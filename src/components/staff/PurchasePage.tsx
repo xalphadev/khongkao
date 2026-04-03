@@ -533,30 +533,28 @@ export default function PurchasePage() {
             <p className="text-gray-400 text-sm mb-4">เลือกประเภทของที่ลูกค้านำมาขาย</p>
 
             <div className="grid grid-cols-2 gap-4">
-              {categories.map((cat) => (
-                {(() => {
-                  const grad = getCategoryGradient(cat.color ?? "#16a34a");
-                  const CIcon = getIconComponent(cat.icon ?? "Package");
-                  return (
-                    <button
-                      key={cat.id}
-                      onClick={() => handleCategorySelect(cat)}
-                      className="relative rounded-3xl flex flex-col items-start gap-4 shadow-xl active:scale-[0.95] transition-all overflow-hidden"
-                      style={{ padding: "20px 18px 22px", background: `linear-gradient(135deg, ${grad.from}, ${grad.to})`, boxShadow: `0 8px 24px ${grad.from}50` }}
-                    >
-                      <div className="absolute -top-6 -right-6 w-28 h-28 bg-white/10 rounded-full" />
-                      <div className="absolute -bottom-4 -left-4 w-20 h-20 bg-black/[0.08] rounded-full" />
-                      <div className="w-14 h-14 bg-white/25 rounded-2xl flex items-center justify-center relative">
-                        <CIcon className="w-7 h-7 text-white" />
-                      </div>
-                      <div className="relative">
-                        <p className="text-white font-bold text-xl leading-tight">{cat.name}</p>
-                        <p className="text-white/70 text-sm mt-1">{cat.products.length} รายการ</p>
-                      </div>
-                    </button>
-                  );
-                })()}
-              ))}
+              {categories.map((cat) => {
+                const grad = getCategoryGradient(cat.color ?? "#16a34a");
+                const CIcon = getIconComponent(cat.icon ?? "Package");
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => handleCategorySelect(cat)}
+                    className="relative rounded-3xl flex flex-col items-start gap-4 shadow-xl active:scale-[0.95] transition-all overflow-hidden"
+                    style={{ padding: "20px 18px 22px", background: `linear-gradient(135deg, ${grad.from}, ${grad.to})`, boxShadow: `0 8px 24px ${grad.from}50` }}
+                  >
+                    <div className="absolute -top-6 -right-6 w-28 h-28 bg-white/10 rounded-full" />
+                    <div className="absolute -bottom-4 -left-4 w-20 h-20 bg-black/[0.08] rounded-full" />
+                    <div className="w-14 h-14 bg-white/25 rounded-2xl flex items-center justify-center relative">
+                      <CIcon className="w-7 h-7 text-white" />
+                    </div>
+                    <div className="relative">
+                      <p className="text-white font-bold text-xl leading-tight">{cat.name}</p>
+                      <p className="text-white/70 text-sm mt-1">{cat.products.length} รายการ</p>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
 
             {/* ปุ่มดูตะกร้าเมื่อมีสินค้า — ไม่แสดง list ให้ไปดูที่หน้า cart แทน */}
@@ -586,10 +584,16 @@ export default function PurchasePage() {
               {selectedCategory.products.map((product) => (
                 <button key={product.id} onClick={() => handleProductSelect(product)}
                   className="w-full bg-white rounded-2xl px-4 py-4 shadow-sm active:scale-[0.98] active:bg-green-50 transition-all flex items-center gap-4">
-                  <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
-                    style={{ background: `linear-gradient(135deg, ${getCategoryGradient(selectedCategory.color ?? "#16a34a").from}, ${getCategoryGradient(selectedCategory.color ?? "#16a34a").to})` }}>
-                    {(() => { const I = getIconComponent(selectedCategory.icon ?? "Package"); return <I className="w-5 h-5 text-white" />; })()}
-                  </div>
+                  {(() => {
+                    const g = getCategoryGradient(selectedCategory.color ?? "#16a34a");
+                    const I = getIconComponent(selectedCategory.icon ?? "Package");
+                    return (
+                      <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+                        style={{ background: `linear-gradient(135deg, ${g.from}, ${g.to})` }}>
+                        <I className="w-5 h-5 text-white" />
+                      </div>
+                    );
+                  })()}
                   <div className="flex-1 text-left">
                     <p className="text-gray-800 font-medium">{product.name}</p>
                     <p className="text-gray-400 text-xs mt-0.5">{product.unit === "KG" ? "วัดเป็นกิโลกรัม" : "วัดเป็นชิ้น"}</p>
@@ -609,10 +613,16 @@ export default function PurchasePage() {
         {step === "quantity" && selectedProduct && (
           <div>
             <div className="bg-white rounded-2xl p-4 shadow-sm mb-4 flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
-                style={{ background: `linear-gradient(135deg, ${getCategoryGradient(selectedCategory?.color ?? "#16a34a").from}, ${getCategoryGradient(selectedCategory?.color ?? "#16a34a").to})` }}>
-                {(() => { const I = getIconComponent(selectedCategory?.icon ?? "Package"); return <I className="w-6 h-6 text-white" />; })()}
-              </div>
+              {(() => {
+                const g = getCategoryGradient(selectedCategory?.color ?? "#16a34a");
+                const I = getIconComponent(selectedCategory?.icon ?? "Package");
+                return (
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
+                    style={{ background: `linear-gradient(135deg, ${g.from}, ${g.to})` }}>
+                    <I className="w-6 h-6 text-white" />
+                  </div>
+                );
+              })()}
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-gray-900">{selectedProduct.name}</p>
                 {selectedProduct.customPrice
