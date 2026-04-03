@@ -559,33 +559,22 @@ export default function PurchasePage() {
           <div>
             <p className="text-gray-400 text-sm mb-4">เลือกประเภทของที่ลูกค้านำมาขาย</p>
 
-            {heldBills.length > 0 && (
-              <button onClick={() => setShowHeldBills(true)} className="w-full mb-4 flex items-center gap-3 bg-amber-50 border-2 border-amber-200 rounded-2xl px-4 py-3 active:scale-[0.98] transition-all">
-                <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
-                  <Clock className="w-5 h-5 text-amber-500" />
-                </div>
-                <div className="flex-1 text-left">
-                  <p className="text-amber-800 font-medium text-sm">มีบิลพักอยู่ {heldBills.length} บิล</p>
-                  <p className="text-amber-600 text-xs">แตะเพื่อรับช่วงต่อ หรือเปิดบิลใหม่ได้เลย</p>
-                </div>
-                <ChevronRight className="w-4 h-4 text-amber-500" />
-              </button>
-            )}
-
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-4">
               {categories.map((cat) => (
                 <button
                   key={cat.id}
                   onClick={() => handleCategorySelect(cat)}
-                  className={`relative bg-gradient-to-br ${CAT_COLORS[cat.name] ?? "from-gray-500 to-gray-600"} rounded-2xl p-4 flex flex-col items-start gap-3 shadow-lg ${CAT_SHADOW[cat.name] ?? "shadow-gray-500/20"} active:scale-[0.96] transition-all overflow-hidden`}
+                  className={`relative bg-gradient-to-br ${CAT_COLORS[cat.name] ?? "from-gray-500 to-gray-600"} rounded-3xl flex flex-col items-start gap-4 shadow-xl ${CAT_SHADOW[cat.name] ?? "shadow-gray-500/20"} active:scale-[0.95] transition-all overflow-hidden`}
+                  style={{ padding: "20px 18px 22px" }}
                 >
-                  <div className="absolute -top-4 -right-4 w-20 h-20 bg-white/10 rounded-full" />
-                  <div className="w-11 h-11 bg-white/20 rounded-xl flex items-center justify-center">
-                    <CatIcon name={cat.name} className="w-6 h-6 text-white" />
+                  <div className="absolute -top-6 -right-6 w-28 h-28 bg-white/10 rounded-full" />
+                  <div className="absolute -bottom-4 -left-4 w-20 h-20 bg-black/[0.08] rounded-full" />
+                  <div className="w-14 h-14 bg-white/25 rounded-2xl flex items-center justify-center relative">
+                    <CatIcon name={cat.name} className="w-7 h-7 text-white" />
                   </div>
-                  <div>
-                    <p className="text-white font-medium text-sm leading-tight">{cat.name}</p>
-                    <p className="text-white/60 text-xs">{cat.products.length} รายการ</p>
+                  <div className="relative">
+                    <p className="text-white font-bold text-xl leading-tight">{cat.name}</p>
+                    <p className="text-white/70 text-sm mt-1">{cat.products.length} รายการ</p>
                   </div>
                 </button>
               ))}
