@@ -81,18 +81,26 @@ export const ICON_OPTIONS: { key: string; label: string; Icon: React.ComponentTy
 ];
 
 export const COLOR_OPTIONS = [
-  { key: "#16a34a", label: "เขียว",       from: "#15803d", to: "#16a34a" },
-  { key: "#2563eb", label: "น้ำเงิน",     from: "#1d4ed8", to: "#3b82f6" },
-  { key: "#dc2626", label: "แดง",         from: "#b91c1c", to: "#ef4444" },
-  { key: "#d97706", label: "ส้มทอง",      from: "#b45309", to: "#f59e0b" },
-  { key: "#7c3aed", label: "ม่วง",        from: "#6d28d9", to: "#8b5cf6" },
-  { key: "#0891b2", label: "ฟ้าคราม",    from: "#0e7490", to: "#06b6d4" },
-  { key: "#db2777", label: "ชมพู",        from: "#be185d", to: "#ec4899" },
-  { key: "#65a30d", label: "เขียวมะนาว",  from: "#4d7c0f", to: "#84cc16" },
-  { key: "#ea580c", label: "ส้ม",         from: "#c2410c", to: "#f97316" },
-  { key: "#0f766e", label: "เขียวน้ำ",    from: "#0f766e", to: "#14b8a6" },
-  { key: "#475569", label: "เทา",         from: "#334155", to: "#64748b" },
-  { key: "#92400e", label: "น้ำตาล",      from: "#78350f", to: "#b45309" },
+  { key: "#16a34a", label: "เขียว",        from: "#15803d", to: "#22c55e" },
+  { key: "#2563eb", label: "น้ำเงิน",      from: "#1d4ed8", to: "#3b82f6" },
+  { key: "#dc2626", label: "แดง",          from: "#b91c1c", to: "#f87171" },
+  { key: "#d97706", label: "ส้มทอง",       from: "#b45309", to: "#fbbf24" },
+  { key: "#7c3aed", label: "ม่วง",         from: "#6d28d9", to: "#a78bfa" },
+  { key: "#0891b2", label: "ฟ้าคราม",     from: "#0e7490", to: "#22d3ee" },
+  { key: "#db2777", label: "ชมพู",         from: "#be185d", to: "#f472b6" },
+  { key: "#65a30d", label: "เขียวมะนาว",   from: "#4d7c0f", to: "#a3e635" },
+  { key: "#ea580c", label: "ส้ม",          from: "#c2410c", to: "#fb923c" },
+  { key: "#0f766e", label: "เขียวน้ำ",     from: "#0f766e", to: "#2dd4bf" },
+  { key: "#475569", label: "เทาเข้ม",      from: "#334155", to: "#94a3b8" },
+  { key: "#92400e", label: "น้ำตาล",       from: "#78350f", to: "#d97706" },
+  { key: "#1e40af", label: "น้ำเงินเข้ม",  from: "#1e3a8a", to: "#3b82f6" },
+  { key: "#9d174d", label: "แดงม่วง",      from: "#831843", to: "#ec4899" },
+  { key: "#064e3b", label: "เขียวเข้ม",    from: "#022c22", to: "#10b981" },
+  { key: "#1e3a5f", label: "กรมท่า",       from: "#0f172a", to: "#3b82f6" },
+  { key: "#7e22ce", label: "ม่วงเข้ม",     from: "#581c87", to: "#c084fc" },
+  { key: "#b45309", label: "เหลืองทอง",    from: "#92400e", to: "#fcd34d" },
+  { key: "#0e7490", label: "ฟ้าทะเล",      from: "#164e63", to: "#67e8f9" },
+  { key: "#be123c", label: "แดงเข้ม",      from: "#881337", to: "#fb7185" },
 ];
 
 export function getIconComponent(key: string): React.ComponentType<{ className?: string }> {
@@ -256,7 +264,7 @@ export default function CategoriesPage() {
               {/* เลือกสี */}
               <div>
                 <FieldLabel>เลือกสี</FieldLabel>
-                <div className="grid grid-cols-6 gap-2">
+                <div className="grid grid-cols-5 gap-2">
                   {COLOR_OPTIONS.map((c) => (
                     <button
                       key={c.key}
@@ -266,8 +274,8 @@ export default function CategoriesPage() {
                       title={c.label}
                     >
                       {form.color === c.key && (
-                        <div className="absolute inset-0 rounded-2xl ring-2 ring-white ring-offset-1 ring-offset-transparent flex items-center justify-center">
-                          <div className="w-3 h-3 rounded-full bg-white shadow" />
+                        <div className="absolute inset-0 rounded-2xl ring-[3px] ring-white ring-offset-1 flex items-center justify-center">
+                          <div className="w-2.5 h-2.5 rounded-full bg-white shadow-md" />
                         </div>
                       )}
                     </button>

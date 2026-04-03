@@ -12,18 +12,22 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const { id } = await params;
   const body = await req.json();
 
-  const category = await prisma.category.update({
-    where: { id },
-    data: {
-      name: body.name,
-      description: body.description,
-      icon: body.icon,
-      color: body.color,
-      isActive: body.isActive,
-    },
-  });
+  // Only include fields that were explicitly sent
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const data: Record<string, any> = {};
+  if (body.name !== undefined)        data.name = body.name;
+  if (body.description !== undefined) data.description = body.description;
+  if (body.icon !== undefined)        data.icon = body.icon;
+  if (body.color !== undefined)       data.color = body.color;
+  if (body.isActive !== undefined)    data.isActive = body.isActive;
 
-  return NextResponse.json(category);
+  try {
+    const category = await prisma.category.update({ where: { id }, data });
+    return NextResponse.json(category);
+  } catch (err) {
+    console.error("[PUT /api/categories/[id]]", err);
+    return NextResponse.json({ error: "เกิดข้อผิดพลาดในการบันทึก" }, { status: 500 });
+  }
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
