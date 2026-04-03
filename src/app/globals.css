@@ -1,26 +1,71 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --font-family-kanit: var(--font-kanit, "Kanit"), sans-serif;
+  --font-family-sans: var(--font-kanit, "Kanit"), sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-kanit, "Kanit"), sans-serif;
+  font-weight: 400;
+  -webkit-tap-highlight-color: transparent;
 }
+
+/* Kanit: max bold = 500 */
+b, strong, .font-bold, .font-semibold {
+  font-weight: 500 !important;
+}
+
+/* Staff large button */
+.btn-staff {
+  min-height: 64px;
+  font-size: 1.2rem;
+  font-weight: 500;
+  border-radius: 1rem;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  transition: all 0.15s ease;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+}
+
+.btn-staff:active {
+  transform: scale(0.97);
+  opacity: 0.92;
+}
+
+/* Card lift on hover */
+.card-lift {
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.card-lift:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px -4px rgba(0,0,0,0.1);
+}
+
+/* Smooth number input */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Print */
+@media print {
+  .no-print { display: none !important; }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }

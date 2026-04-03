@@ -1,36 +1,116 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# มือสองของเก่า — ระบบรับซื้อของเก่า
 
-## Getting Started
+## 🚀 Deploy ด้วย Docker
 
-First, run the development server:
+### สิ่งที่ต้องมีบนเซิร์ฟเวอร์
+- Docker Engine ≥ 24
+- Docker Compose v2 (`docker compose`)
+- Port 80 และ 443 ว่าง
 
+---
+
+### ขั้นตอน Deploy (ครั้งแรก)
+
+**1. Clone โปรเจ็กต์**
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone <repo-url> khongkao
+cd khongkao
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+**2. สร้างไฟล์ `.env`**
+```bash
+cp .env.example .env
+```
+แก้ไข `.env` — ต้องเปลี่ยน `NEXTAUTH_SECRET`:
+```bash
+# สร้าง secret แบบสุ่ม
+openssl rand -base64 32
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+**3. ใส่ SSL Certificate**
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+เลือก 1 วิธี:
 
-## Learn More
+- **วิธี A (แนะนำ): ใช้ Cloudflare**
+  - ตั้งค่า DNS A record ของ `khongkao.xalpha.co.th` → IP เซิร์ฟเวอร์
+  - Cloudflare SSL Mode: **Full (strict)**
+  - ดาวน์โหลด **Cloudflare Origin Certificate** แล้ววางไฟล์:
+    ```
+    nginx/ssl/cert.pem   ← Origin Certificate
+    nginx/ssl/key.pem    ← Private Key
+    ```
 
-To learn more about Next.js, take a look at the following resources:
+- **วิธี B: ใช้ cert ตัวเอง**
+  - วางไฟล์ cert ใน `nginx/ssl/cert.pem` และ `nginx/ssl/key.pem`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+**4. Build และ Start**
+```bash
+docker compose up --build -d
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+ระบบจะทำให้อัตโนมัติ:
+- Build Next.js application
+- รัน database migrations
+- Seed ข้อมูลเริ่มต้น (users, categories, products)
+- Start nginx + app
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### อัปเดตเวอร์ชันใหม่
+```bash
+git pull
+docker compose up --build -d
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+### ดู Logs
+```bash
+# ดู log ทั้งหมด
+docker compose logs -f
+
+# ดูเฉพาะ app
+docker compose logs -f app
+
+# ดูเฉพาะ nginx
+docker compose logs -f nginx
+```
+
+### หยุดระบบ
+```bash
+docker compose down
+```
+
+### Backup ฐานข้อมูล
+```bash
+# Copy ไฟล์ SQLite ออกมา
+docker compose cp app:/app/data/prod.db ./backup-$(date +%Y%m%d).db
+```
+
+---
+
+## 👤 บัญชีเริ่มต้น (หลัง seed)
+
+| บทบาท | Username | Password |
+|--------|----------|----------|
+| เจ้าของร้าน | `owner` | `owner123` |
+| พนักงาน (ป้าแดง) | `pa_daeng` | `staff123` |
+| พนักงาน (ป้าน้อย) | `pa_noi` | `staff123` |
+
+> ⚠️ **เปลี่ยนรหัสผ่านหลัง deploy ทันที** ผ่านหน้า จัดการพนักงาน
+
+---
+
+## 🛠 Development (Local)
+
+```bash
+npm install
+cp .env.example .env.local
+# แก้ .env.local ให้ DATABASE_URL=file:./prisma/dev.db
+
+npx prisma migrate dev
+npm run db:seed
+npm run dev
+```
+
+เปิด [http://localhost:3000](http://localhost:3000)
