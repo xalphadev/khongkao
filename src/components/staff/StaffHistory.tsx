@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRef } from "react";
 import {
-  ClipboardList, User, ChevronDown, Pencil, X, Check, ChevronLeft, ChevronRight, Search,
+  ClipboardList, User, ChevronDown, Pencil, X, Check, ChevronLeft, ChevronRight, Search, Calendar,
 } from "lucide-react";
 import StaffTabBar from "./StaffTabBar";
 import ConfirmModal from "@/components/ui/ConfirmModal";
@@ -32,6 +33,12 @@ function formatMoney(n: number) {
 function formatTime(s: string) {
   return new Date(s).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
 }
+function localDateString(d: Date = new Date()) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
 function formatThaiDate(dateStr: string) {
   return new Date(dateStr + "T00:00:00").toLocaleDateString("th-TH", {
     weekday: "long", year: "numeric", month: "long", day: "numeric",
@@ -40,10 +47,10 @@ function formatThaiDate(dateStr: string) {
 function addDays(dateStr: string, n: number) {
   const d = new Date(dateStr + "T00:00:00");
   d.setDate(d.getDate() + n);
-  return d.toISOString().split("T")[0];
+  return localDateString(d);
 }
 function isToday(dateStr: string) {
-  return dateStr === new Date().toISOString().split("T")[0];
+  return dateStr === localDateString();
 }
 
 // ── Edit Modal ────────────────────────────────────────────────
@@ -219,10 +226,11 @@ function EditTransactionModal({
 export default function StaffHistory() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [date, setDate] = useState(() => localDateString());
   const [search, setSearch] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
+  const dateInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { load(); }, [date]);
 
@@ -263,17 +271,35 @@ export default function StaffHistory() {
 
         {/* Date nav */}
         <div className="relative flex items-center gap-2 mb-4">
+          {/* ◀ Prev day */}
           <button
             onClick={() => setDate(addDays(date, -1))}
             className="w-11 h-11 flex items-center justify-center rounded-xl bg-white/20 text-white active:bg-white/30 transition-colors shrink-0"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
-          <div className="flex-1 bg-white/20 rounded-xl px-3 py-2.5 text-center">
+
+          {/* Date label — tap to open picker */}
+          <button
+            className="flex-1 bg-white/20 rounded-xl px-3 py-2.5 flex items-center justify-center gap-2 active:bg-white/30 transition-colors"
+            onClick={() => dateInputRef.current?.showPicker?.() ?? dateInputRef.current?.click()}
+          >
+            <Calendar className="w-4 h-4 text-white/80 shrink-0" />
             <p className="text-white text-sm font-medium leading-tight">
               {isToday(date) ? "วันนี้" : formatThaiDate(date)}
             </p>
-          </div>
+          </button>
+          {/* Hidden native date input */}
+          <input
+            ref={dateInputRef}
+            type="date"
+            value={date}
+            max={localDateString()}
+            onChange={(e) => { if (e.target.value) setDate(e.target.value); }}
+            className="absolute opacity-0 pointer-events-none w-0 h-0"
+          />
+
+          {/* ▶ Next day (disabled on today) */}
           <button
             onClick={() => { if (!isToday(date)) setDate(addDays(date, 1)); }}
             disabled={isToday(date)}
