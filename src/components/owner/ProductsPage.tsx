@@ -112,17 +112,16 @@ export default function ProductsPage() {
 
   const saveInlinePrice = async (p: Product) => {
     const price = parseFloat(inlinePrice);
-    if (!isNaN(price) && price >= 0 && price !== p.pricePerUnit) {
+    setInlineEditId(null);
+    if (!isNaN(price) && price >= 0) {
       await fetch(`/api/products/${p.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ pricePerUnit: price }),
       });
       loadData();
-      // Refresh history if currently viewing this product's history
       if (historyProductId === p.id) loadHistory(p.id);
     }
-    setInlineEditId(null);
   };
 
   const loadHistory = async (productId: string) => {
@@ -214,7 +213,11 @@ export default function ProductsPage() {
                             step="0.5"
                             inputMode="decimal"
                           />
-                          <button onClick={() => saveInlinePrice(p)} className="w-8 h-8 bg-green-600 rounded-xl flex items-center justify-center">
+                          <button
+                            onMouseDown={(e) => { e.preventDefault(); saveInlinePrice(p); }}
+                            onTouchStart={(e) => { e.preventDefault(); saveInlinePrice(p); }}
+                            className="w-8 h-8 bg-green-600 rounded-xl flex items-center justify-center"
+                          >
                             <Check className="w-4 h-4 text-white" />
                           </button>
                         </div>

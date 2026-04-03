@@ -12,14 +12,18 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const { id } = await params;
   const body = await req.json();
 
-  // Record price history if price is changing
+  // Record price history if price is changing (best-effort, non-blocking)
   if (body.pricePerUnit !== undefined && !body.customPrice) {
-    const current = await prisma.product.findUnique({ where: { id } });
-    const newPrice = parseFloat(body.pricePerUnit);
-    if (current && current.pricePerUnit !== newPrice && !current.customPrice) {
-      await prisma.productPriceHistory.create({
-        data: { productId: id, oldPrice: current.pricePerUnit, newPrice },
-      });
+    try {
+      const current = await prisma.product.findUnique({ where: { id } });
+      const newPrice = parseFloat(body.pricePerUnit);
+      if (current && current.pricePerUnit !== newPrice && !current.customPrice) {
+        await prisma.productPriceHistory.create({
+          data: { productId: id, oldPrice: current.pricePerUnit, newPrice },
+        });
+      }
+    } catch {
+      // price history table may not exist yet — continue without recording
     }
   }
 
