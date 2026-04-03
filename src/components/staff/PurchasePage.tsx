@@ -682,72 +682,92 @@ export default function PurchasePage() {
 
         {/* ── STEP 4: Cart ── */}
         {step === "cart" && (
-          <div>
-            <p className="text-gray-400 text-sm mb-4">ตรวจสอบรายการก่อนบันทึก</p>
+          <div className="space-y-3">
 
             {cart.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-gray-400 gap-2">
+              <div className="flex flex-col items-center justify-center py-20 text-gray-400 gap-2">
                 <ShoppingCart className="w-12 h-12 text-gray-200 mb-2" />
                 <p className="font-medium text-gray-500">ยังไม่มีรายการ</p>
+                <button onClick={() => setStep("category")} className="mt-3 flex items-center gap-1.5 text-green-600 text-sm font-medium">
+                  <Plus className="w-4 h-4" /> เพิ่มสินค้า
+                </button>
               </div>
             ) : (
-              <div className="space-y-2 mb-4">
-                {cart.map((item, i) => (
-                  <div key={i} className="bg-white rounded-2xl px-4 py-3.5 shadow-sm flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-green-50 text-green-600 flex items-center justify-center text-sm font-medium shrink-0">{i + 1}</div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-gray-800 font-medium text-sm">{item.productName}</p>
-                      <p className="text-gray-400 text-xs">{item.quantity} {item.unit === "KG" ? "กก." : "ชิ้น"} × ฿{item.unitPrice.toLocaleString()}</p>
-                    </div>
-                    <p className="text-green-600 font-medium text-sm tabular-nums shrink-0">฿{formatMoney(item.subtotal)}</p>
-                    <button onClick={() => setEditingCartIdx(i)} className="w-7 h-7 flex items-center justify-center rounded-full bg-blue-50 text-blue-400 hover:bg-blue-100 transition-all shrink-0">
-                      <Pencil className="w-3.5 h-3.5" />
-                    </button>
-                    <button onClick={() => setCart(cart.filter((_, idx) => idx !== i))} className="w-7 h-7 flex items-center justify-center rounded-full bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-600 transition-all shrink-0">
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {cart.length > 0 && (
               <>
-                <div className="bg-white rounded-2xl px-5 py-4 shadow-sm mb-4">
-                  <div className="flex justify-between items-center">
-                    <p className="text-gray-500 text-sm">ยอดรวมทั้งหมด</p>
-                    <p className="text-3xl font-medium text-green-600 tabular-nums">฿{formatMoney(totalAmount)}</p>
-                  </div>
-                  <div className="mt-2 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-green-400 to-green-600 rounded-full w-full" />
+                {/* ── Items ── */}
+                <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+                  {cart.map((item, i) => (
+                    <div key={i} className={`flex items-center gap-3 px-4 py-3.5 ${i > 0 ? "border-t border-gray-50" : ""}`}>
+                      <span className="w-6 h-6 rounded-full bg-green-50 text-green-600 flex items-center justify-center text-xs font-medium shrink-0">{i + 1}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-gray-800 font-medium text-sm">{item.productName}</p>
+                        <p className="text-gray-400 text-xs">{item.quantity} {item.unit === "KG" ? "กก." : "ชิ้น"} × ฿{item.unitPrice.toLocaleString()}</p>
+                      </div>
+                      <p className="text-green-600 font-medium text-sm tabular-nums shrink-0">฿{formatMoney(item.subtotal)}</p>
+                      <button onClick={() => setEditingCartIdx(i)} className="w-7 h-7 flex items-center justify-center rounded-full bg-blue-50 text-blue-400 shrink-0">
+                        <Pencil className="w-3 h-3" />
+                      </button>
+                      <button onClick={() => setCart(cart.filter((_, idx) => idx !== i))} className="w-7 h-7 flex items-center justify-center rounded-full bg-red-50 text-red-400 shrink-0">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                  {/* Total row */}
+                  <div className="flex items-center justify-between px-4 py-3.5 bg-green-50 border-t border-green-100">
+                    <p className="text-green-700 text-sm font-medium">ยอดรวม</p>
+                    <p className="text-green-700 font-medium text-xl tabular-nums">฿{formatMoney(totalAmount)}</p>
                   </div>
                 </div>
 
-                <div className="bg-white rounded-2xl px-4 py-3 shadow-sm mb-4 flex items-center gap-3 border-2 border-transparent focus-within:border-green-400 transition-all">
-                  <User className="w-5 h-5 text-gray-400 shrink-0" />
-                  <div className="flex-1">
-                    <p className="text-gray-400 text-xs mb-0.5">ชื่อลูกค้า</p>
-                    <input type="text" value={customerName} onChange={(e) => setCustomerName(e.target.value)}
-                      className="w-full bg-transparent text-base text-gray-800 placeholder-gray-300 focus:outline-none"
-                      placeholder="ไม่บังคับ เช่น ลุงสมชาย" maxLength={40} />
-                  </div>
+                {/* ── Customer name ── */}
+                <div className="bg-white rounded-2xl px-4 py-3 shadow-sm flex items-center gap-3 border-2 border-transparent focus-within:border-green-400 transition-all">
+                  <User className="w-4 h-4 text-gray-400 shrink-0" />
+                  <input
+                    type="text"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    className="flex-1 bg-transparent text-sm text-gray-800 placeholder-gray-400 focus:outline-none"
+                    placeholder="ชื่อลูกค้า (ไม่บังคับ)"
+                    maxLength={40}
+                  />
                   {customerName && (
-                    <button onClick={() => setCustomerName("")} className="text-gray-300 hover:text-gray-500 shrink-0">
-                      <X className="w-4 h-4" />
+                    <button onClick={() => setCustomerName("")} className="text-gray-300 shrink-0">
+                      <X className="w-3.5 h-3.5" />
                     </button>
                   )}
                 </div>
 
-                <button onClick={() => setStep("category")} className="btn-staff bg-white text-gray-600 shadow-sm border border-gray-200 mb-2" style={{ minHeight: 52 }}>
-                  <Plus className="w-4 h-4" /> เพิ่มสินค้า
-                </button>
-                <button onClick={() => setShowHoldConfirm(true)} disabled={holdingBill} className="btn-staff bg-amber-50 border-2 border-amber-200 text-amber-700 mb-2" style={{ minHeight: 52, fontSize: "0.95rem" }}>
-                  <Clock className="w-4 h-4" /> พักบิลนี้ไว้ก่อน
-                </button>
-                <button onClick={() => setShowPayConfirm(true)} disabled={saving} className="btn-staff bg-gradient-to-r from-green-600 to-green-500 disabled:from-green-400 disabled:to-green-400 text-white shadow-lg shadow-green-600/25" style={{ minHeight: 64 }}>
-                  <Banknote className="w-5 h-5" />
-                  {saving ? "กำลังบันทึก..." : `จ่ายเงิน ฿${formatMoney(totalAmount)}`}
-                </button>
+                {/* ── Actions ── */}
+                <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+                  {/* เพิ่มสินค้า — secondary link style */}
+                  <button
+                    onClick={() => setStep("category")}
+                    className="w-full flex items-center justify-center gap-2 py-3.5 text-gray-500 text-sm border-b border-gray-50 active:bg-gray-50 transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>เพิ่มสินค้า</span>
+                  </button>
+
+                  {/* พักบิล + จ่าย */}
+                  <div className="grid grid-cols-2 gap-0">
+                    <button
+                      onClick={() => setShowHoldConfirm(true)}
+                      disabled={holdingBill}
+                      className="flex items-center justify-center gap-2 py-4 text-amber-600 text-sm font-medium border-r border-gray-50 active:bg-amber-50 transition-colors disabled:opacity-50"
+                    >
+                      <Clock className="w-4 h-4 shrink-0" />
+                      <span>พักบิล</span>
+                    </button>
+                    <button
+                      onClick={() => setShowPayConfirm(true)}
+                      disabled={saving}
+                      className="flex items-center justify-center gap-2 py-4 bg-green-600 text-white text-sm font-medium active:bg-green-700 transition-colors disabled:opacity-60"
+                    >
+                      <Banknote className="w-4 h-4 shrink-0" />
+                      <span>{saving ? "บันทึก..." : `จ่าย ฿${formatMoney(totalAmount)}`}</span>
+                    </button>
+                  </div>
+                </div>
               </>
             )}
           </div>
