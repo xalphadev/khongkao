@@ -298,7 +298,7 @@ export default function StaffHistory() {
         </div>
 
         {/* Stats */}
-        <div className="relative grid grid-cols-2 gap-3">
+        <div className="relative grid grid-cols-2 gap-3 mb-10">
           <div className="bg-white/15 rounded-2xl px-4 py-3.5">
             <p className="text-blue-200 text-xs mb-0.5">ยอดรวม</p>
             <p className="text-white font-medium text-xl tabular-nums">฿{formatMoney(total)}</p>
@@ -310,8 +310,8 @@ export default function StaffHistory() {
         </div>
 
         <div className="absolute bottom-0 left-0 right-0">
-          <svg viewBox="0 0 390 32" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full" preserveAspectRatio="none">
-            <path d="M0 32 C97.5 0 292.5 0 390 32 L390 32 L0 32 Z" fill="#f4f6f9" />
+          <svg viewBox="0 0 390 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full" preserveAspectRatio="none">
+            <path d="M0 40 C97.5 0 292.5 0 390 40 L390 40 L0 40 Z" fill="#f4f6f9" />
           </svg>
         </div>
       </div>
