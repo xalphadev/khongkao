@@ -135,8 +135,8 @@ export default function StaffHome({ userName }: StaffHomeProps) {
           onClick={() => router.push("/staff/purchase")}
           className="w-full relative overflow-hidden rounded-3xl active:scale-[0.97] transition-all text-left"
           style={{
-            background: "linear-gradient(135deg, #c2410c 0%, #ea580c 40%, #f97316 100%)",
-            boxShadow: "0 8px 28px rgba(234,88,12,0.40), 0 2px 8px rgba(234,88,12,0.20)",
+            background: "linear-gradient(135deg, #4d7c0f 0%, #65a30d 45%, #84cc16 100%)",
+            boxShadow: "0 8px 28px rgba(101,163,13,0.45), 0 2px 8px rgba(101,163,13,0.20)",
             padding: "18px 20px",
           }}
         >
@@ -150,7 +150,7 @@ export default function StaffHome({ userName }: StaffHomeProps) {
             </div>
             <div className="flex-1">
               <p className="text-white font-bold text-2xl leading-tight">รับซื้อของเก่า</p>
-              <p className="text-orange-100 text-sm mt-0.5 font-medium">เริ่มบันทึกรายการรับซื้อใหม่</p>
+              <p className="text-lime-100 text-sm mt-0.5 font-medium">เริ่มบันทึกรายการรับซื้อใหม่</p>
             </div>
             <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
               style={{ background: "rgba(255,255,255,0.18)" }}>
