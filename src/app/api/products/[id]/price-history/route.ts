@@ -10,11 +10,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   }
 
   const { id } = await params;
-  const history = await prisma.productPriceHistory.findMany({
-    where: { productId: id },
-    orderBy: { changedAt: "desc" },
-    take: 10,
-  });
 
-  return NextResponse.json(history);
+  try {
+    const history = await prisma.productPriceHistory.findMany({
+      where: { productId: id },
+      orderBy: { changedAt: "desc" },
+      take: 10,
+    });
+    return NextResponse.json(history);
+  } catch {
+    return NextResponse.json([], { status: 200 });
+  }
 }
