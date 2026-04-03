@@ -17,6 +17,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     data: {
       name: body.name,
       description: body.description,
+      icon: body.icon,
+      color: body.color,
       isActive: body.isActive,
     },
   });

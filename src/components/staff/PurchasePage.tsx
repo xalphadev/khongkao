@@ -4,14 +4,17 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft, ShoppingCart, Clock, Plus, X, Check,
-  Wrench, Cpu, Newspaper, Recycle, GlassWater, Package,
+  Package,
   Scale, Hash, Banknote, User, CheckCircle2, ChevronRight, Pencil, Trash2,
 } from "lucide-react";
 import ReceiptModal from "./ReceiptModal";
+import { getIconComponent, getCategoryGradient } from "@/components/owner/CategoriesPage";
 
 interface Category {
   id: string;
   name: string;
+  icon: string | null;
+  color: string | null;
   products: Product[];
 }
 
@@ -49,36 +52,6 @@ function formatTime(s: string) {
   return new Date(s).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
 }
 
-type CatIconName = "โลหะ" | "อิเล็กทรอนิกส์" | "กระดาษ" | "พลาสติก" | "แก้ว";
-
-const CAT_ICON_MAP: Record<CatIconName, React.ComponentType<{ className?: string }>> = {
-  โลหะ: Wrench,
-  อิเล็กทรอนิกส์: Cpu,
-  กระดาษ: Newspaper,
-  พลาสติก: Recycle,
-  แก้ว: GlassWater,
-};
-
-function CatIcon({ name, className }: { name: string; className?: string }) {
-  const Icon = CAT_ICON_MAP[name as CatIconName] ?? Package;
-  return <Icon className={className ?? "w-6 h-6"} />;
-}
-
-const CAT_COLORS: Record<string, string> = {
-  โลหะ: "from-slate-500 to-slate-600",
-  อิเล็กทรอนิกส์: "from-blue-500 to-blue-600",
-  กระดาษ: "from-amber-500 to-orange-500",
-  พลาสติก: "from-purple-500 to-violet-600",
-  แก้ว: "from-cyan-500 to-teal-500",
-};
-
-const CAT_SHADOW: Record<string, string> = {
-  โลหะ: "shadow-slate-500/30",
-  อิเล็กทรอนิกส์: "shadow-blue-500/30",
-  กระดาษ: "shadow-amber-500/30",
-  พลาสติก: "shadow-purple-500/30",
-  แก้ว: "shadow-cyan-500/30",
-};
 
 type Step = "category" | "product" | "quantity" | "cart";
 
@@ -561,22 +534,28 @@ export default function PurchasePage() {
 
             <div className="grid grid-cols-2 gap-4">
               {categories.map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => handleCategorySelect(cat)}
-                  className={`relative bg-gradient-to-br ${CAT_COLORS[cat.name] ?? "from-gray-500 to-gray-600"} rounded-3xl flex flex-col items-start gap-4 shadow-xl ${CAT_SHADOW[cat.name] ?? "shadow-gray-500/20"} active:scale-[0.95] transition-all overflow-hidden`}
-                  style={{ padding: "20px 18px 22px" }}
-                >
-                  <div className="absolute -top-6 -right-6 w-28 h-28 bg-white/10 rounded-full" />
-                  <div className="absolute -bottom-4 -left-4 w-20 h-20 bg-black/[0.08] rounded-full" />
-                  <div className="w-14 h-14 bg-white/25 rounded-2xl flex items-center justify-center relative">
-                    <CatIcon name={cat.name} className="w-7 h-7 text-white" />
-                  </div>
-                  <div className="relative">
-                    <p className="text-white font-bold text-xl leading-tight">{cat.name}</p>
-                    <p className="text-white/70 text-sm mt-1">{cat.products.length} รายการ</p>
-                  </div>
-                </button>
+                {(() => {
+                  const grad = getCategoryGradient(cat.color ?? "#16a34a");
+                  const CIcon = getIconComponent(cat.icon ?? "Package");
+                  return (
+                    <button
+                      key={cat.id}
+                      onClick={() => handleCategorySelect(cat)}
+                      className="relative rounded-3xl flex flex-col items-start gap-4 shadow-xl active:scale-[0.95] transition-all overflow-hidden"
+                      style={{ padding: "20px 18px 22px", background: `linear-gradient(135deg, ${grad.from}, ${grad.to})`, boxShadow: `0 8px 24px ${grad.from}50` }}
+                    >
+                      <div className="absolute -top-6 -right-6 w-28 h-28 bg-white/10 rounded-full" />
+                      <div className="absolute -bottom-4 -left-4 w-20 h-20 bg-black/[0.08] rounded-full" />
+                      <div className="w-14 h-14 bg-white/25 rounded-2xl flex items-center justify-center relative">
+                        <CIcon className="w-7 h-7 text-white" />
+                      </div>
+                      <div className="relative">
+                        <p className="text-white font-bold text-xl leading-tight">{cat.name}</p>
+                        <p className="text-white/70 text-sm mt-1">{cat.products.length} รายการ</p>
+                      </div>
+                    </button>
+                  );
+                })()}
               ))}
             </div>
 
@@ -607,8 +586,9 @@ export default function PurchasePage() {
               {selectedCategory.products.map((product) => (
                 <button key={product.id} onClick={() => handleProductSelect(product)}
                   className="w-full bg-white rounded-2xl px-4 py-4 shadow-sm active:scale-[0.98] active:bg-green-50 transition-all flex items-center gap-4">
-                  <div className="w-11 h-11 rounded-xl bg-gray-50 flex items-center justify-center shrink-0">
-                    <CatIcon name={selectedCategory.name} className="w-5 h-5 text-gray-500" />
+                  <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+                    style={{ background: `linear-gradient(135deg, ${getCategoryGradient(selectedCategory.color ?? "#16a34a").from}, ${getCategoryGradient(selectedCategory.color ?? "#16a34a").to})` }}>
+                    {(() => { const I = getIconComponent(selectedCategory.icon ?? "Package"); return <I className="w-5 h-5 text-white" />; })()}
                   </div>
                   <div className="flex-1 text-left">
                     <p className="text-gray-800 font-medium">{product.name}</p>
@@ -629,8 +609,9 @@ export default function PurchasePage() {
         {step === "quantity" && selectedProduct && (
           <div>
             <div className="bg-white rounded-2xl p-4 shadow-sm mb-4 flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center shrink-0">
-                <CatIcon name={selectedCategory?.name ?? ""} className="w-6 h-6 text-green-600" />
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
+                style={{ background: `linear-gradient(135deg, ${getCategoryGradient(selectedCategory?.color ?? "#16a34a").from}, ${getCategoryGradient(selectedCategory?.color ?? "#16a34a").to})` }}>
+                {(() => { const I = getIconComponent(selectedCategory?.icon ?? "Package"); return <I className="w-6 h-6 text-white" />; })()}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-gray-900">{selectedProduct.name}</p>

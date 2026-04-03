@@ -67,12 +67,12 @@ async function main() {
 
   // ── Categories ─────────────────────────────────────────────────
   const categoryDefs = [
-    { name: "โลหะ",          description: "เหล็ก, ทองแดง, อลูมิเนียม, สังกะสี" },
-    { name: "อิเล็กทรอนิกส์", description: "เครื่องใช้ไฟฟ้า, โทรศัพท์, คอมพิวเตอร์" },
-    { name: "กระดาษ",         description: "กระดาษ, หนังสือพิมพ์, กล่องกระดาษ" },
-    { name: "พลาสติก",        description: "ขวดพลาสติก, ถุงพลาสติก" },
-    { name: "แก้ว",           description: "ขวดแก้ว, กระจก" },
-    { name: "อื่นๆ",          description: "สินค้าอื่นๆ ที่ไม่อยู่ในหมวดหมู่" },
+    { name: "โลหะ",           description: "เหล็ก, ทองแดง, อลูมิเนียม, สังกะสี",          icon: "Wrench",    color: "#475569" },
+    { name: "อิเล็กทรอนิกส์", description: "เครื่องใช้ไฟฟ้า, โทรศัพท์, คอมพิวเตอร์",     icon: "Cpu",       color: "#2563eb" },
+    { name: "กระดาษ",          description: "กระดาษ, หนังสือพิมพ์, กล่องกระดาษ",           icon: "Newspaper", color: "#d97706" },
+    { name: "พลาสติก",         description: "ขวดพลาสติก, ถุงพลาสติก",                      icon: "Recycle",   color: "#7c3aed" },
+    { name: "แก้ว",            description: "ขวดแก้ว, กระจก",                              icon: "GlassWater",color: "#0891b2" },
+    { name: "อื่นๆ",           description: "สินค้าอื่นๆ ที่ไม่อยู่ในหมวดหมู่",           icon: "Package",   color: "#16a34a" },
   ];
 
   const catMap: Record<string, string> = {};
@@ -82,6 +82,10 @@ async function main() {
       const created = await prisma.category.create({ data: cat });
       catMap[cat.name] = created.id;
     } else {
+      // Update icon/color if not set yet
+      if (!existing.icon || !existing.color) {
+        await prisma.category.update({ where: { id: existing.id }, data: { icon: cat.icon, color: cat.color } });
+      }
       catMap[cat.name] = existing.id;
     }
   }

@@ -3,12 +3,15 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const { searchParams } = new URL(req.url);
+  const includeInactive = searchParams.get("includeInactive") === "true";
+
   const categories = await prisma.category.findMany({
-    where: { isActive: true },
+    where: includeInactive ? {} : { isActive: true },
     include: { products: { where: { isActive: true }, orderBy: { name: "asc" } } },
     orderBy: { name: "asc" },
   });
@@ -23,12 +26,12 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { name, description } = body;
+  const { name, description, icon, color } = body;
 
   if (!name) return NextResponse.json({ error: "ต้องระบุชื่อหมวดหมู่" }, { status: 400 });
 
   const category = await prisma.category.create({
-    data: { name, description },
+    data: { name, description, icon, color },
   });
 
   return NextResponse.json(category, { status: 201 });
