@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Crown, User, Phone, Plus, X } from "lucide-react";
+import { Crown, User, Phone, Plus, X, Users } from "lucide-react";
 
 interface User {
   id: string; name: string; username: string; role: string;
@@ -92,13 +92,23 @@ export default function StaffManagePage() {
   );
 
   return (
-    <div>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
-        <div>
-          <h1 className="text-xl font-medium text-gray-900">จัดการพนักงาน</h1>
-          <p className="text-gray-400 text-sm mt-0.5">เพิ่ม/แก้ไขบัญชีผู้ใช้งาน</p>
+    <div className="space-y-4">
+      {/* ── Page banner ── */}
+      <div className="relative rounded-3xl overflow-hidden px-5 py-5 flex items-center justify-between gap-4"
+        style={{ background: "linear-gradient(135deg, #0e7490 0%, #06b6d4 100%)" }}>
+        <div className="absolute -top-4 -right-4 w-28 h-28 rounded-full bg-white/[0.08]" />
+        <div className="absolute bottom-0 left-12 w-20 h-20 rounded-full bg-black/[0.07]" />
+        <div className="flex items-center gap-4 relative">
+          <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
+            <Users className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <p className="text-white font-bold text-lg leading-tight">จัดการพนักงาน</p>
+            <p className="text-cyan-100 text-sm">เพิ่ม/แก้ไขบัญชีผู้ใช้งาน</p>
+          </div>
         </div>
-        <button onClick={openCreate} className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-sm">
+        <button onClick={openCreate}
+          className="relative flex items-center gap-2 bg-white/20 hover:bg-white/30 active:bg-white/40 text-white px-4 py-2.5 rounded-2xl text-sm font-semibold transition-all shrink-0 shadow-sm">
           <Plus className="w-4 h-4" /> เพิ่มพนักงาน
         </button>
       </div>

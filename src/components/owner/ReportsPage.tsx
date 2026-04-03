@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ClipboardList, Download, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from "lucide-react";
+import { ClipboardList, Download, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, BarChart2 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 interface TransactionItem {
@@ -80,7 +80,21 @@ export default function ReportsPage() {
   };
 
   return (
-    <div>
+    <div className="space-y-4">
+      {/* ── Page banner ── */}
+      <div className="relative rounded-3xl overflow-hidden px-5 py-5 flex items-center gap-4"
+        style={{ background: "linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%)" }}>
+        <div className="absolute -top-4 -right-4 w-28 h-28 rounded-full bg-white/[0.08]" />
+        <div className="absolute bottom-0 left-12 w-20 h-20 rounded-full bg-black/[0.07]" />
+        <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
+          <BarChart2 className="w-6 h-6 text-white" />
+        </div>
+        <div className="relative">
+          <p className="text-white font-bold text-lg leading-tight">รายงาน</p>
+          <p className="text-blue-200 text-sm">ข้อมูลรายการรับซื้อ</p>
+        </div>
+      </div>
+
       {/* ── Header card ── */}
       <div className="bg-gradient-to-br from-green-600 to-green-500 rounded-2xl p-4 mb-5 shadow-lg shadow-green-600/20">
         <div className="flex items-center justify-between mb-3">

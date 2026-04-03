@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { CheckCircle2, AlertCircle, Save } from "lucide-react";
+import { CheckCircle2, AlertCircle, Save, Settings } from "lucide-react";
 
 interface ShopSettings {
   name: string; address: string | null; phone: string | null;
@@ -44,13 +44,22 @@ export default function SettingsPage() {
   );
 
   return (
-    <div>
-      <div className="mb-6">
-        <h1 className="text-xl font-medium text-gray-900">ตั้งค่าร้านค้า</h1>
-        <p className="text-gray-400 text-sm mt-0.5">ข้อมูลร้านค้าที่แสดงบนใบเสร็จ</p>
+    <div className="space-y-5">
+      {/* ── Page banner ── */}
+      <div className="relative rounded-3xl overflow-hidden px-5 py-5 flex items-center gap-4"
+        style={{ background: "linear-gradient(135deg, #374151 0%, #6b7280 100%)" }}>
+        <div className="absolute -top-4 -right-4 w-28 h-28 rounded-full bg-white/[0.08]" />
+        <div className="absolute bottom-0 left-12 w-20 h-20 rounded-full bg-black/[0.07]" />
+        <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
+          <Settings className="w-6 h-6 text-white" />
+        </div>
+        <div className="relative">
+          <p className="text-white font-bold text-lg leading-tight">ตั้งค่าร้านค้า</p>
+          <p className="text-gray-300 text-sm">ข้อมูลที่แสดงบนใบเสร็จ</p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 max-w-4xl">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 max-w-4xl" style={{ marginTop: 0 }}>
         {/* Form */}
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 space-y-5">
           <div>
