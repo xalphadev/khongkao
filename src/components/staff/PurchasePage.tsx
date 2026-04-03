@@ -34,6 +34,7 @@ interface CartItem {
   unitPrice: number;
   subtotal: number;
   unit: string;
+  customPrice?: boolean;
 }
 
 interface HeldBill {
@@ -106,60 +107,98 @@ function EditCartItemModal({
   item, onConfirm, onCancel,
 }: {
   item: CartItem;
-  onConfirm: (newQty: number) => void;
+  onConfirm: (newQty: number, newPrice?: number) => void;
   onCancel: () => void;
 }) {
   const [qty, setQty] = useState(String(item.quantity));
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [price, setPrice] = useState(String(item.unitPrice));
+  const qtyRef = useRef<HTMLInputElement>(null);
+  const priceRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
-    setTimeout(() => inputRef.current?.select(), 100);
-  }, []);
-  const parsed = parseFloat(qty);
-  const isValid = !isNaN(parsed) && parsed > 0;
+    setTimeout(() => (item.customPrice ? priceRef : qtyRef).current?.select(), 100);
+  }, [item.customPrice]);
+
+  const parsedQty = parseFloat(qty);
+  const parsedPrice = parseFloat(price);
+  const effectivePrice = item.customPrice ? parsedPrice : item.unitPrice;
+  const isQtyValid = !isNaN(parsedQty) && parsedQty > 0;
+  const isPriceValid = !item.customPrice || (!isNaN(parsedPrice) && parsedPrice > 0);
+  const isValid = isQtyValid && isPriceValid;
+  const newTotal = isValid ? parsedQty * effectivePrice : 0;
+
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-[2px]">
       <div className="bg-white w-full max-w-md rounded-t-3xl px-5 py-6">
-        <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-5" />
+        <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-4" />
         <div className="flex items-center gap-3 mb-5">
-          <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
-            <Pencil className="w-5 h-5 text-blue-500" />
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${item.customPrice ? "bg-purple-50" : "bg-blue-50"}`}>
+            <Pencil className={`w-5 h-5 ${item.customPrice ? "text-purple-500" : "text-blue-500"}`} />
           </div>
           <div>
             <h3 className="font-medium text-gray-900">{item.productName}</h3>
-            <p className="text-gray-400 text-xs">฿{item.unitPrice.toLocaleString()} / {item.unit === "KG" ? "กก." : "ชิ้น"}</p>
+            {item.customPrice
+              ? <p className="text-purple-500 text-xs font-medium">กรอกราคาเอง</p>
+              : <p className="text-gray-400 text-xs">฿{item.unitPrice.toLocaleString()} / {item.unit === "KG" ? "กก." : "ชิ้น"}</p>
+            }
           </div>
         </div>
 
-        <div className="flex items-center justify-center gap-2 text-gray-400 text-sm mb-3">
-          {item.unit === "KG" ? <Scale className="w-4 h-4" /> : <Hash className="w-4 h-4" />}
-          <span>{item.unit === "KG" ? "แก้ไขน้ำหนัก (กิโลกรัม)" : "แก้ไขจำนวน (ชิ้น)"}</span>
-        </div>
-
-        <input
-          ref={inputRef}
-          type="number"
-          value={qty}
-          onChange={(e) => setQty(e.target.value)}
-          className="w-full bg-white rounded-2xl px-4 py-5 text-6xl font-medium text-center focus:outline-none transition-all tabular-nums mb-3"
-          style={{ border: "3px solid #60a5fa" }}
-          min="0"
-          step={item.unit === "KG" ? "0.1" : "1"}
-          inputMode="decimal"
-        />
-
-        {isValid && (
-          <div className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3 mb-4">
-            <p className="text-gray-400 text-sm">ยอดใหม่</p>
-            <p className="text-blue-600 font-medium text-xl tabular-nums">฿{formatMoney(parsed * item.unitPrice)}</p>
+        {/* ── ราคา/หน่วย (เฉพาะ customPrice) ── */}
+        {item.customPrice && (
+          <div className="mb-4">
+            <div className="flex items-center justify-center gap-2 text-gray-400 text-sm mb-2">
+              <Banknote className="w-4 h-4" />
+              <span>ราคารับซื้อ / หน่วย (บาท)</span>
+            </div>
+            <input
+              ref={priceRef}
+              type="number"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              className="w-full bg-white rounded-2xl px-4 py-4 text-5xl font-medium text-center focus:outline-none tabular-nums"
+              style={{ border: `3px solid ${isPriceValid && price ? "#a855f7" : "#e5e7eb"}` }}
+              min="0"
+              step="0.01"
+              inputMode="decimal"
+              placeholder="0"
+            />
           </div>
         )}
+
+        {/* ── จำนวน ── */}
+        <div className={item.customPrice ? "" : ""}>
+          <div className="flex items-center justify-center gap-2 text-gray-400 text-sm mb-2">
+            {item.unit === "KG" ? <Scale className="w-4 h-4" /> : <Hash className="w-4 h-4" />}
+            <span>{item.unit === "KG" ? "น้ำหนัก (กิโลกรัม)" : "จำนวน (ชิ้น)"}</span>
+          </div>
+          <input
+            ref={qtyRef}
+            type="number"
+            value={qty}
+            onChange={(e) => setQty(e.target.value)}
+            className="w-full bg-white rounded-2xl px-4 py-4 text-5xl font-medium text-center focus:outline-none transition-all tabular-nums"
+            style={{ border: `3px solid ${isQtyValid ? "#60a5fa" : "#e5e7eb"}` }}
+            min="0"
+            step={item.unit === "KG" ? "0.1" : "1"}
+            inputMode="decimal"
+            placeholder="0"
+          />
+        </div>
+
+        {/* ── ยอดใหม่ ── */}
+        <div className={`flex items-center justify-between rounded-xl px-4 py-3 mt-3 mb-4 ${isValid ? "bg-green-50" : "bg-gray-50"}`}>
+          <p className="text-gray-400 text-sm">ยอดใหม่</p>
+          <p className={`font-semibold text-xl tabular-nums ${isValid ? "text-green-600" : "text-gray-300"}`}>
+            {isValid ? `฿${formatMoney(newTotal)}` : "—"}
+          </p>
+        </div>
 
         <div className="grid grid-cols-2 gap-3">
           <button onClick={onCancel} className="py-3.5 rounded-2xl border-2 border-gray-200 text-gray-600 font-medium text-sm active:scale-[0.97] transition-all">
             ยกเลิก
           </button>
           <button
-            onClick={() => isValid && onConfirm(parsed)}
+            onClick={() => isValid && onConfirm(parsedQty, item.customPrice ? parsedPrice : undefined)}
             disabled={!isValid}
             className="py-3.5 rounded-2xl bg-blue-500 disabled:bg-gray-100 disabled:text-gray-300 text-white font-medium text-sm active:scale-[0.97] transition-all shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2"
           >
@@ -396,6 +435,7 @@ export default function PurchasePage() {
         productName: selectedProduct.name,
         quantity: qty, unitPrice, subtotal,
         unit: selectedProduct.unit,
+        customPrice: selectedProduct.customPrice,
       }]);
     }
     setStep("cart");
@@ -819,12 +859,12 @@ export default function PurchasePage() {
       {editingCartIdx !== null && (
         <EditCartItemModal
           item={cart[editingCartIdx]}
-          onConfirm={(newQty) => {
-            setCart(cart.map((item, i) =>
-              i === editingCartIdx
-                ? { ...item, quantity: newQty, subtotal: newQty * item.unitPrice }
-                : item
-            ));
+          onConfirm={(newQty, newPrice) => {
+            setCart(cart.map((item, i) => {
+              if (i !== editingCartIdx) return item;
+              const price = newPrice !== undefined ? newPrice : item.unitPrice;
+              return { ...item, quantity: newQty, unitPrice: price, subtotal: newQty * price };
+            }));
             setEditingCartIdx(null);
           }}
           onCancel={() => setEditingCartIdx(null)}
