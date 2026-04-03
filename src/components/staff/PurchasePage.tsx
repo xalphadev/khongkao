@@ -575,44 +575,21 @@ export default function PurchasePage() {
               ))}
             </div>
 
+            {/* ปุ่มดูตะกร้าเมื่อมีสินค้า — ไม่แสดง list ให้ไปดูที่หน้า cart แทน */}
             {cart.length > 0 && (
-              <div className="mt-5">
-                <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-                  <div className="px-4 py-3 bg-green-50 flex justify-between items-center border-b border-green-100">
-                    <div className="flex items-center gap-2">
-                      <span className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center text-white text-xs font-medium">{cart.length}</span>
-                      <p className="text-green-800 text-sm font-medium">สินค้าในตะกร้า</p>
-                    </div>
-                    <p className="text-green-700 font-medium tabular-nums">฿{formatMoney(totalAmount)}</p>
-                  </div>
-                  <div className="divide-y divide-gray-50">
-                    {cart.map((item, i) => (
-                      <div key={i} className="flex items-center gap-2 px-4 py-2.5 text-sm">
-                        <div className="flex-1 min-w-0">
-                          <span className="text-gray-700">{item.productName}</span>
-                          <span className="text-gray-400 text-xs ml-1.5">{item.quantity} {item.unit === "KG" ? "กก." : "ชิ้น"}</span>
-                        </div>
-                        <span className="text-green-600 font-medium tabular-nums shrink-0">฿{formatMoney(item.subtotal)}</span>
-                        <button onClick={() => setEditingCartIdx(i)} className="w-7 h-7 flex items-center justify-center rounded-full bg-blue-50 text-blue-400 hover:bg-blue-100 transition-all shrink-0">
-                          <Pencil className="w-3 h-3" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="p-3 space-y-2">
-                    <CustomerNameInput />
-                    <div className="grid grid-cols-2 gap-2">
-                      <button onClick={() => setShowHoldConfirm(true)} disabled={holdingBill} className="flex items-center justify-center gap-1.5 rounded-2xl bg-amber-50 border-2 border-amber-200 text-amber-700 text-sm font-medium active:scale-[0.97] transition-all" style={{ minHeight: 52 }}>
-                        <Clock className="w-4 h-4 shrink-0" /> พักบิล
-                      </button>
-                      <button onClick={() => setShowPayConfirm(true)} disabled={saving} className="flex items-center justify-center gap-1.5 rounded-2xl bg-gradient-to-r from-green-600 to-green-500 disabled:from-green-400 disabled:to-green-400 text-white shadow-lg shadow-green-600/25 active:scale-[0.97] transition-all" style={{ minHeight: 52 }}>
-                        <Banknote className="w-4 h-4 shrink-0" />
-                        <span className="text-sm font-medium">{saving ? "บันทึก..." : `จ่าย ฿${formatMoney(totalAmount)}`}</span>
-                      </button>
-                    </div>
-                  </div>
+              <button
+                onClick={() => setStep("cart")}
+                className="mt-5 w-full bg-white rounded-2xl shadow-sm border border-green-100 px-4 py-4 flex items-center gap-3 active:scale-[0.98] transition-all"
+              >
+                <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center shrink-0">
+                  <ShoppingCart className="w-5 h-5 text-green-600" />
                 </div>
-              </div>
+                <div className="flex-1 text-left">
+                  <p className="text-green-800 font-medium text-sm">ดูรายการในตะกร้า</p>
+                  <p className="text-green-600 text-xs">{cart.length} รายการ · ฿{formatMoney(totalAmount)}</p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-green-400" />
+              </button>
             )}
           </div>
         )}
