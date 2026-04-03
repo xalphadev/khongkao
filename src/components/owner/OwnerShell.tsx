@@ -9,13 +9,15 @@ import {
   Users, Settings, LogOut, X, Menu, ChevronRight,
 } from "lucide-react";
 
+const BRAND = "#16a34a";
+
 const navItems = [
-  { href: "/owner",            label: "หน้าหลัก",  icon: LayoutDashboard, exact: true,  color: "#16a34a" },
-  { href: "/owner/reports",    label: "รายงาน",   icon: BarChart2,        exact: false, color: "#2563eb" },
-  { href: "/owner/products",   label: "สินค้า",   icon: Tag,              exact: false, color: "#d97706" },
-  { href: "/owner/categories", label: "หมวดหมู่", icon: FolderOpen,       exact: false, color: "#7c3aed" },
-  { href: "/owner/staff",      label: "พนักงาน",  icon: Users,            exact: false, color: "#0891b2" },
-  { href: "/owner/settings",   label: "ตั้งค่า",  icon: Settings,         exact: false, color: "#6b7280" },
+  { href: "/owner",            label: "หน้าหลัก",  icon: LayoutDashboard, exact: true  },
+  { href: "/owner/reports",    label: "รายงาน",   icon: BarChart2,        exact: false },
+  { href: "/owner/products",   label: "สินค้า",   icon: Tag,              exact: false },
+  { href: "/owner/categories", label: "หมวดหมู่", icon: FolderOpen,       exact: false },
+  { href: "/owner/staff",      label: "พนักงาน",  icon: Users,            exact: false },
+  { href: "/owner/settings",   label: "ตั้งค่า",  icon: Settings,         exact: false },
 ];
 
 // Only 4 most-used items in the bottom tab bar; the rest go in the drawer
@@ -40,23 +42,23 @@ export default function OwnerShell({ children }: { children: React.ReactNode }) 
             key={item.href}
             href={item.href}
             onClick={onNav}
-            className={`flex items-center gap-3 px-3.5 py-3 rounded-2xl text-sm transition-all group ${
+            className={`flex items-center gap-3 px-3.5 py-3 rounded-2xl text-sm transition-all ${
               active ? "shadow-sm" : "hover:bg-gray-50"
             }`}
-            style={active ? { background: `${item.color}15`, color: item.color } : { color: "#6b7280" }}
+            style={active ? { background: "#f0fdf4", color: BRAND } : { color: "#6b7280" }}
           >
             <div
               className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-all"
-              style={active ? { background: item.color } : { background: "#f3f4f6" }}
+              style={active ? { background: BRAND } : { background: "#f3f4f6" }}
             >
               <Icon
-                className="w-4 h-4 transition-colors"
+                className="w-4 h-4"
                 style={{ color: active ? "#fff" : "#9ca3af" }}
                 strokeWidth={active ? 2.2 : 1.8}
               />
             </div>
             <span className={`flex-1 ${active ? "font-semibold" : "font-medium"}`}>{item.label}</span>
-            {active && <ChevronRight className="w-3.5 h-3.5 opacity-50" />}
+            {active && <ChevronRight className="w-3.5 h-3.5 opacity-40" style={{ color: BRAND }} />}
           </Link>
         );
       })}
@@ -165,9 +167,9 @@ export default function OwnerShell({ children }: { children: React.ReactNode }) 
             {currentPage && (
               <div
                 className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                style={{ background: `${currentPage.color}18` }}
+                style={{ background: "#f0fdf4" }}
               >
-                <currentPage.icon className="w-5 h-5" style={{ color: currentPage.color }} strokeWidth={2.2} />
+                <currentPage.icon className="w-5 h-5" style={{ color: BRAND }} strokeWidth={2.2} />
               </div>
             )}
             <p className="font-bold text-gray-800 text-lg leading-tight">
@@ -198,17 +200,17 @@ export default function OwnerShell({ children }: { children: React.ReactNode }) 
               >
                 <div
                   className="w-12 h-8 rounded-2xl flex items-center justify-center transition-all"
-                  style={active ? { background: `${item.color}18` } : {}}
+                  style={active ? { background: "#f0fdf4" } : {}}
                 >
                   <Icon
                     className="w-5 h-5 transition-all"
-                    style={{ color: active ? item.color : "#9ca3af" }}
+                    style={{ color: active ? BRAND : "#9ca3af" }}
                     strokeWidth={active ? 2.3 : 1.8}
                   />
                 </div>
                 <span
                   className="text-[10px] leading-none font-semibold"
-                  style={{ color: active ? item.color : "#9ca3af" }}
+                  style={{ color: active ? BRAND : "#9ca3af" }}
                 >
                   {item.label}
                 </span>

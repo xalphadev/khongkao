@@ -97,7 +97,7 @@ export default function StaffManagePage() {
       <div className="flex items-center justify-between gap-3">
         <p className="text-gray-500 text-sm">พนักงานทั้งหมด {staff.length} คน</p>
         <button onClick={openCreate}
-          className="flex items-center gap-2 bg-cyan-600 hover:bg-cyan-700 active:bg-cyan-800 text-white px-4 py-2.5 rounded-2xl text-sm font-semibold transition-all shadow-sm shadow-cyan-500/30">
+          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white px-4 py-2.5 rounded-2xl text-sm font-semibold transition-all shadow-sm shadow-green-600/25">
           <Plus className="w-4 h-4" /> เพิ่มพนักงาน
         </button>
       </div>
