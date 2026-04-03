@@ -18,6 +18,9 @@ const navItems = [
   { href: "/owner/settings",   label: "ตั้งค่า",  icon: Settings,         exact: false, color: "#6b7280" },
 ];
 
+// Only 4 most-used items in the bottom tab bar; the rest go in the drawer
+const tabBarItems = navItems.slice(0, 4);
+
 export default function OwnerShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -173,33 +176,33 @@ export default function OwnerShell({ children }: { children: React.ReactNode }) 
         </main>
       </div>
 
-      {/* ── Mobile Bottom Tab Bar ── */}
+      {/* ── Mobile Bottom Tab Bar (4 items + More) ── */}
       <nav
         className="lg:hidden fixed bottom-0 left-0 right-0 z-20 bg-white"
         style={{ boxShadow: "0 -4px 20px rgba(0,0,0,0.08)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
-        <div className="flex items-stretch px-1 pt-1 pb-1">
-          {navItems.map((item) => {
+        <div className="flex items-stretch px-2 pt-1.5 pb-1.5 gap-1">
+          {tabBarItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item);
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className="flex-1 flex flex-col items-center justify-center py-1.5 gap-0.5 min-w-0 active:scale-95 transition-all"
+                className="flex-1 flex flex-col items-center justify-center py-1 gap-1 min-w-0 active:scale-95 transition-all"
               >
                 <div
-                  className="w-9 h-6 rounded-full flex items-center justify-center transition-all"
-                  style={active ? { background: `${item.color}20` } : {}}
+                  className="w-12 h-8 rounded-2xl flex items-center justify-center transition-all"
+                  style={active ? { background: `${item.color}18` } : {}}
                 >
                   <Icon
-                    className="w-[18px] h-[18px] transition-all"
+                    className="w-5 h-5 transition-all"
                     style={{ color: active ? item.color : "#9ca3af" }}
                     strokeWidth={active ? 2.3 : 1.8}
                   />
                 </div>
                 <span
-                  className="text-[9px] leading-none font-semibold truncate w-full text-center px-0.5"
+                  className="text-[10px] leading-none font-semibold"
                   style={{ color: active ? item.color : "#9ca3af" }}
                 >
                   {item.label}
@@ -207,6 +210,17 @@ export default function OwnerShell({ children }: { children: React.ReactNode }) 
               </Link>
             );
           })}
+
+          {/* More button → opens drawer */}
+          <button
+            onClick={() => setDrawerOpen(true)}
+            className="flex-1 flex flex-col items-center justify-center py-1 gap-1 min-w-0 active:scale-95 transition-all"
+          >
+            <div className="w-12 h-8 rounded-2xl flex items-center justify-center">
+              <Menu className="w-5 h-5 text-gray-400" strokeWidth={1.8} />
+            </div>
+            <span className="text-[10px] leading-none font-semibold text-gray-400">เพิ่มเติม</span>
+          </button>
         </div>
       </nav>
     </div>
