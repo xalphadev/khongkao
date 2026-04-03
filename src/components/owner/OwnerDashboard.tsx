@@ -42,7 +42,8 @@ function isToday(dateStr: string) {
   return dateStr === new Date().toISOString().split("T")[0];
 }
 
-const CAT_COLORS = ["#16a34a", "#2563eb", "#d97706", "#dc2626", "#7c3aed", "#0891b2"];
+const CAT_COLORS = ["#16a34a", "#2563eb", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4"];
+const CAT_BCOLORS = ["#dcfce7", "#dbeafe", "#fef3c7", "#fee2e2", "#ede9fe", "#cffafe"];
 
 export default function OwnerDashboard() {
   const [daily, setDaily] = useState<DailyReport | null>(null);
@@ -163,35 +164,40 @@ export default function OwnerDashboard() {
 
           {/* ── Month summary + comparison ── */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="bg-white rounded-2xl p-4 shadow-sm">
-              <p className="text-gray-400 text-sm mb-1">ยอดเดือนนี้</p>
-              <p className="text-amber-600 font-bold text-2xl tabular-nums leading-tight">
+            {/* Card 1: ยอดเดือนนี้ */}
+            <div className="relative rounded-2xl overflow-hidden p-4"
+              style={{ background: "linear-gradient(135deg, #d97706 0%, #f59e0b 100%)" }}>
+              <div className="absolute -top-4 -right-4 w-20 h-20 rounded-full bg-white/10" />
+              <p className="text-amber-100 text-xs font-medium mb-2 relative">ยอดเดือนนี้</p>
+              <p className="text-white font-bold text-2xl tabular-nums leading-tight relative break-all">
                 ฿{formatMoney(monthly?.totalAmount ?? 0)}
               </p>
               {prevMonthTotal !== null && prevMonthTotal > 0 && (monthly?.totalAmount ?? 0) > 0 && (
-                <div className="mt-1.5 flex items-center gap-1">
-                  {(monthly?.totalAmount ?? 0) >= prevMonthTotal ? (
-                    <span className="text-xs bg-green-100 text-green-700 font-medium px-1.5 py-0.5 rounded-lg">
-                      +{Math.round(((monthly?.totalAmount ?? 0) / prevMonthTotal - 1) * 100)}% vs เดือนก่อน
-                    </span>
-                  ) : (
-                    <span className="text-xs bg-red-50 text-red-500 font-medium px-1.5 py-0.5 rounded-lg">
-                      {Math.round(((monthly?.totalAmount ?? 0) / prevMonthTotal - 1) * 100)}% vs เดือนก่อน
-                    </span>
-                  )}
+                <div className="mt-2 relative">
+                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                    (monthly?.totalAmount ?? 0) >= prevMonthTotal
+                      ? "bg-white/25 text-white"
+                      : "bg-black/15 text-white/80"
+                  }`}>
+                    {(monthly?.totalAmount ?? 0) >= prevMonthTotal ? "+" : ""}
+                    {Math.round(((monthly?.totalAmount ?? 0) / prevMonthTotal - 1) * 100)}%
+                  </span>
                 </div>
               )}
-              <p className="text-gray-400 text-xs mt-1">{monthly?.totalTransactions ?? 0} รายการ</p>
+              <p className="text-amber-200 text-xs mt-1.5 relative">{monthly?.totalTransactions ?? 0} รายการ</p>
             </div>
-            <div className="bg-white rounded-2xl p-4 shadow-sm">
-              <p className="text-gray-400 text-sm mb-1">เฉลี่ยต่อวัน</p>
-              <p className="text-blue-600 font-bold text-2xl tabular-nums leading-tight">
+            {/* Card 2: เฉลี่ยต่อวัน */}
+            <div className="relative rounded-2xl overflow-hidden p-4"
+              style={{ background: "linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%)" }}>
+              <div className="absolute -top-4 -right-4 w-20 h-20 rounded-full bg-white/10" />
+              <p className="text-blue-100 text-xs font-medium mb-2 relative">เฉลี่ยต่อวัน</p>
+              <p className="text-white font-bold text-2xl tabular-nums leading-tight relative break-all">
                 ฿{monthly && monthly.totalTransactions > 0
                   ? formatMoney(monthly.totalAmount / (monthly.dailyData.filter((d) => d.amount > 0).length || 1))
                   : "0"}
               </p>
               {prevMonthTotal !== null && prevMonthTotal > 0 && (
-                <p className="text-gray-400 text-xs mt-1">เดือนก่อน ฿{formatMoney(prevMonthTotal)}</p>
+                <p className="text-blue-200 text-xs mt-1.5 relative">เดือนก่อน ฿{formatMoney(prevMonthTotal)}</p>
               )}
             </div>
           </div>
@@ -200,27 +206,33 @@ export default function OwnerDashboard() {
           {daily && daily.productBreakdown.length > 0 && (
             <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
               <div className="px-4 py-3.5 border-b border-gray-50 flex items-center gap-2">
-                <Package className="w-4 h-4 text-gray-400" />
-                <p className="text-gray-700 font-semibold text-sm">สินค้าที่รับซื้อ</p>
+                <div className="w-7 h-7 rounded-xl bg-green-100 flex items-center justify-center">
+                  <Package className="w-4 h-4 text-green-600" />
+                </div>
+                <p className="text-gray-800 font-semibold text-sm">สินค้าที่รับซื้อ</p>
               </div>
               <div className="divide-y divide-gray-50">
                 {daily.productBreakdown.map((p, i) => (
                   <div key={i} className="flex items-center gap-3 px-4 py-3.5">
                     <span
-                      className="w-8 h-8 rounded-xl flex items-center justify-center text-sm font-bold shrink-0"
-                      style={{ background: `${CAT_COLORS[i % CAT_COLORS.length]}18`, color: CAT_COLORS[i % CAT_COLORS.length] }}
+                      className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 shadow-sm"
+                      style={{ background: CAT_BCOLORS[i % CAT_BCOLORS.length], color: CAT_COLORS[i % CAT_COLORS.length] }}
                     >
                       {i + 1}
                     </span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-gray-800 font-medium text-base truncate">{p.name}</p>
+                      <p className="text-gray-800 font-semibold text-base truncate">{p.name}</p>
                       <p className="text-gray-400 text-sm">{p.quantity} {p.unit === "KG" ? "กก." : "ชิ้น"}</p>
                     </div>
-                    <p className="text-green-600 font-bold text-base tabular-nums shrink-0">฿{formatMoney(p.amount)}</p>
+                    <p className="font-bold text-base tabular-nums shrink-0"
+                      style={{ color: CAT_COLORS[i % CAT_COLORS.length] }}>
+                      ฿{formatMoney(p.amount)}
+                    </p>
                   </div>
                 ))}
               </div>
-              <div className="flex justify-between items-center px-4 py-3.5 bg-green-50 border-t border-green-100">
+              <div className="flex justify-between items-center px-4 py-3.5 border-t border-green-100"
+                style={{ background: "linear-gradient(90deg, #f0fdf4, #dcfce7)" }}>
                 <p className="text-green-700 font-semibold text-base">รวมทั้งหมด</p>
                 <p className="text-green-700 font-bold text-xl tabular-nums">฿{formatMoneyFull(daily.totalAmount)}</p>
               </div>
@@ -230,17 +242,29 @@ export default function OwnerDashboard() {
           {/* ── Category breakdown (today) ── */}
           {daily && daily.categoryBreakdown.length > 0 && (
             <div className="bg-white rounded-2xl p-4 shadow-sm">
-              <p className="text-gray-700 font-semibold text-sm mb-3">ยอดตามหมวดหมู่</p>
-              <div className="space-y-2.5">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-7 h-7 rounded-xl bg-violet-100 flex items-center justify-center">
+                  <Package className="w-4 h-4 text-violet-600" />
+                </div>
+                <p className="text-gray-800 font-semibold text-sm">ยอดตามหมวดหมู่</p>
+              </div>
+              <div className="space-y-3.5">
                 {daily.categoryBreakdown.map((c, i) => {
                   const pct = daily.totalAmount > 0 ? (c.amount / daily.totalAmount) * 100 : 0;
                   return (
                     <div key={i}>
-                      <div className="flex justify-between items-center mb-1">
-                        <p className="text-gray-700 text-sm font-medium">{c.name}</p>
-                        <p className="text-gray-600 text-sm tabular-nums font-semibold">฿{formatMoney(c.amount)}</p>
+                      <div className="flex justify-between items-center mb-1.5">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2.5 h-2.5 rounded-full shrink-0"
+                            style={{ background: CAT_COLORS[i % CAT_COLORS.length] }} />
+                          <p className="text-gray-700 text-sm font-medium">{c.name}</p>
+                        </div>
+                        <p className="text-sm tabular-nums font-bold"
+                          style={{ color: CAT_COLORS[i % CAT_COLORS.length] }}>
+                          ฿{formatMoney(c.amount)}
+                        </p>
                       </div>
-                      <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                      <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
                         <div
                           className="h-full rounded-full transition-all"
                           style={{ width: `${pct}%`, background: CAT_COLORS[i % CAT_COLORS.length] }}
@@ -256,32 +280,38 @@ export default function OwnerDashboard() {
           {/* ── Staff breakdown (today) ── */}
           {daily && daily.staffBreakdown && daily.staffBreakdown.length > 0 && (
             <div className="bg-white rounded-2xl p-4 shadow-sm">
-              <div className="flex items-center gap-2 mb-3">
-                <Users className="w-4 h-4 text-gray-400" />
-                <p className="text-gray-700 font-semibold text-sm">ยอดตามพนักงาน</p>
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-7 h-7 rounded-xl bg-cyan-100 flex items-center justify-center">
+                  <Users className="w-4 h-4 text-cyan-600" />
+                </div>
+                <p className="text-gray-800 font-semibold text-sm">ยอดตามพนักงาน</p>
               </div>
-              <div className="space-y-3">
+              <div className="space-y-3.5">
                 {daily.staffBreakdown.map((s, i) => {
                   const pct = daily.totalAmount > 0 ? (s.amount / daily.totalAmount) * 100 : 0;
-                  const colors = ["#16a34a", "#2563eb", "#d97706", "#7c3aed"];
+                  const colors = ["#16a34a", "#3b82f6", "#f59e0b", "#8b5cf6", "#ef4444", "#06b6d4"];
+                  const bgColors = ["#dcfce7", "#dbeafe", "#fef3c7", "#ede9fe", "#fee2e2", "#cffafe"];
                   return (
                     <div key={i}>
-                      <div className="flex justify-between items-center mb-1">
-                        <div className="flex items-center gap-2">
+                      <div className="flex justify-between items-center mb-1.5">
+                        <div className="flex items-center gap-2.5">
                           <div
-                            className="w-7 h-7 rounded-xl flex items-center justify-center text-xs font-bold text-white shrink-0"
-                            style={{ background: colors[i % colors.length] }}
+                            className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold shrink-0"
+                            style={{ background: bgColors[i % bgColors.length], color: colors[i % colors.length] }}
                           >
                             {s.name.charAt(0)}
                           </div>
-                          <p className="text-gray-700 text-sm font-medium">{s.name}</p>
+                          <p className="text-gray-700 text-sm font-semibold">{s.name}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-gray-700 text-sm font-semibold tabular-nums">฿{formatMoney(s.amount)}</p>
+                          <p className="text-sm font-bold tabular-nums"
+                            style={{ color: colors[i % colors.length] }}>
+                            ฿{formatMoney(s.amount)}
+                          </p>
                           <p className="text-gray-400 text-xs">{s.count} บิล</p>
                         </div>
                       </div>
-                      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                      <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
                         <div
                           className="h-full rounded-full transition-all"
                           style={{ width: `${pct}%`, background: colors[i % colors.length] }}
@@ -324,8 +354,8 @@ export default function OwnerDashboard() {
                       />
                       <Bar
                         dataKey="amount"
-                        radius={[4, 4, 0, 0]}
-                        maxBarSize={24}
+                        radius={[5, 5, 0, 0]}
+                        maxBarSize={20}
                         fill="#16a34a"
                       />
                     </BarChart>
