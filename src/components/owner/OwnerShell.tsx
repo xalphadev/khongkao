@@ -146,28 +146,35 @@ export default function OwnerShell({ children }: { children: React.ReactNode }) 
       <div className="flex-1 lg:ml-60 flex flex-col min-h-screen overflow-x-hidden w-full">
 
         {/* Mobile top bar */}
-        <header className="lg:hidden sticky top-0 z-20 bg-white border-b border-gray-100 px-4 py-3 flex items-center gap-3"
-          style={{ boxShadow: "0 1px 12px rgba(0,0,0,0.06)" }}
+        <header
+          className="lg:hidden sticky top-0 z-20 px-4 flex items-center gap-3"
+          style={{
+            background: currentPage ? currentPage.color : "#16a34a",
+            paddingTop: "env(safe-area-inset-top, 12px)",
+            paddingBottom: "12px",
+            minHeight: 64,
+            boxShadow: "0 2px 16px rgba(0,0,0,0.15)",
+          }}
         >
           <button
             onClick={() => setDrawerOpen(true)}
-            className="w-10 h-10 flex items-center justify-center rounded-2xl active:bg-gray-100 transition-colors"
-            style={{ background: "#f3f4f6" }}
+            className="w-10 h-10 flex items-center justify-center rounded-2xl active:bg-white/20 transition-colors shrink-0"
+            style={{ background: "rgba(255,255,255,0.18)" }}
           >
-            <Menu className="w-5 h-5 text-gray-700" />
+            <Menu className="w-5 h-5 text-white" />
           </button>
           <div className="flex items-center gap-2.5 flex-1">
             {currentPage && (
-              <div
-                className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
-                style={{ background: currentPage.color }}
-              >
-                <currentPage.icon className="w-4 h-4 text-white" strokeWidth={2.2} />
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-white/20">
+                <currentPage.icon className="w-5 h-5 text-white" strokeWidth={2.2} />
               </div>
             )}
-            <span className="font-semibold text-gray-800 text-base">
-              {currentPage?.label ?? "มือสองของเก่า"}
-            </span>
+            <div>
+              <p className="font-bold text-white text-lg leading-tight">
+                {currentPage?.label ?? "มือสองของเก่า"}
+              </p>
+              <p className="text-white/70 text-xs">ระบบจัดการร้าน</p>
+            </div>
           </div>
         </header>
 

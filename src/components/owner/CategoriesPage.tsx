@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Wrench, Cpu, Newspaper, Recycle, GlassWater, Package, Plus, X, FolderOpen } from "lucide-react";
+import { Wrench, Cpu, Newspaper, Recycle, GlassWater, Package, Plus, X } from "lucide-react";
 
 interface Category {
   id: string; name: string; description: string | null;
@@ -66,22 +66,11 @@ export default function CategoriesPage() {
 
   return (
     <div className="space-y-4">
-      {/* ── Page banner ── */}
-      <div className="relative rounded-3xl overflow-hidden px-5 py-5 flex items-center justify-between gap-4"
-        style={{ background: "linear-gradient(135deg, #6d28d9 0%, #8b5cf6 100%)" }}>
-        <div className="absolute -top-4 -right-4 w-28 h-28 rounded-full bg-white/[0.08]" />
-        <div className="absolute bottom-0 left-12 w-20 h-20 rounded-full bg-black/[0.07]" />
-        <div className="flex items-center gap-4 relative">
-          <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
-            <FolderOpen className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <p className="text-white font-bold text-lg leading-tight">จัดการหมวดหมู่</p>
-            <p className="text-purple-200 text-sm">จัดกลุ่มประเภทสินค้า</p>
-          </div>
-        </div>
+      {/* ── Toolbar ── */}
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-gray-500 text-sm">หมวดหมู่ทั้งหมด {categories.length} หมวด</p>
         <button onClick={openCreate}
-          className="relative flex items-center gap-2 bg-white/20 hover:bg-white/30 active:bg-white/40 text-white px-4 py-2.5 rounded-2xl text-sm font-semibold transition-all shrink-0 shadow-sm">
+          className="flex items-center gap-2 bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white px-4 py-2.5 rounded-2xl text-sm font-semibold transition-all shadow-sm shadow-violet-500/30">
           <Plus className="w-4 h-4" /> เพิ่มหมวดหมู่
         </button>
       </div>

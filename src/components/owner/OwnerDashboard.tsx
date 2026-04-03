@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
-import { Banknote, ChevronLeft, ChevronRight, TrendingUp, ShoppingBag, Package, Users, BarChart2 } from "lucide-react";
+import { Banknote, ChevronLeft, ChevronRight, TrendingUp, ShoppingBag, Package, Users } from "lucide-react";
 
 interface DailyReport {
   date: string;
@@ -75,20 +75,6 @@ export default function OwnerDashboard() {
 
   return (
     <div className="space-y-4">
-
-      {/* ── Page banner ── */}
-      <div className="relative rounded-3xl overflow-hidden px-5 py-5 flex items-center gap-4"
-        style={{ background: "linear-gradient(135deg, #166534 0%, #16a34a 100%)" }}>
-        <div className="absolute -top-4 -right-4 w-28 h-28 rounded-full bg-white/[0.08]" />
-        <div className="absolute bottom-0 left-12 w-20 h-20 rounded-full bg-black/[0.07]" />
-        <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
-          <BarChart2 className="w-6 h-6 text-white" />
-        </div>
-        <div className="relative">
-          <p className="text-white font-bold text-lg leading-tight">แดชบอร์ด</p>
-          <p className="text-green-200 text-sm">ภาพรวมยอดรับซื้อ</p>
-        </div>
-      </div>
 
       {/* ── Date navigator ── */}
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
