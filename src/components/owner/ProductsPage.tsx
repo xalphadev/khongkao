@@ -236,19 +236,19 @@ export default function ProductsPage() {
                     <span className="text-purple-500 text-sm shrink-0">ราคาเอง</span>
                   )}
                 </div>
-                <div className="flex gap-2 pt-3 border-t border-gray-50">
+                <div className="flex gap-2 pt-2.5 border-t border-gray-50">
                   <button onClick={() => toggleActive(p)}
-                    className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors ${p.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
+                    className={`flex-1 py-1.5 rounded-xl text-xs font-semibold transition-colors ${p.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
                     {p.isActive ? "เปิดรับซื้อ" : "ปิดรับซื้อ"}
                   </button>
                   <button onClick={() => openEdit(p)}
-                    className="flex-1 py-2.5 rounded-xl text-sm font-medium bg-blue-50 text-blue-600 transition-colors">
+                    className="flex-1 py-1.5 rounded-xl text-xs font-semibold bg-blue-50 text-blue-600 transition-colors">
                     แก้ไข
                   </button>
                   {!p.customPrice && (
                     <button onClick={() => toggleHistory(p.id)}
-                      className={`w-10 py-2.5 rounded-xl text-sm font-medium transition-colors flex items-center justify-center ${historyProductId === p.id ? "bg-amber-100 text-amber-600" : "bg-gray-100 text-gray-400"}`}>
-                      <History className="w-4 h-4" />
+                      className={`w-9 py-1.5 rounded-xl text-xs font-medium transition-colors flex items-center justify-center ${historyProductId === p.id ? "bg-amber-100 text-amber-600" : "bg-gray-100 text-gray-400"}`}>
+                      <History className="w-3.5 h-3.5" />
                     </button>
                   )}
                 </div>

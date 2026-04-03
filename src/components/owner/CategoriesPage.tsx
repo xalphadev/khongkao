@@ -95,13 +95,13 @@ export default function CategoriesPage() {
                     <p className="text-gray-400 text-xs mt-1">{c.products.length} สินค้า</p>
                   </div>
                 </div>
-                <div className="flex gap-2 pt-3 border-t border-gray-50">
+                <div className="flex gap-2 pt-2.5 border-t border-gray-50">
                   <button onClick={() => toggleActive(c)}
-                    className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors ${c.isActive ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}>
+                    className={`flex-1 py-1.5 rounded-xl text-xs font-semibold transition-colors ${c.isActive ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}>
                     {c.isActive ? "เปิดใช้งาน" : "ปิดใช้งาน"}
                   </button>
                   <button onClick={() => openEdit(c)}
-                    className="flex-1 py-2.5 rounded-xl text-sm font-medium bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors">
+                    className="flex-1 py-1.5 rounded-xl text-xs font-semibold bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors">
                     แก้ไข
                   </button>
                 </div>

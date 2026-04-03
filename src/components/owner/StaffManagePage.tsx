@@ -78,13 +78,13 @@ export default function StaffManagePage() {
       {u.phone && (
         <p className="text-gray-400 text-xs mb-2 flex items-center gap-1"><Phone className="w-3 h-3" /> {u.phone}</p>
       )}
-      <div className="flex gap-2 pt-3 border-t border-gray-50">
+      <div className="flex gap-2 pt-2.5 border-t border-gray-50">
         <button onClick={() => openEdit(u)}
-          className="flex-1 border border-gray-200 text-gray-600 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors">
+          className="flex-1 border border-gray-200 text-gray-600 py-1.5 rounded-xl text-xs font-semibold hover:bg-gray-50 transition-colors">
           แก้ไข
         </button>
         <button onClick={() => setConfirm(u)}
-          className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors ${u.isActive ? "bg-red-50 text-red-500 hover:bg-red-100" : "bg-green-50 text-green-600 hover:bg-green-100"}`}>
+          className={`flex-1 py-1.5 rounded-xl text-xs font-semibold transition-colors ${u.isActive ? "bg-red-50 text-red-500 hover:bg-red-100" : "bg-green-50 text-green-600 hover:bg-green-100"}`}>
           {u.isActive ? "ปิดใช้งาน" : "เปิดใช้งาน"}
         </button>
       </div>
