@@ -705,7 +705,7 @@ export default function PurchasePage() {
 
         {/* ── STEP 4: Cart ── */}
         {step === "cart" && (
-          <div className="space-y-3">
+          <div className="flex flex-col gap-2.5">
 
             {cart.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-gray-400 gap-2">
@@ -717,8 +717,8 @@ export default function PurchasePage() {
               </div>
             ) : (
               <>
-                {/* ── Customer name (top) ── */}
-                <div className="bg-white rounded-2xl px-4 py-3 shadow-sm flex items-center gap-3 border-2 border-transparent focus-within:border-green-400 transition-all">
+                {/* ── Customer name ── */}
+                <div className="bg-white rounded-2xl px-4 py-2.5 shadow-sm flex items-center gap-3 border-2 border-transparent focus-within:border-green-400 transition-all">
                   <User className="w-4 h-4 text-gray-400 shrink-0" />
                   <input
                     type="text"
@@ -735,70 +735,80 @@ export default function PurchasePage() {
                   )}
                 </div>
 
-                {/* ── Items ── */}
+                {/* ── Items (compact table) ── */}
                 <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+                  {/* Header */}
+                  <div className="flex items-center px-3 py-2 bg-gray-50 border-b border-gray-100">
+                    <span className="text-gray-400 text-xs font-medium flex-1">สินค้า ({cart.length} รายการ)</span>
+                    <span className="text-gray-400 text-xs font-medium w-20 text-center">จำนวน × ราคา</span>
+                    <span className="text-gray-400 text-xs font-medium w-16 text-right">ยอด</span>
+                    <span className="w-14" />
+                  </div>
+                  {/* Rows */}
                   {cart.map((item, i) => (
-                    <div key={i} className={`flex items-center gap-3 px-4 py-3.5 ${i > 0 ? "border-t border-gray-50" : ""}`}>
-                      <span className="w-6 h-6 rounded-full bg-green-50 text-green-600 flex items-center justify-center text-xs font-medium shrink-0">{i + 1}</span>
+                    <div key={i} className={`flex items-center gap-2 px-3 py-2 ${i > 0 ? "border-t border-gray-50" : ""}`}>
+                      <span className="w-5 h-5 rounded-full bg-green-50 text-green-600 flex items-center justify-center text-[10px] font-bold shrink-0">{i + 1}</span>
                       <div className="flex-1 min-w-0">
-                        <p className="text-gray-800 font-medium text-sm">{item.productName}</p>
-                        <p className="text-gray-400 text-xs">{item.quantity} {item.unit === "KG" ? "กก." : "ชิ้น"} × ฿{item.unitPrice.toLocaleString()}</p>
+                        <p className="text-gray-800 font-medium text-sm leading-tight truncate">{item.productName}</p>
+                        <p className="text-gray-400 text-[11px] leading-tight">
+                          {item.quantity} {item.unit === "KG" ? "กก." : "ชิ้น"} × ฿{item.unitPrice.toLocaleString()}
+                        </p>
                       </div>
-                      <p className="text-green-600 font-medium text-sm tabular-nums shrink-0">฿{formatMoney(item.subtotal)}</p>
-                      <button onClick={() => setEditingCartIdx(i)} className="w-7 h-7 flex items-center justify-center rounded-full bg-blue-50 text-blue-400 shrink-0">
-                        <Pencil className="w-3 h-3" />
+                      <p className="text-green-600 font-semibold text-sm tabular-nums shrink-0 w-16 text-right">฿{formatMoney(item.subtotal)}</p>
+                      <button onClick={() => setEditingCartIdx(i)} className="w-7 h-7 flex items-center justify-center rounded-xl bg-blue-50 text-blue-400 shrink-0">
+                        <Pencil className="w-3.5 h-3.5" />
                       </button>
-                      <button onClick={() => setCart(cart.filter((_, idx) => idx !== i))} className="w-7 h-7 flex items-center justify-center rounded-full bg-red-50 text-red-400 shrink-0">
-                        <X className="w-3 h-3" />
+                      <button onClick={() => setCart(cart.filter((_, idx) => idx !== i))} className="w-7 h-7 flex items-center justify-center rounded-xl bg-red-50 text-red-400 shrink-0">
+                        <X className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   ))}
                   {/* Total row */}
-                  <div className="flex items-center justify-between px-4 py-3.5 bg-green-50 border-t border-green-100">
-                    <p className="text-green-700 text-sm font-medium">ยอดรวม</p>
-                    <p className="text-green-700 font-medium text-xl tabular-nums">฿{formatMoney(totalAmount)}</p>
+                  <div className="flex items-center justify-between px-3 py-3 bg-green-50 border-t border-green-100">
+                    <p className="text-green-700 text-sm font-semibold">ยอดรวม {cart.length} รายการ</p>
+                    <p className="text-green-700 font-bold text-xl tabular-nums">฿{formatMoney(totalAmount)}</p>
                   </div>
                 </div>
 
-                {/* ── Actions ── */}
-                <div className="space-y-3">
-                  {/* จ่าย — primary big button */}
-                  <button
-                    onClick={() => setShowPayConfirm(true)}
-                    disabled={saving}
-                    className="w-full flex items-center justify-center gap-3 py-5 rounded-2xl bg-blue-600 text-white font-semibold text-lg active:bg-blue-700 transition-colors disabled:opacity-60 shadow-lg shadow-blue-600/30"
-                  >
-                    <Banknote className="w-6 h-6 shrink-0" />
-                    <span>{saving ? "บันทึก..." : `จ่าย ฿${formatMoney(totalAmount)}`}</span>
-                  </button>
-
-                  {/* เพิ่มสินค้า + พักบิล */}
-                  <div className="grid grid-cols-2 gap-3">
+                {/* ── Sticky Action Bar ── */}
+                <div className="sticky bottom-4 z-10 pt-1">
+                  <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-3 space-y-2.5">
+                    {/* จ่าย */}
                     <button
-                      onClick={() => setStep("category")}
-                      className="flex items-center justify-center gap-2 py-4 rounded-2xl bg-white border border-gray-200 text-gray-600 text-sm font-medium active:bg-gray-50 transition-colors shadow-sm"
+                      onClick={() => setShowPayConfirm(true)}
+                      disabled={saving}
+                      className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-blue-600 text-white font-bold text-lg active:bg-blue-700 transition-colors disabled:opacity-60 shadow-md shadow-blue-600/30"
                     >
-                      <Plus className="w-4 h-4" />
-                      <span>เพิ่มสินค้า</span>
+                      <Banknote className="w-6 h-6 shrink-0" />
+                      <span>{saving ? "บันทึก..." : `จ่าย ฿${formatMoney(totalAmount)}`}</span>
                     </button>
+                    {/* เพิ่มสินค้า + พักบิล */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => setStep("category")}
+                        className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-gray-50 border border-gray-200 text-gray-600 text-sm font-medium active:bg-gray-100 transition-colors"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>เพิ่มสินค้า</span>
+                      </button>
+                      <button
+                        onClick={() => setShowHoldConfirm(true)}
+                        disabled={holdingBill}
+                        className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-amber-50 border border-amber-200 text-amber-600 text-sm font-medium active:bg-amber-100 transition-colors disabled:opacity-50"
+                      >
+                        <Clock className="w-4 h-4 shrink-0" />
+                        <span>พักบิล</span>
+                      </button>
+                    </div>
+                    {/* ยกเลิก */}
                     <button
-                      onClick={() => setShowHoldConfirm(true)}
-                      disabled={holdingBill}
-                      className="flex items-center justify-center gap-2 py-4 rounded-2xl bg-white border border-amber-200 text-amber-600 text-sm font-medium active:bg-amber-50 transition-colors shadow-sm disabled:opacity-50"
+                      onClick={() => setShowCancelConfirm(true)}
+                      className="w-full flex items-center justify-center gap-2 py-2 rounded-2xl text-red-400 text-sm font-medium active:bg-red-50 transition-colors"
                     >
-                      <Clock className="w-4 h-4 shrink-0" />
-                      <span>พักบิล</span>
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>ยกเลิกบิลนี้</span>
                     </button>
                   </div>
-
-                  {/* ยกเลิกบิล */}
-                  <button
-                    onClick={() => setShowCancelConfirm(true)}
-                    className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-red-400 text-sm font-medium active:bg-red-50 transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    <span>ยกเลิกบิลนี้</span>
-                  </button>
                 </div>
               </>
             )}

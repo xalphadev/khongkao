@@ -180,6 +180,12 @@ export default function ReceiptModal({ transaction, onClose }: ReceiptModalProps
 
           <div className="border-t border-dashed border-gray-200 my-3" />
 
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-gray-500 text-xs font-medium uppercase tracking-wide">รายการสินค้า</p>
+            <span className="bg-green-100 text-green-700 text-xs font-semibold px-2 py-0.5 rounded-full">
+              {transaction.items.length} รายการ
+            </span>
+          </div>
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100">

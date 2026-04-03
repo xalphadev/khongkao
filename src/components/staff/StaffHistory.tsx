@@ -137,50 +137,47 @@ function EditTransactionModal({
             )}
           </div>
 
-          <div className="space-y-2.5">
+          {/* Compact table — ~42px/row instead of ~180px/card */}
+          <div className="bg-white rounded-2xl overflow-hidden border border-gray-100">
+            {/* Table header */}
+            <div className="grid grid-cols-[1fr_72px_72px_64px_28px] gap-1 px-3 py-2 bg-gray-50 border-b border-gray-100">
+              <p className="text-gray-400 text-[11px] font-medium">สินค้า ({items.length})</p>
+              <p className="text-gray-400 text-[11px] font-medium text-center">{items.some(i => i.unit === "KG") ? "กก." : "ชิ้น"}</p>
+              <p className="text-gray-400 text-[11px] font-medium text-center">ราคา/หน่วย</p>
+              <p className="text-gray-400 text-[11px] font-medium text-right">ยอด</p>
+              <span />
+            </div>
+            {/* Rows */}
             {items.map((item, idx) => (
-              <div key={idx} className="bg-gray-50 rounded-2xl px-4 py-3">
-                <div className="flex items-center justify-between mb-2.5">
-                  <p className="text-gray-800 text-sm font-medium">{item.productName}</p>
-                  <button
-                    onClick={() => setRemoveConfirmIdx(idx)}
-                    className="w-6 h-6 flex items-center justify-center rounded-full bg-red-50 text-red-400"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <p className="text-gray-400 text-xs mb-1">{item.unit === "KG" ? "น้ำหนัก (กก.)" : "จำนวน (ชิ้น)"}</p>
-                    <input
-                      type="number"
-                      value={item.quantity || ""}
-                      onChange={(e) => updateQty(idx, e.target.value)}
-                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm text-center focus:border-blue-400 focus:outline-none bg-white"
-                      min="0"
-                      step={item.unit === "KG" ? "0.1" : "1"}
-                      inputMode="decimal"
-                    />
-                  </div>
-                  <div>
-                    <p className="text-gray-400 text-xs mb-1">ราคา / หน่วย (฿)</p>
-                    <input
-                      type="number"
-                      value={item.unitPrice || ""}
-                      onChange={(e) => updatePrice(idx, e.target.value)}
-                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm text-center focus:border-blue-400 focus:outline-none bg-white"
-                      min="0"
-                      step="0.01"
-                      inputMode="decimal"
-                    />
-                  </div>
-                </div>
-                <div className="flex justify-between items-center mt-2 pt-2 border-t border-gray-200">
-                  <p className="text-gray-400 text-xs">ยอด</p>
-                  <p className="text-green-600 text-sm font-semibold tabular-nums">
-                    ฿{formatMoney(item.quantity * item.unitPrice)}
-                  </p>
-                </div>
+              <div key={idx} className={`grid grid-cols-[1fr_72px_72px_64px_28px] gap-1 items-center px-3 py-2 ${idx > 0 ? "border-t border-gray-50" : ""}`}>
+                <p className="text-gray-800 text-sm font-medium leading-tight truncate pr-1">{item.productName}</p>
+                <input
+                  type="number"
+                  value={item.quantity || ""}
+                  onChange={(e) => updateQty(idx, e.target.value)}
+                  className="w-full border border-gray-200 rounded-lg px-1.5 py-1.5 text-sm text-center focus:border-blue-400 focus:outline-none bg-gray-50 tabular-nums"
+                  min="0"
+                  step={item.unit === "KG" ? "0.1" : "1"}
+                  inputMode="decimal"
+                />
+                <input
+                  type="number"
+                  value={item.unitPrice || ""}
+                  onChange={(e) => updatePrice(idx, e.target.value)}
+                  className="w-full border border-gray-200 rounded-lg px-1.5 py-1.5 text-sm text-center focus:border-blue-400 focus:outline-none bg-gray-50 tabular-nums"
+                  min="0"
+                  step="0.01"
+                  inputMode="decimal"
+                />
+                <p className="text-green-600 text-xs font-semibold tabular-nums text-right">
+                  ฿{formatMoney(item.quantity * item.unitPrice)}
+                </p>
+                <button
+                  onClick={() => setRemoveConfirmIdx(idx)}
+                  className="w-6 h-6 flex items-center justify-center rounded-lg bg-red-50 text-red-400 active:bg-red-100"
+                >
+                  <X className="w-3 h-3" />
+                </button>
               </div>
             ))}
           </div>
