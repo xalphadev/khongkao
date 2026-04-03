@@ -222,48 +222,58 @@ function PayConfirmModal({
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-[2px]">
-      <div className="bg-white w-full max-w-md rounded-t-3xl px-5 py-6">
-        <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-5" />
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
-            <Banknote className="w-5 h-5 text-blue-600" />
-          </div>
-          <div>
-            <h3 className="font-medium text-gray-900">ยืนยันการรับซื้อ</h3>
-            {customerName ? (
-              <p className="text-gray-400 text-xs">ลูกค้า: {customerName}</p>
-            ) : (
-              <p className="text-gray-400 text-xs">ตรวจสอบรายการก่อนยืนยัน</p>
-            )}
-          </div>
-        </div>
-
-        {/* รายการสินค้า */}
-        <div className="bg-gray-50 rounded-2xl overflow-hidden mb-4">
-          <div className="divide-y divide-gray-100">
-            {items.map((item, i) => (
-              <div key={i} className="flex justify-between items-center px-4 py-2.5 text-sm">
-                <span className="text-gray-700">
-                  {item.productName}
-                  <span className="text-gray-400 text-xs ml-1.5">{item.quantity} {item.unit === "KG" ? "กก." : "ชิ้น"}</span>
-                </span>
-                <span className="text-green-600 font-medium tabular-nums">฿{formatMoney(item.subtotal)}</span>
-              </div>
-            ))}
-          </div>
-          <div className="flex justify-between items-center px-4 py-3 bg-green-50 border-t border-green-100">
-            <span className="text-green-800 font-medium text-sm">ยอดรวม</span>
-            <span className="text-green-700 font-medium text-xl tabular-nums">฿{formatMoney(total)}</span>
+      <div className="bg-white w-full max-w-md rounded-t-3xl flex flex-col" style={{ maxHeight: "90vh" }}>
+        {/* ── Header (fixed) ── */}
+        <div className="px-5 pt-5 pb-3 shrink-0">
+          <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-4" />
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
+              <Banknote className="w-5 h-5 text-blue-600" />
+            </div>
+            <div>
+              <h3 className="font-medium text-gray-900">ยืนยันการรับซื้อ</h3>
+              {customerName
+                ? <p className="text-gray-400 text-xs">ลูกค้า: {customerName}</p>
+                : <p className="text-gray-400 text-xs">ตรวจสอบรายการก่อนยืนยัน</p>
+              }
+            </div>
+            <span className="ml-auto bg-blue-50 text-blue-600 text-xs font-semibold px-2.5 py-1 rounded-full">
+              {items.length} รายการ
+            </span>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <button onClick={onCancel} className="py-3.5 rounded-2xl border-2 border-gray-200 text-gray-600 font-medium text-sm active:scale-[0.97] transition-all">
-            ยกเลิก
-          </button>
-          <button onClick={onConfirm} className="py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 to-blue-500 text-white font-medium text-sm active:scale-[0.97] transition-all shadow-lg shadow-blue-600/25 flex items-center justify-center gap-2">
-            <CheckCircle2 className="w-4 h-4" /> ยืนยันจ่ายเงิน
-          </button>
+        {/* ── Items list (scrollable) ── */}
+        <div className="flex-1 overflow-y-auto mx-5 mb-0">
+          <div className="bg-gray-50 rounded-2xl overflow-hidden">
+            <div className="divide-y divide-gray-100">
+              {items.map((item, i) => (
+                <div key={i} className="flex justify-between items-center px-4 py-2.5 text-sm">
+                  <span className="text-gray-700 flex-1 min-w-0 pr-2 truncate">
+                    {item.productName}
+                    <span className="text-gray-400 text-xs ml-1.5">{item.quantity} {item.unit === "KG" ? "กก." : "ชิ้น"}</span>
+                  </span>
+                  <span className="text-green-600 font-medium tabular-nums shrink-0">฿{formatMoney(item.subtotal)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* ── Total + Buttons (fixed bottom) ── */}
+        <div className="px-5 pt-3 pb-6 shrink-0">
+          <div className="flex justify-between items-center px-4 py-3 bg-green-50 rounded-2xl border border-green-100 mb-3">
+            <span className="text-green-800 font-semibold text-sm">ยอดรวมทั้งหมด</span>
+            <span className="text-green-700 font-bold text-2xl tabular-nums">฿{formatMoney(total)}</span>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <button onClick={onCancel} className="py-3.5 rounded-2xl border-2 border-gray-200 text-gray-600 font-medium text-sm active:scale-[0.97] transition-all">
+              ยกเลิก
+            </button>
+            <button onClick={onConfirm} className="py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 to-blue-500 text-white font-medium text-sm active:scale-[0.97] transition-all shadow-lg shadow-blue-600/25 flex items-center justify-center gap-2">
+              <CheckCircle2 className="w-4 h-4" /> ยืนยันจ่ายเงิน
+            </button>
+          </div>
         </div>
       </div>
     </div>
