@@ -6,7 +6,7 @@ import { X, Plus } from "lucide-react";
 interface Category { id: string; name: string; }
 interface Product {
   id: string; name: string; unit: string; pricePerUnit: number;
-  isActive: boolean; categoryId: string; category: Category;
+  customPrice: boolean; isActive: boolean; categoryId: string; category: Category;
 }
 
 function formatMoney(n: number) {
@@ -52,7 +52,7 @@ export default function ProductsPage() {
   const [editing, setEditing] = useState<Product | null>(null);
   const [filterCat, setFilterCat] = useState("");
   const [search, setSearch] = useState("");
-  const [form, setForm] = useState({ categoryId: "", name: "", unit: "KG", pricePerUnit: "" });
+  const [form, setForm] = useState({ categoryId: "", name: "", unit: "KG", pricePerUnit: "", customPrice: false });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -67,20 +67,21 @@ export default function ProductsPage() {
 
   const openCreate = () => {
     setEditing(null);
-    setForm({ categoryId: categories[0]?.id ?? "", name: "", unit: "KG", pricePerUnit: "" });
+    setForm({ categoryId: categories[0]?.id ?? "", name: "", unit: "KG", pricePerUnit: "", customPrice: false });
     setError(""); setShowModal(true);
   };
   const openEdit = (p: Product) => {
     setEditing(p);
-    setForm({ categoryId: p.categoryId, name: p.name, unit: p.unit, pricePerUnit: String(p.pricePerUnit) });
+    setForm({ categoryId: p.categoryId, name: p.name, unit: p.unit, pricePerUnit: String(p.pricePerUnit), customPrice: p.customPrice });
     setError(""); setShowModal(true);
   };
 
   const handleSave = async () => {
     setError("");
-    if (!form.name || !form.categoryId || !form.pricePerUnit) { setError("กรุณากรอกข้อมูลให้ครบ"); return; }
+    if (!form.name || !form.categoryId) { setError("กรุณากรอกข้อมูลให้ครบ"); return; }
+    if (!form.customPrice && !form.pricePerUnit) { setError("กรุณากรอกราคารับซื้อ"); return; }
     setSaving(true);
-    const body = { ...form, pricePerUnit: parseFloat(form.pricePerUnit) };
+    const body = { ...form, pricePerUnit: form.customPrice ? 0 : parseFloat(form.pricePerUnit) };
     const res = editing
       ? await fetch(`/api/products/${editing.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
       : await fetch("/api/products", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -142,10 +143,17 @@ export default function ProductsPage() {
               <div key={p.id} className={`bg-white rounded-2xl px-4 py-4 shadow-sm border border-gray-100 transition-all ${!p.isActive ? "opacity-50" : ""}`}>
                 <div className="flex items-start justify-between gap-2 mb-3">
                   <div className="min-w-0">
-                    <p className="font-medium text-gray-900">{p.name}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium text-gray-900">{p.name}</p>
+                      {p.customPrice && (
+                        <span className="text-xs bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded-lg font-medium">กำหนดเอง</span>
+                      )}
+                    </div>
                     <p className="text-gray-400 text-xs mt-0.5">{p.category.name} · {p.unit === "KG" ? "กก." : "ชิ้น"}</p>
                   </div>
-                  <p className="text-green-600 font-medium tabular-nums text-lg shrink-0">฿{formatMoney(p.pricePerUnit)}</p>
+                  <p className="text-green-600 font-medium tabular-nums text-lg shrink-0">
+                    {p.customPrice ? <span className="text-purple-500 text-sm">ราคาเอง</span> : `฿${formatMoney(p.pricePerUnit)}`}
+                  </p>
                 </div>
                 <div className="flex gap-2 pt-3 border-t border-gray-50">
                   <button
@@ -189,8 +197,11 @@ export default function ProductsPage() {
                           {p.unit === "KG" ? "กก." : "ชิ้น"}
                         </span>
                       </td>
-                      <td className="px-5 py-3.5 text-right font-medium text-green-600 tabular-nums">
-                        ฿{formatMoney(p.pricePerUnit)}
+                      <td className="px-5 py-3.5 text-right font-medium tabular-nums">
+                        {p.customPrice
+                          ? <span className="text-purple-500 text-xs bg-purple-50 px-2 py-0.5 rounded-lg">กำหนดเอง</span>
+                          : <span className="text-green-600">฿{formatMoney(p.pricePerUnit)}</span>
+                        }
                       </td>
                       <td className="px-5 py-3.5 text-center">
                         <button onClick={() => toggleActive(p)}
@@ -233,10 +244,27 @@ export default function ProductsPage() {
               <option value="PIECE">ชิ้น (ชิ้น)</option>
             </select>
           </div>
-          <div>
-            <FieldLabel>ราคารับซื้อ (บาท / {form.unit === "KG" ? "กก." : "ชิ้น"})</FieldLabel>
-            <FieldInput type="number" value={form.pricePerUnit} onChange={(e) => setForm({ ...form, pricePerUnit: e.target.value })} placeholder="0" min="0" step="0.01" />
-          </div>
+          {/* Toggle: ราคาเอง */}
+          <button
+            type="button"
+            onClick={() => setForm({ ...form, customPrice: !form.customPrice, pricePerUnit: !form.customPrice ? "" : form.pricePerUnit })}
+            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all ${form.customPrice ? "border-purple-400 bg-purple-50" : "border-gray-200 bg-gray-50"}`}
+          >
+            <div className="text-left">
+              <p className={`text-sm font-medium ${form.customPrice ? "text-purple-700" : "text-gray-700"}`}>ให้ป้ากรอกราคาเอง</p>
+              <p className="text-xs text-gray-400 mt-0.5">ราคาจะถูกกรอกตอนรับซื้อ เช่น ค่าอื่นๆ</p>
+            </div>
+            <div className={`w-11 h-6 rounded-full transition-all relative ${form.customPrice ? "bg-purple-500" : "bg-gray-300"}`}>
+              <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all ${form.customPrice ? "left-5" : "left-0.5"}`} />
+            </div>
+          </button>
+
+          {!form.customPrice && (
+            <div>
+              <FieldLabel>ราคารับซื้อ (บาท / {form.unit === "KG" ? "กก." : "ชิ้น"})</FieldLabel>
+              <FieldInput type="number" value={form.pricePerUnit} onChange={(e) => setForm({ ...form, pricePerUnit: e.target.value })} placeholder="0" min="0" step="0.01" />
+            </div>
+          )}
         </Modal>
       )}
     </div>

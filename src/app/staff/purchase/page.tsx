@@ -1,5 +1,10 @@
+import { Suspense } from "react";
 import PurchasePage from "@/components/staff/PurchasePage";
 
 export default function Purchase() {
-  return <PurchasePage />;
+  return (
+    <Suspense>
+      <PurchasePage />
+    </Suspense>
+  );
 }

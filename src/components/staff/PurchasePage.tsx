@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft, ShoppingCart, Clock, Plus, X, Check,
   Wrench, Cpu, Newspaper, Recycle, GlassWater, Package,
-  Scale, Hash, Banknote, User, CheckCircle2, ChevronRight, Pencil,
+  Scale, Hash, Banknote, User, CheckCircle2, ChevronRight, Pencil, Trash2,
 } from "lucide-react";
 import ReceiptModal from "./ReceiptModal";
 
@@ -20,6 +20,7 @@ interface Product {
   name: string;
   unit: string;
   pricePerUnit: number;
+  customPrice: boolean;
   categoryId: string;
 }
 
@@ -212,8 +213,8 @@ function PayConfirmModal({
       <div className="bg-white w-full max-w-md rounded-t-3xl px-5 py-6">
         <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-5" />
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center">
-            <Banknote className="w-5 h-5 text-green-600" />
+          <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
+            <Banknote className="w-5 h-5 text-blue-600" />
           </div>
           <div>
             <h3 className="font-medium text-gray-900">ยืนยันการรับซื้อ</h3>
@@ -248,7 +249,7 @@ function PayConfirmModal({
           <button onClick={onCancel} className="py-3.5 rounded-2xl border-2 border-gray-200 text-gray-600 font-medium text-sm active:scale-[0.97] transition-all">
             ยกเลิก
           </button>
-          <button onClick={onConfirm} className="py-3.5 rounded-2xl bg-gradient-to-r from-green-600 to-green-500 text-white font-medium text-sm active:scale-[0.97] transition-all shadow-lg shadow-green-600/25 flex items-center justify-center gap-2">
+          <button onClick={onConfirm} className="py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 to-blue-500 text-white font-medium text-sm active:scale-[0.97] transition-all shadow-lg shadow-blue-600/25 flex items-center justify-center gap-2">
             <CheckCircle2 className="w-4 h-4" /> ยืนยันจ่ายเงิน
           </button>
         </div>
@@ -344,6 +345,7 @@ function HeldBillsModal({
 // ── Main Component ────────────────────────────────────────────
 export default function PurchasePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -360,16 +362,27 @@ export default function PurchasePage() {
   const [heldBills, setHeldBills] = useState<HeldBill[]>([]);
   const [showHoldConfirm, setShowHoldConfirm] = useState(false);
   const [showPayConfirm, setShowPayConfirm] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [editingCartIdx, setEditingCartIdx] = useState<number | null>(null);
   const [showHeldBills, setShowHeldBills] = useState(false);
   const [holdingBill, setHoldingBill] = useState(false);
 
+  const [customUnitPrice, setCustomUnitPrice] = useState("");
   const quantityRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetch("/api/categories").then((r) => r.json()).then(setCategories);
     loadHeldBills();
   }, []);
+
+  // Auto-resume held bill from query param ?held=<id>
+  useEffect(() => {
+    const heldId = searchParams.get("held");
+    if (!heldId || heldBills.length === 0) return;
+    const bill = heldBills.find((b) => b.id === heldId);
+    if (bill) handleResume(bill);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [heldBills]);
 
   useEffect(() => {
     if (step === "quantity") setTimeout(() => quantityRef.current?.focus(), 150);
@@ -390,12 +403,14 @@ export default function PurchasePage() {
   };
 
   const handleCategorySelect = (cat: Category) => { setSelectedCategory(cat); setStep("product"); };
-  const handleProductSelect = (p: Product) => { setSelectedProduct(p); setQuantity(""); setStep("quantity"); };
+  const handleProductSelect = (p: Product) => { setSelectedProduct(p); setQuantity(""); setCustomUnitPrice(""); setStep("quantity"); };
 
   const handleAddToCart = () => {
     if (!selectedProduct || !quantity || parseFloat(quantity) <= 0) return;
+    if (selectedProduct.customPrice && (!customUnitPrice || parseFloat(customUnitPrice) <= 0)) return;
     const qty = parseFloat(quantity);
-    const subtotal = qty * selectedProduct.pricePerUnit;
+    const unitPrice = selectedProduct.customPrice ? parseFloat(customUnitPrice) : selectedProduct.pricePerUnit;
+    const subtotal = qty * unitPrice;
     const idx = cart.findIndex((i) => i.productId === selectedProduct.id);
     if (idx >= 0) {
       const updated = [...cart];
@@ -406,11 +421,11 @@ export default function PurchasePage() {
       setCart([...cart, {
         productId: selectedProduct.id,
         productName: selectedProduct.name,
-        quantity: qty, unitPrice: selectedProduct.pricePerUnit, subtotal,
+        quantity: qty, unitPrice, subtotal,
         unit: selectedProduct.unit,
       }]);
     }
-    setStep("category");
+    setStep("cart");
     setSelectedCategory(null);
     setSelectedProduct(null);
     setQuantity("");
@@ -429,6 +444,7 @@ export default function PurchasePage() {
         setSelectedCategory(null); setSelectedProduct(null); setQuantity("");
         setShowHoldConfirm(false);
         await loadHeldBills();
+        router.push("/staff");
       }
     } finally { setHoldingBill(false); }
   };
@@ -629,49 +645,76 @@ export default function PurchasePage() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-gray-900">{selectedProduct.name}</p>
-                <p className="text-green-600 text-sm">฿{selectedProduct.pricePerUnit.toLocaleString()} / {selectedProduct.unit === "KG" ? "กก." : "ชิ้น"}</p>
+                {selectedProduct.customPrice
+                  ? <p className="text-purple-600 text-sm font-medium">กรอกราคาเอง</p>
+                  : <p className="text-green-600 text-sm">฿{selectedProduct.pricePerUnit.toLocaleString()} / {selectedProduct.unit === "KG" ? "กก." : "ชิ้น"}</p>
+                }
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl px-5 py-6 shadow-sm">
-              {/* Label */}
-              <div className="flex items-center justify-center gap-2 text-gray-400 text-sm mb-3">
-                {selectedProduct.unit === "KG" ? <Scale className="w-4 h-4" /> : <Hash className="w-4 h-4" />}
-                <span>{selectedProduct.unit === "KG" ? "ใส่น้ำหนัก (กิโลกรัม)" : "ใส่จำนวน (ชิ้น)"}</span>
+            <div className="bg-white rounded-2xl px-5 py-6 shadow-sm space-y-4">
+              {/* ── ราคาต่อหน่วย (เฉพาะ customPrice) ── */}
+              {selectedProduct.customPrice && (
+                <div>
+                  <div className="flex items-center justify-center gap-2 text-gray-400 text-sm mb-3">
+                    <Banknote className="w-4 h-4" />
+                    <span>ราคารับซื้อ (บาท / {selectedProduct.unit === "KG" ? "กก." : "ชิ้น"})</span>
+                  </div>
+                  <input
+                    type="number"
+                    value={customUnitPrice}
+                    onChange={(e) => setCustomUnitPrice(e.target.value)}
+                    className="w-full bg-white rounded-2xl px-4 py-4 text-5xl font-medium text-center focus:outline-none transition-all tabular-nums"
+                    style={{ border: "3px solid #a855f7" }}
+                    placeholder="0"
+                    min="0"
+                    step="0.01"
+                    inputMode="decimal"
+                  />
+                </div>
+              )}
+
+              {/* ── จำนวน ── */}
+              <div>
+                <div className="flex items-center justify-center gap-2 text-gray-400 text-sm mb-3">
+                  {selectedProduct.unit === "KG" ? <Scale className="w-4 h-4" /> : <Hash className="w-4 h-4" />}
+                  <span>{selectedProduct.unit === "KG" ? "ใส่น้ำหนัก (กิโลกรัม)" : "ใส่จำนวน (ชิ้น)"}</span>
+                </div>
+                <input
+                  ref={quantityRef}
+                  type="number"
+                  value={quantity}
+                  onChange={(e) => setQuantity(e.target.value)}
+                  className="w-full bg-white rounded-2xl px-4 py-5 text-7xl font-medium text-center focus:outline-none transition-all tabular-nums"
+                  style={{ border: "3px solid #4ade80" }}
+                  placeholder="0"
+                  min="0"
+                  step={selectedProduct.unit === "KG" ? "0.1" : "1"}
+                  inputMode="decimal"
+                />
               </div>
 
-              {/* ── ช่องตัวเลข: เป็น hero ── */}
-              <input
-                ref={quantityRef}
-                type="number"
-                value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
-                className="w-full bg-white rounded-2xl px-4 py-5 text-7xl font-medium text-center focus:outline-none transition-all tabular-nums"
-                style={{ border: "3px solid #4ade80" }}
-                placeholder="0"
-                min="0"
-                step={selectedProduct.unit === "KG" ? "0.1" : "1"}
-                inputMode="decimal"
-              />
-
               {/* ── ยอดเงิน: secondary ── */}
-              {quantity && parseFloat(quantity) > 0 ? (
-                <div className="mt-3 flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3">
+              {quantity && parseFloat(quantity) > 0 && (!selectedProduct.customPrice || (customUnitPrice && parseFloat(customUnitPrice) > 0)) ? (
+                <div className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3">
                   <p className="text-gray-400 text-sm">ยอดที่ต้องจ่าย</p>
                   <p className="text-green-600 font-medium text-xl tabular-nums">
-                    ฿{formatMoney(parseFloat(quantity) * selectedProduct.pricePerUnit)}
+                    ฿{formatMoney(parseFloat(quantity) * (selectedProduct.customPrice ? parseFloat(customUnitPrice || "0") : selectedProduct.pricePerUnit))}
                   </p>
                 </div>
               ) : (
-                <div className="mt-3 bg-gray-50 rounded-xl px-4 py-3 text-center">
-                  <p className="text-gray-300 text-sm">ยอดเงินจะแสดงเมื่อใส่จำนวน</p>
+                <div className="bg-gray-50 rounded-xl px-4 py-3 text-center">
+                  <p className="text-gray-300 text-sm">ยอดเงินจะแสดงเมื่อใส่จำนวน{selectedProduct.customPrice ? "และราคา" : ""}</p>
                 </div>
               )}
 
               <button
                 onClick={handleAddToCart}
-                disabled={!quantity || parseFloat(quantity) <= 0}
-                className="btn-staff bg-green-600 hover:bg-green-700 disabled:bg-gray-100 disabled:text-gray-300 text-white mt-4 shadow-lg shadow-green-600/25 disabled:shadow-none"
+                disabled={
+                  !quantity || parseFloat(quantity) <= 0 ||
+                  (selectedProduct.customPrice && (!customUnitPrice || parseFloat(customUnitPrice) <= 0))
+                }
+                className="btn-staff bg-green-600 hover:bg-green-700 disabled:bg-gray-100 disabled:text-gray-300 text-white shadow-lg shadow-green-600/25 disabled:shadow-none"
                 style={{ minHeight: 60 }}
               >
                 <Check className="w-5 h-5" /> เพิ่มรายการ
@@ -694,6 +737,24 @@ export default function PurchasePage() {
               </div>
             ) : (
               <>
+                {/* ── Customer name (top) ── */}
+                <div className="bg-white rounded-2xl px-4 py-3 shadow-sm flex items-center gap-3 border-2 border-transparent focus-within:border-green-400 transition-all">
+                  <User className="w-4 h-4 text-gray-400 shrink-0" />
+                  <input
+                    type="text"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    className="flex-1 bg-transparent text-sm text-gray-800 placeholder-gray-400 focus:outline-none"
+                    placeholder="ชื่อลูกค้า (ไม่บังคับ)"
+                    maxLength={40}
+                  />
+                  {customerName && (
+                    <button onClick={() => setCustomerName("")} className="text-gray-300 shrink-0">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
                 {/* ── Items ── */}
                 <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
                   {cart.map((item, i) => (
@@ -719,54 +780,45 @@ export default function PurchasePage() {
                   </div>
                 </div>
 
-                {/* ── Customer name ── */}
-                <div className="bg-white rounded-2xl px-4 py-3 shadow-sm flex items-center gap-3 border-2 border-transparent focus-within:border-green-400 transition-all">
-                  <User className="w-4 h-4 text-gray-400 shrink-0" />
-                  <input
-                    type="text"
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    className="flex-1 bg-transparent text-sm text-gray-800 placeholder-gray-400 focus:outline-none"
-                    placeholder="ชื่อลูกค้า (ไม่บังคับ)"
-                    maxLength={40}
-                  />
-                  {customerName && (
-                    <button onClick={() => setCustomerName("")} className="text-gray-300 shrink-0">
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-
                 {/* ── Actions ── */}
-                <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-                  {/* เพิ่มสินค้า — secondary link style */}
+                <div className="space-y-3">
+                  {/* จ่าย — primary big button */}
                   <button
-                    onClick={() => setStep("category")}
-                    className="w-full flex items-center justify-center gap-2 py-3.5 text-gray-500 text-sm border-b border-gray-50 active:bg-gray-50 transition-colors"
+                    onClick={() => setShowPayConfirm(true)}
+                    disabled={saving}
+                    className="w-full flex items-center justify-center gap-3 py-5 rounded-2xl bg-blue-600 text-white font-semibold text-lg active:bg-blue-700 transition-colors disabled:opacity-60 shadow-lg shadow-blue-600/30"
                   >
-                    <Plus className="w-4 h-4" />
-                    <span>เพิ่มสินค้า</span>
+                    <Banknote className="w-6 h-6 shrink-0" />
+                    <span>{saving ? "บันทึก..." : `จ่าย ฿${formatMoney(totalAmount)}`}</span>
                   </button>
 
-                  {/* พักบิล + จ่าย */}
-                  <div className="grid grid-cols-2 gap-0">
+                  {/* เพิ่มสินค้า + พักบิล */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => setStep("category")}
+                      className="flex items-center justify-center gap-2 py-4 rounded-2xl bg-white border border-gray-200 text-gray-600 text-sm font-medium active:bg-gray-50 transition-colors shadow-sm"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>เพิ่มสินค้า</span>
+                    </button>
                     <button
                       onClick={() => setShowHoldConfirm(true)}
                       disabled={holdingBill}
-                      className="flex items-center justify-center gap-2 py-4 text-amber-600 text-sm font-medium border-r border-gray-50 active:bg-amber-50 transition-colors disabled:opacity-50"
+                      className="flex items-center justify-center gap-2 py-4 rounded-2xl bg-white border border-amber-200 text-amber-600 text-sm font-medium active:bg-amber-50 transition-colors shadow-sm disabled:opacity-50"
                     >
                       <Clock className="w-4 h-4 shrink-0" />
                       <span>พักบิล</span>
                     </button>
-                    <button
-                      onClick={() => setShowPayConfirm(true)}
-                      disabled={saving}
-                      className="flex items-center justify-center gap-2 py-4 bg-green-600 text-white text-sm font-medium active:bg-green-700 transition-colors disabled:opacity-60"
-                    >
-                      <Banknote className="w-4 h-4 shrink-0" />
-                      <span>{saving ? "บันทึก..." : `จ่าย ฿${formatMoney(totalAmount)}`}</span>
-                    </button>
                   </div>
+
+                  {/* ยกเลิกบิล */}
+                  <button
+                    onClick={() => setShowCancelConfirm(true)}
+                    className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-red-400 text-sm font-medium active:bg-red-50 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span>ยกเลิกบิลนี้</span>
+                  </button>
                 </div>
               </>
             )}
@@ -799,6 +851,41 @@ export default function PurchasePage() {
       )}
       {showHoldConfirm && (
         <HoldConfirmModal total={totalAmount} initialName={customerName} onConfirm={handleHoldConfirm} onCancel={() => setShowHoldConfirm(false)} />
+      )}
+      {showCancelConfirm && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-[2px]">
+          <div className="bg-white w-full max-w-md rounded-t-3xl px-5 py-6">
+            <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-5" />
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center">
+                <Trash2 className="w-5 h-5 text-red-500" />
+              </div>
+              <div>
+                <h3 className="font-medium text-gray-900">ยกเลิกบิลนี้?</h3>
+                <p className="text-gray-400 text-xs">รายการทั้งหมด {cart.length} รายการจะถูกลบออก</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3 mt-4">
+              <button
+                onClick={() => setShowCancelConfirm(false)}
+                className="py-3.5 rounded-2xl border-2 border-gray-200 text-gray-600 font-medium text-sm active:scale-[0.97] transition-all"
+              >
+                ไม่ยกเลิก
+              </button>
+              <button
+                onClick={() => {
+                  setCart([]); setCustomerName(""); setStep("category");
+                  setSelectedCategory(null); setSelectedProduct(null); setQuantity("");
+                  setShowCancelConfirm(false);
+                  router.push("/staff");
+                }}
+                className="py-3.5 rounded-2xl bg-red-500 text-white font-medium text-sm active:scale-[0.97] transition-all shadow-lg shadow-red-500/25"
+              >
+                ยกเลิกบิล
+              </button>
+            </div>
+          </div>
+        </div>
       )}
       {showHeldBills && (
         <HeldBillsModal bills={heldBills} onResume={handleResume} onCancel={handleCancelHeld} onClose={() => setShowHeldBills(false)} />

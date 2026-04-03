@@ -30,14 +30,18 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { categoryId, name, unit, pricePerUnit } = body;
+  const { categoryId, name, unit, pricePerUnit, customPrice } = body;
 
-  if (!categoryId || !name || !unit || pricePerUnit === undefined) {
+  if (!categoryId || !name || !unit) {
     return NextResponse.json({ error: "ข้อมูลไม่ครบ" }, { status: 400 });
   }
 
   const product = await prisma.product.create({
-    data: { categoryId, name, unit, pricePerUnit: parseFloat(pricePerUnit) },
+    data: {
+      categoryId, name, unit,
+      pricePerUnit: customPrice ? 0 : parseFloat(pricePerUnit ?? 0),
+      customPrice: !!customPrice,
+    },
     include: { category: true },
   });
 

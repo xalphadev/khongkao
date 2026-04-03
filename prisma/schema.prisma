@@ -38,6 +38,7 @@ model Product {
   name           String
   unit           String            @default("KG")
   pricePerUnit   Float
+  customPrice    Boolean           @default(false)
   isActive       Boolean           @default(true)
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
