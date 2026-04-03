@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ClipboardList, Download, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Calendar, CalendarDays, BarChart2 } from "lucide-react";
+import { ClipboardList, Download, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Calendar, CalendarDays, BarChart2, X, User, Clock } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 interface TransactionItem {
@@ -75,12 +75,17 @@ function periodLabel(period: Period, anchor: string) {
   return d.toLocaleDateString("th-TH", { month: "long", year: "numeric" });
 }
 
+const COLORS = ["#16a34a", "#2563eb", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4"];
+const BGCOLORS = ["#dcfce7", "#dbeafe", "#fef3c7", "#fee2e2", "#ede9fe", "#cffafe"];
+
 export default function ReportsPage() {
   const [period, setPeriod] = useState<Period>("day");
   const [anchor, setAnchor] = useState(new Date().toISOString().split("T")[0]);
   const [report, setReport] = useState<PeriodReport | null>(null);
   const [loading, setLoading] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
+  const [drillExpandedId, setDrillExpandedId] = useState<string | null>(null);
 
   useEffect(() => { load(); }, [period, anchor]);
 
@@ -93,6 +98,7 @@ export default function ReportsPage() {
   const load = async () => {
     setLoading(true);
     setExpandedId(null);
+    setSelectedProduct(null);
     const { startDate, endDate } = getRange();
     const r = await fetch(`/api/reports/period?startDate=${startDate}&endDate=${endDate}`);
     setReport(await r.json());
@@ -295,23 +301,36 @@ export default function ReportsPage() {
             </div>
           )}
 
-          {/* ── Product breakdown ── */}
+          {/* ── Product breakdown (clickable) ── */}
           {report.productBreakdown.length > 0 && (
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="px-4 py-3.5 border-b border-gray-50 flex items-center justify-between">
                 <p className="text-sm font-semibold text-gray-700">รายการสินค้า</p>
-                <span className="text-xs text-gray-400">{report.productBreakdown.length} ชนิด</span>
+                <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{report.productBreakdown.length} ชนิด</span>
               </div>
-              <div className="divide-y divide-gray-50">
+              <p className="text-xs text-gray-400 px-4 pt-2.5">กดสินค้าเพื่อดูรายละเอียดบิล</p>
+              <div className="divide-y divide-gray-50 mt-1">
                 {report.productBreakdown.map((p, i) => (
-                  <div key={i} className="flex items-center gap-3 px-4 py-3">
-                    <span className="w-6 h-6 rounded-full bg-gray-100 text-gray-400 text-xs flex items-center justify-center shrink-0 font-medium">{i + 1}</span>
+                  <button
+                    key={i}
+                    onClick={() => { setSelectedProduct(p.name); setDrillExpandedId(null); }}
+                    className="w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-blue-50 hover:bg-gray-50 transition-colors"
+                  >
+                    <span className="w-8 h-8 rounded-xl flex items-center justify-center text-sm font-bold shrink-0"
+                      style={{ background: BGCOLORS[i % BGCOLORS.length], color: COLORS[i % COLORS.length] }}>
+                      {i + 1}
+                    </span>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-800 text-sm leading-tight">{p.name}</p>
+                      <p className="font-semibold text-gray-800 text-sm leading-tight">{p.name}</p>
                       <p className="text-gray-400 text-xs mt-0.5">{p.quantity} {p.unit === "KG" ? "กก." : "ชิ้น"}</p>
                     </div>
-                    <p className="text-green-600 font-semibold tabular-nums text-sm shrink-0">฿{formatMoney(p.amount)}</p>
-                  </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <p className="font-bold tabular-nums text-sm" style={{ color: COLORS[i % COLORS.length] }}>
+                        ฿{formatMoney(p.amount)}
+                      </p>
+                      <ChevronRight className="w-4 h-4 text-gray-300" />
+                    </div>
+                  </button>
                 ))}
               </div>
             </div>
@@ -380,6 +399,141 @@ export default function ReportsPage() {
           </div>
         </>
       )}
+
+      {/* ── Product drill-down drawer ── */}
+      {selectedProduct && report && (() => {
+        const txns = report.transactions.filter((t) =>
+          t.items.some((item) => item.productName === selectedProduct)
+        );
+        const totalQty = txns.reduce((s, t) => {
+          const item = t.items.find((i) => i.productName === selectedProduct);
+          return s + (item?.quantity ?? 0);
+        }, 0);
+        const totalAmt = txns.reduce((s, t) => {
+          const item = t.items.find((i) => i.productName === selectedProduct);
+          return s + (item?.subtotal ?? 0);
+        }, 0);
+        const unit = txns[0]?.items.find((i) => i.productName === selectedProduct)?.unit ?? "KG";
+        return (
+          <>
+            {/* Backdrop */}
+            <div
+              className="fixed inset-0 bg-black/40 z-40 backdrop-blur-[2px]"
+              onClick={() => setSelectedProduct(null)}
+            />
+            {/* Sheet */}
+            <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl flex flex-col"
+              style={{ maxHeight: "82vh" }}>
+              {/* Header */}
+              <div className="flex items-center gap-3 px-5 pt-5 pb-4 border-b border-gray-100 shrink-0">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-gray-400 mb-0.5">รายการสินค้า</p>
+                  <p className="font-bold text-gray-900 text-lg leading-tight truncate">{selectedProduct}</p>
+                  <div className="flex items-center gap-3 mt-1.5">
+                    <span className="text-xs bg-green-100 text-green-700 font-semibold px-2 py-0.5 rounded-full">
+                      ฿{formatMoney(totalAmt)}
+                    </span>
+                    <span className="text-xs bg-blue-100 text-blue-700 font-semibold px-2 py-0.5 rounded-full">
+                      {totalQty} {unit === "KG" ? "กก." : "ชิ้น"}
+                    </span>
+                    <span className="text-xs bg-gray-100 text-gray-600 font-semibold px-2 py-0.5 rounded-full">
+                      {txns.length} บิล
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSelectedProduct(null)}
+                  className="w-9 h-9 rounded-2xl bg-gray-100 flex items-center justify-center shrink-0 active:bg-gray-200"
+                >
+                  <X className="w-4 h-4 text-gray-500" />
+                </button>
+              </div>
+
+              {/* Transaction list */}
+              <div className="overflow-y-auto flex-1 divide-y divide-gray-50">
+                {txns.length === 0 ? (
+                  <div className="py-16 text-center text-gray-400">
+                    <p className="text-sm">ไม่พบรายการ</p>
+                  </div>
+                ) : txns.map((t) => {
+                  const prodItem = t.items.find((i) => i.productName === selectedProduct);
+                  const isOpen = drillExpandedId === t.id;
+                  return (
+                    <div key={t.id}>
+                      <button
+                        onClick={() => setDrillExpandedId(isOpen ? null : t.id)}
+                        className="w-full px-5 py-4 flex items-center gap-3 text-left active:bg-gray-50 transition-colors"
+                      >
+                        {/* Bill ID */}
+                        <span className="font-mono text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-lg shrink-0">
+                          #{t.id.slice(-5).toUpperCase()}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          {/* Time + Staff */}
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <div className="flex items-center gap-1 text-gray-500 text-xs">
+                              <Clock className="w-3 h-3" />
+                              {period !== "day" && `${new Date(t.createdAt).toLocaleDateString("th-TH", { day: "numeric", month: "short" })} `}
+                              {formatTime(t.createdAt)}
+                            </div>
+                            <div className="flex items-center gap-1 text-blue-500 text-xs font-medium">
+                              <User className="w-3 h-3" />
+                              {t.staff.name}
+                            </div>
+                            {t.customerName && (
+                              <span className="text-gray-400 text-xs">· {t.customerName}</span>
+                            )}
+                          </div>
+                          {/* This product qty */}
+                          <p className="text-green-700 font-semibold text-sm mt-0.5">
+                            {prodItem?.quantity} {prodItem?.unit === "KG" ? "กก." : "ชิ้น"} = ฿{formatMoney(prodItem?.subtotal ?? 0)}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className="text-gray-500 text-xs tabular-nums">฿{formatMoney(t.totalAmount)}</span>
+                          {isOpen
+                            ? <ChevronUp className="w-3.5 h-3.5 text-gray-400" />
+                            : <ChevronDown className="w-3.5 h-3.5 text-gray-400" />}
+                        </div>
+                      </button>
+
+                      {/* Expanded: full bill items */}
+                      {isOpen && (
+                        <div className="bg-blue-50 mx-4 mb-3 rounded-2xl px-4 py-3 space-y-2">
+                          <p className="text-xs font-semibold text-blue-600 mb-2">รายการทั้งหมดในบิล</p>
+                          {t.items.map((item) => (
+                            <div key={item.id} className="flex justify-between items-center">
+                              <div className="flex items-center gap-2">
+                                {item.productName === selectedProduct && (
+                                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />
+                                )}
+                                <span className={`text-sm ${item.productName === selectedProduct ? "font-semibold text-gray-900" : "text-gray-600"}`}>
+                                  {item.productName}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-3 text-xs">
+                                <span className="text-gray-400">{item.quantity} {item.unit === "KG" ? "กก." : "ชิ้น"}</span>
+                                <span className="text-green-700 font-semibold tabular-nums">฿{formatMoney(item.subtotal)}</span>
+                              </div>
+                            </div>
+                          ))}
+                          <div className="flex justify-between pt-2 border-t border-blue-100">
+                            <span className="text-xs text-blue-600 font-semibold">รวมทั้งบิล</span>
+                            <span className="text-sm text-blue-700 font-bold tabular-nums">฿{formatMoney(t.totalAmount)}</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Safe area bottom */}
+              <div className="shrink-0" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)", minHeight: 12 }} />
+            </div>
+          </>
+        );
+      })()}
     </div>
   );
 }
