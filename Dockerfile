@@ -4,6 +4,8 @@
 FROM node:20-alpine AS deps
 WORKDIR /app
 
+RUN apk add --no-cache openssl
+
 COPY package.json package-lock.json ./
 RUN npm ci
 
@@ -12,6 +14,8 @@ RUN npm ci
 # ─────────────────────────────────────────────
 FROM node:20-alpine AS builder
 WORKDIR /app
+
+RUN apk add --no-cache openssl
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -31,6 +35,9 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
+
+# OpenSSL required by Prisma on Alpine (musl)
+RUN apk add --no-cache openssl
 
 # Non-root user for security
 RUN addgroup --system --gid 1001 nodejs \
