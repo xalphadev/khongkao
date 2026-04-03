@@ -12,6 +12,17 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const { id } = await params;
   const body = await req.json();
 
+  // Record price history if price is changing
+  if (body.pricePerUnit !== undefined && !body.customPrice) {
+    const current = await prisma.product.findUnique({ where: { id } });
+    const newPrice = parseFloat(body.pricePerUnit);
+    if (current && current.pricePerUnit !== newPrice && !current.customPrice) {
+      await prisma.productPriceHistory.create({
+        data: { productId: id, oldPrice: current.pricePerUnit, newPrice },
+      });
+    }
+  }
+
   const product = await prisma.product.update({
     where: { id },
     data: {

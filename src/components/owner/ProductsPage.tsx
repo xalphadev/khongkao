@@ -1,12 +1,15 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { X, Plus, Pencil, Check, Tag } from "lucide-react";
+import { X, Plus, Pencil, Check, Tag, History, ChevronDown, ChevronUp } from "lucide-react";
 
 interface Category { id: string; name: string; }
 interface Product {
   id: string; name: string; unit: string; pricePerUnit: number;
   customPrice: boolean; isActive: boolean; categoryId: string; category: Category;
+}
+interface PriceHistoryEntry {
+  id: string; oldPrice: number; newPrice: number; changedAt: string;
 }
 
 function formatMoney(n: number) {
@@ -58,6 +61,9 @@ export default function ProductsPage() {
   const [inlineEditId, setInlineEditId] = useState<string | null>(null);
   const [inlinePrice, setInlinePrice] = useState("");
   const inlineRef = useRef<HTMLInputElement>(null);
+  const [historyProductId, setHistoryProductId] = useState<string | null>(null);
+  const [priceHistory, setPriceHistory] = useState<PriceHistoryEntry[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   useEffect(() => { loadData(); }, []);
 
@@ -113,8 +119,26 @@ export default function ProductsPage() {
         body: JSON.stringify({ pricePerUnit: price }),
       });
       loadData();
+      // Refresh history if currently viewing this product's history
+      if (historyProductId === p.id) loadHistory(p.id);
     }
     setInlineEditId(null);
+  };
+
+  const loadHistory = async (productId: string) => {
+    setLoadingHistory(true);
+    const res = await fetch(`/api/products/${productId}/price-history`);
+    if (res.ok) setPriceHistory(await res.json());
+    setLoadingHistory(false);
+  };
+
+  const toggleHistory = (productId: string) => {
+    if (historyProductId === productId) {
+      setHistoryProductId(null);
+    } else {
+      setHistoryProductId(productId);
+      loadHistory(productId);
+    }
   };
 
   const filtered = products.filter((p) => {
@@ -221,19 +245,49 @@ export default function ProductsPage() {
                   )}
                 </div>
                 <div className="flex gap-2 pt-3 border-t border-gray-50">
-                  <button
-                    onClick={() => toggleActive(p)}
-                    className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors ${p.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}
-                  >
+                  <button onClick={() => toggleActive(p)}
+                    className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors ${p.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
                     {p.isActive ? "เปิดรับซื้อ" : "ปิดรับซื้อ"}
                   </button>
-                  <button
-                    onClick={() => openEdit(p)}
-                    className="flex-1 py-2.5 rounded-xl text-sm font-medium bg-blue-50 text-blue-600 transition-colors"
-                  >
+                  <button onClick={() => openEdit(p)}
+                    className="flex-1 py-2.5 rounded-xl text-sm font-medium bg-blue-50 text-blue-600 transition-colors">
                     แก้ไข
                   </button>
+                  {!p.customPrice && (
+                    <button onClick={() => toggleHistory(p.id)}
+                      className={`w-10 py-2.5 rounded-xl text-sm font-medium transition-colors flex items-center justify-center ${historyProductId === p.id ? "bg-amber-100 text-amber-600" : "bg-gray-100 text-gray-400"}`}>
+                      <History className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
+                {/* Price history panel */}
+                {historyProductId === p.id && (
+                  <div className="mt-2 bg-amber-50 rounded-xl p-3 border border-amber-100">
+                    <p className="text-amber-700 text-xs font-semibold mb-2 flex items-center gap-1.5">
+                      <History className="w-3.5 h-3.5" />ประวัติการปรับราคา
+                    </p>
+                    {loadingHistory ? (
+                      <p className="text-amber-400 text-xs">กำลังโหลด...</p>
+                    ) : priceHistory.length === 0 ? (
+                      <p className="text-amber-400 text-xs">ยังไม่มีการปรับราคา</p>
+                    ) : (
+                      <div className="space-y-1.5">
+                        {priceHistory.map((h) => (
+                          <div key={h.id} className="flex items-center justify-between text-xs">
+                            <span className="text-amber-600">
+                              {new Date(h.changedAt).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" })}
+                            </span>
+                            <span className="flex items-center gap-1 text-gray-500">
+                              <span className="line-through text-gray-400">฿{formatMoney(h.oldPrice)}</span>
+                              <span>→</span>
+                              <span className="text-green-600 font-semibold">฿{formatMoney(h.newPrice)}</span>
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -296,9 +350,17 @@ export default function ProductsPage() {
                         </button>
                       </td>
                       <td className="px-5 py-3.5 text-center">
-                        <button onClick={() => openEdit(p)} className="text-blue-500 hover:text-blue-700 text-xs font-medium transition-colors">
-                          แก้ไข
-                        </button>
+                        <div className="flex items-center justify-center gap-2">
+                          <button onClick={() => openEdit(p)} className="text-blue-500 hover:text-blue-700 text-xs font-medium transition-colors">
+                            แก้ไข
+                          </button>
+                          {!p.customPrice && (
+                            <button onClick={() => toggleHistory(p.id)}
+                              className={`text-xs font-medium transition-colors flex items-center gap-1 ${historyProductId === p.id ? "text-amber-600" : "text-gray-400 hover:text-amber-500"}`}>
+                              <History className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
