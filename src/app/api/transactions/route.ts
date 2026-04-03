@@ -14,17 +14,14 @@ export async function GET(req: NextRequest) {
 
   let dateFilter = {};
 
+  // Use "T00:00:00" suffix so Date parses as LOCAL midnight, not UTC midnight
   if (date) {
-    const start = new Date(date);
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(date);
-    end.setHours(23, 59, 59, 999);
+    const start = new Date(date + "T00:00:00");
+    const end   = new Date(date + "T23:59:59.999");
     dateFilter = { createdAt: { gte: start, lte: end } };
   } else if (startDate && endDate) {
-    const start = new Date(startDate);
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(endDate);
-    end.setHours(23, 59, 59, 999);
+    const start = new Date(startDate + "T00:00:00");
+    const end   = new Date(endDate   + "T23:59:59.999");
     dateFilter = { createdAt: { gte: start, lte: end } };
   }
 

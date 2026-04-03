@@ -10,12 +10,14 @@ export async function GET(req: NextRequest) {
   }
 
   const { searchParams } = new URL(req.url);
-  const date = searchParams.get("date") || new Date().toISOString().split("T")[0];
+  function localDateString(d: Date = new Date()) {
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  }
+  const date = searchParams.get("date") || localDateString();
 
-  const start = new Date(date);
-  start.setHours(0, 0, 0, 0);
-  const end = new Date(date);
-  end.setHours(23, 59, 59, 999);
+  // Append time to parse as LOCAL midnight, not UTC midnight
+  const start = new Date(date + "T00:00:00");
+  const end   = new Date(date + "T23:59:59.999");
 
   const transactions = await prisma.transaction.findMany({
     where: { createdAt: { gte: start, lte: end } },
