@@ -5,6 +5,7 @@ import {
   ClipboardList, User, ChevronDown, Pencil, X, Check, ChevronLeft, ChevronRight, Search,
 } from "lucide-react";
 import StaffTabBar from "./StaffTabBar";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 
 interface TransactionItem {
   id: string;
@@ -59,6 +60,7 @@ function EditTransactionModal({
   const [items, setItems] = useState<TransactionItem[]>(transaction.items.map((i) => ({ ...i })));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [removeConfirmIdx, setRemoveConfirmIdx] = useState<number | null>(null);
 
   const total = items.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
 
@@ -134,7 +136,7 @@ function EditTransactionModal({
                 <div className="flex items-center justify-between mb-2.5">
                   <p className="text-gray-800 text-sm font-medium">{item.productName}</p>
                   <button
-                    onClick={() => removeItem(idx)}
+                    onClick={() => setRemoveConfirmIdx(idx)}
                     className="w-6 h-6 flex items-center justify-center rounded-full bg-red-50 text-red-400"
                   >
                     <X className="w-3 h-3" />
@@ -198,6 +200,17 @@ function EditTransactionModal({
           </button>
         </div>
       </div>
+
+      {removeConfirmIdx !== null && (
+        <ConfirmModal
+          title="ลบรายการนี้?"
+          description={`"${items[removeConfirmIdx]?.productName}" จะถูกลบออกจากบิล`}
+          variant="danger"
+          confirmLabel="ลบรายการ"
+          onConfirm={() => { removeItem(removeConfirmIdx); setRemoveConfirmIdx(null); }}
+          onCancel={() => setRemoveConfirmIdx(null)}
+        />
+      )}
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { X, Plus, Pencil, Check, History, ChevronDown, ChevronUp } from "lucide-react";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 
 interface Category { id: string; name: string; }
 interface Product {
@@ -64,6 +65,7 @@ export default function ProductsPage() {
   const [historyProductId, setHistoryProductId] = useState<string | null>(null);
   const [priceHistory, setPriceHistory] = useState<PriceHistoryEntry[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [toggleConfirm, setToggleConfirm] = useState<Product | null>(null);
 
   useEffect(() => { loadData(); }, []);
 
@@ -101,6 +103,7 @@ export default function ProductsPage() {
 
   const toggleActive = async (p: Product) => {
     await fetch(`/api/products/${p.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ isActive: !p.isActive }) });
+    setToggleConfirm(null);
     loadData();
   };
 
@@ -237,7 +240,7 @@ export default function ProductsPage() {
                   )}
                 </div>
                 <div className="flex gap-2 pt-2.5 border-t border-gray-50">
-                  <button onClick={() => toggleActive(p)}
+                  <button onClick={() => setToggleConfirm(p)}
                     className={`flex-1 py-1.5 rounded-xl text-xs font-semibold transition-colors ${p.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
                     {p.isActive ? "เปิดรับซื้อ" : "ปิดรับซื้อ"}
                   </button>
@@ -336,7 +339,7 @@ export default function ProductsPage() {
                         )}
                       </td>
                       <td className="px-5 py-3.5 text-center">
-                        <button onClick={() => toggleActive(p)}
+                        <button onClick={() => setToggleConfirm(p)}
                           className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${p.isActive ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}>
                           {p.isActive ? "เปิด" : "ปิด"}
                         </button>
@@ -361,6 +364,19 @@ export default function ProductsPage() {
             </div>
           </div>
         </>
+      )}
+
+      {toggleConfirm && (
+        <ConfirmModal
+          title={toggleConfirm.isActive ? "ปิดรับซื้อสินค้านี้?" : "เปิดรับซื้อสินค้านี้?"}
+          description={toggleConfirm.isActive
+            ? `"${toggleConfirm.name}" จะไม่แสดงให้ป้าๆ เลือก`
+            : `"${toggleConfirm.name}" จะกลับมาแสดงในหน้ารับซื้อ`}
+          variant={toggleConfirm.isActive ? "danger" : "success"}
+          confirmLabel={toggleConfirm.isActive ? "ปิดรับซื้อ" : "เปิดรับซื้อ"}
+          onConfirm={() => toggleActive(toggleConfirm)}
+          onCancel={() => setToggleConfirm(null)}
+        />
       )}
 
       {showModal && (

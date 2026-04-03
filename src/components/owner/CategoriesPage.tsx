@@ -16,6 +16,7 @@ import {
   Music, Camera, Headphones,
   Archive, Layers, Grid3x3,
 } from "lucide-react";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 
 // ── Icon registry ────────────────────────────────────────────────
 export const ICON_OPTIONS: { key: string; label: string; Icon: React.ComponentType<{ className?: string }> }[] = [
@@ -128,6 +129,7 @@ export default function CategoriesPage() {
   const [form, setForm] = useState({ name: "", description: "", icon: "Package", color: "#16a34a" });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [toggleConfirm, setToggleConfirm] = useState<Category | null>(null);
 
   const load = async () => {
     setCategories(await fetch("/api/categories?includeInactive=true").then((r) => r.json()));
@@ -160,6 +162,7 @@ export default function CategoriesPage() {
 
   const toggleActive = async (c: Category) => {
     await fetch(`/api/categories/${c.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ isActive: !c.isActive }) });
+    setToggleConfirm(null);
     load();
   };
 
@@ -200,7 +203,7 @@ export default function CategoriesPage() {
                   </div>
                 </div>
                 <div className="flex gap-2 pt-2.5 border-t border-gray-50">
-                  <button onClick={() => toggleActive(c)}
+                  <button onClick={() => setToggleConfirm(c)}
                     className={`flex-1 py-1.5 rounded-xl text-xs font-semibold transition-colors ${c.isActive ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}>
                     {c.isActive ? "เปิดใช้งาน" : "ปิดใช้งาน"}
                   </button>
@@ -213,6 +216,20 @@ export default function CategoriesPage() {
             );
           })}
         </div>
+      )}
+
+      {/* ── Confirm toggle ── */}
+      {toggleConfirm && (
+        <ConfirmModal
+          title={toggleConfirm.isActive ? "ปิดหมวดหมู่นี้?" : "เปิดหมวดหมู่นี้?"}
+          description={toggleConfirm.isActive
+            ? `"${toggleConfirm.name}" จะไม่แสดงในหน้ารับซื้อ`
+            : `"${toggleConfirm.name}" จะกลับมาแสดงในหน้ารับซื้อ`}
+          variant={toggleConfirm.isActive ? "danger" : "success"}
+          confirmLabel={toggleConfirm.isActive ? "ปิดใช้งาน" : "เปิดใช้งาน"}
+          onConfirm={() => toggleActive(toggleConfirm)}
+          onCancel={() => setToggleConfirm(null)}
+        />
       )}
 
       {/* ── Modal ── */}

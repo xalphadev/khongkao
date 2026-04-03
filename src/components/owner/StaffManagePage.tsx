@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Crown, User, Phone, Plus, X } from "lucide-react";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 
 interface User {
   id: string; name: string; username: string; role: string;
@@ -181,30 +182,17 @@ export default function StaffManagePage() {
         </div>
       )}
 
-      {/* Confirm toggle */}
       {confirm && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl w-full max-w-xs shadow-2xl p-6">
-            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-4 ${confirm.isActive ? "bg-red-100" : "bg-green-100"}`}>
-              {confirm.isActive ? "🔒" : "🔓"}
-            </div>
-            <h3 className="text-base font-medium text-gray-900 text-center mb-2">
-              {confirm.isActive ? "ปิดใช้งานบัญชี?" : "เปิดใช้งานบัญชี?"}
-            </h3>
-            <p className="text-gray-500 text-sm text-center mb-5">
-              {confirm.isActive
-                ? `"${confirm.name}" จะไม่สามารถเข้าสู่ระบบได้`
-                : `เปิดให้ "${confirm.name}" เข้าสู่ระบบได้อีกครั้ง`}
-            </p>
-            <div className="flex gap-2.5">
-              <button onClick={() => setConfirm(null)} className="flex-1 border border-gray-200 text-gray-600 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50">ยกเลิก</button>
-              <button onClick={() => handleToggle(confirm)}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-medium text-white ${confirm.isActive ? "bg-red-500 hover:bg-red-600" : "bg-green-600 hover:bg-green-700"}`}>
-                ยืนยัน
-              </button>
-            </div>
-          </div>
-        </div>
+        <ConfirmModal
+          title={confirm.isActive ? "ปิดใช้งานบัญชี?" : "เปิดใช้งานบัญชี?"}
+          description={confirm.isActive
+            ? `"${confirm.name}" จะไม่สามารถเข้าสู่ระบบได้`
+            : `เปิดให้ "${confirm.name}" เข้าสู่ระบบได้อีกครั้ง`}
+          variant={confirm.isActive ? "danger" : "success"}
+          confirmLabel={confirm.isActive ? "ปิดใช้งาน" : "เปิดใช้งาน"}
+          onConfirm={() => handleToggle(confirm)}
+          onCancel={() => setConfirm(null)}
+        />
       )}
     </div>
   );
