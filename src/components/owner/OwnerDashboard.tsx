@@ -33,13 +33,16 @@ function formatDateThai(s: string) {
   const d = new Date(s + "T00:00:00");
   return d.toLocaleDateString("th-TH", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 }
+function localDateString(d: Date = new Date()) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
 function addDays(dateStr: string, n: number) {
   const d = new Date(dateStr + "T00:00:00");
   d.setDate(d.getDate() + n);
-  return d.toISOString().split("T")[0];
+  return localDateString(d);
 }
 function isToday(dateStr: string) {
-  return dateStr === new Date().toISOString().split("T")[0];
+  return dateStr === localDateString();
 }
 
 const CAT_COLORS = ["#16a34a", "#2563eb", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4"];
@@ -49,7 +52,7 @@ export default function OwnerDashboard() {
   const [daily, setDaily] = useState<DailyReport | null>(null);
   const [monthly, setMonthly] = useState<MonthlyReport | null>(null);
   const [prevMonthTotal, setPrevMonthTotal] = useState<number | null>(null);
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [date, setDate] = useState(() => localDateString());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => { load(); }, [date]);
@@ -103,7 +106,7 @@ export default function OwnerDashboard() {
         {/* Quick jump to today */}
         {!isToday(date) && (
           <button
-            onClick={() => setDate(new Date().toISOString().split("T")[0])}
+            onClick={() => setDate(localDateString())}
             className="w-full py-2.5 text-center text-green-600 text-sm font-medium border-t border-gray-50 active:bg-green-50 transition-colors"
           >
             กลับไปวันนี้

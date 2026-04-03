@@ -32,18 +32,21 @@ function formatTime(s: string) {
 function formatDateShort(s: string) {
   return new Date(s + "T00:00:00").toLocaleDateString("th-TH", { day: "numeric", month: "short" });
 }
+function localDateString(d: Date = new Date()) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
 function addDays(dateStr: string, n: number) {
   const d = new Date(dateStr + "T00:00:00");
   d.setDate(d.getDate() + n);
-  return d.toISOString().split("T")[0];
+  return localDateString(d);
 }
 function addMonths(dateStr: string, n: number) {
   const d = new Date(dateStr + "T00:00:00");
   d.setMonth(d.getMonth() + n);
-  return d.toISOString().split("T")[0];
+  return localDateString(d);
 }
 function isToday(dateStr: string) {
-  return dateStr === new Date().toISOString().split("T")[0];
+  return dateStr === localDateString();
 }
 function getWeekRange(anchor: string) {
   const d = new Date(anchor + "T00:00:00");
@@ -80,7 +83,7 @@ const BGCOLORS = ["#dcfce7", "#dbeafe", "#fef3c7", "#fee2e2", "#ede9fe", "#cffaf
 
 export default function ReportsPage() {
   const [period, setPeriod] = useState<Period>("day");
-  const [anchor, setAnchor] = useState(new Date().toISOString().split("T")[0]);
+  const [anchor, setAnchor] = useState(() => localDateString());
   const [report, setReport] = useState<PeriodReport | null>(null);
   const [loading, setLoading] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);

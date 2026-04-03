@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRef } from "react";
 import {
   ClipboardList, User, ChevronDown, Pencil, X, Check, ChevronLeft, ChevronRight, Search, Calendar,
 } from "lucide-react";
 import StaffTabBar from "./StaffTabBar";
 import ConfirmModal from "@/components/ui/ConfirmModal";
+import DatePickerModal from "@/components/ui/DatePickerModal";
 
 interface TransactionItem {
   id: string;
@@ -230,7 +230,7 @@ export default function StaffHistory() {
   const [search, setSearch] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
-  const dateInputRef = useRef<HTMLInputElement>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   useEffect(() => { load(); }, [date]);
 
@@ -270,8 +270,7 @@ export default function StaffHistory() {
         </div>
 
         {/* Date nav */}
-        <div className="relative flex items-center gap-2 mb-4">
-          {/* ◀ Prev day */}
+        <div className="flex items-center gap-2 mb-4">
           <button
             onClick={() => setDate(addDays(date, -1))}
             className="w-11 h-11 flex items-center justify-center rounded-xl bg-white/20 text-white active:bg-white/30 transition-colors shrink-0"
@@ -279,27 +278,16 @@ export default function StaffHistory() {
             <ChevronLeft className="w-5 h-5" />
           </button>
 
-          {/* Date label — tap to open picker */}
           <button
             className="flex-1 bg-white/20 rounded-xl px-3 py-2.5 flex items-center justify-center gap-2 active:bg-white/30 transition-colors"
-            onClick={() => dateInputRef.current?.showPicker?.() ?? dateInputRef.current?.click()}
+            onClick={() => setShowDatePicker(true)}
           >
             <Calendar className="w-4 h-4 text-white/80 shrink-0" />
-            <p className="text-white text-sm font-medium leading-tight">
+            <p className="text-white text-sm font-semibold leading-tight">
               {isToday(date) ? "วันนี้" : formatThaiDate(date)}
             </p>
           </button>
-          {/* Hidden native date input */}
-          <input
-            ref={dateInputRef}
-            type="date"
-            value={date}
-            max={localDateString()}
-            onChange={(e) => { if (e.target.value) setDate(e.target.value); }}
-            className="absolute opacity-0 pointer-events-none w-0 h-0"
-          />
 
-          {/* ▶ Next day (disabled on today) */}
           <button
             onClick={() => { if (!isToday(date)) setDate(addDays(date, 1)); }}
             disabled={isToday(date)}
@@ -443,6 +431,17 @@ export default function StaffHistory() {
           transaction={editingTx}
           onSave={handleSaved}
           onClose={() => setEditingTx(null)}
+        />
+      )}
+
+      {showDatePicker && (
+        <DatePickerModal
+          value={date}
+          max={localDateString()}
+          onSelect={(d) => setDate(d)}
+          onClose={() => setShowDatePicker(false)}
+          accentFrom="#4338ca"
+          accentTo="#2563eb"
         />
       )}
     </div>
