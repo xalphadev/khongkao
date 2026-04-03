@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
-import { Banknote, ChevronLeft, ChevronRight, TrendingUp, ShoppingBag, Package, Users } from "lucide-react";
+import { Banknote, ChevronLeft, ChevronRight, ChevronDown, TrendingUp, ShoppingBag, Package, Users } from "lucide-react";
 
 interface DailyReport {
   date: string;
@@ -52,10 +52,12 @@ export default function OwnerDashboard() {
   const [daily, setDaily] = useState<DailyReport | null>(null);
   const [monthly, setMonthly] = useState<MonthlyReport | null>(null);
   const [prevMonthTotal, setPrevMonthTotal] = useState<number | null>(null);
+  const [showAllProducts, setShowAllProducts] = useState(false);
+
   const [date, setDate] = useState(() => localDateString());
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => { load(); }, [date]);
+  useEffect(() => { load(); setShowAllProducts(false); }, [date]);
 
   const load = async () => {
     setLoading(true);
@@ -206,41 +208,58 @@ export default function OwnerDashboard() {
           </div>
 
           {/* ── Products sold today ── */}
-          {daily && daily.productBreakdown.length > 0 && (
-            <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-              <div className="px-4 py-3.5 border-b border-gray-50 flex items-center gap-2">
-                <div className="w-7 h-7 rounded-xl bg-green-100 flex items-center justify-center">
-                  <Package className="w-4 h-4 text-green-600" />
-                </div>
-                <p className="text-gray-800 font-semibold text-sm">สินค้าที่รับซื้อ</p>
-              </div>
-              <div className="divide-y divide-gray-50">
-                {daily.productBreakdown.map((p, i) => (
-                  <div key={i} className="flex items-center gap-3 px-4 py-3.5">
-                    <span
-                      className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 shadow-sm"
-                      style={{ background: CAT_BCOLORS[i % CAT_BCOLORS.length], color: CAT_COLORS[i % CAT_COLORS.length] }}
-                    >
-                      {i + 1}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-gray-800 font-semibold text-base truncate">{p.name}</p>
-                      <p className="text-gray-400 text-sm">{p.quantity} {p.unit === "KG" ? "กก." : "ชิ้น"}</p>
-                    </div>
-                    <p className="font-bold text-base tabular-nums shrink-0"
-                      style={{ color: CAT_COLORS[i % CAT_COLORS.length] }}>
-                      ฿{formatMoney(p.amount)}
-                    </p>
+          {daily && daily.productBreakdown.length > 0 && (() => {
+            const LIMIT = 10;
+            const all = daily.productBreakdown;
+            const shown = showAllProducts ? all : all.slice(0, LIMIT);
+            const hidden = all.length - LIMIT;
+            return (
+              <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+                <div className="px-4 py-3.5 border-b border-gray-50 flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-xl bg-green-100 flex items-center justify-center">
+                    <Package className="w-4 h-4 text-green-600" />
                   </div>
-                ))}
+                  <p className="text-gray-800 font-semibold text-sm flex-1">สินค้าที่รับซื้อ</p>
+                  <span className="bg-green-50 text-green-600 text-xs font-semibold px-2 py-0.5 rounded-full">{all.length} รายการ</span>
+                </div>
+                <div className="divide-y divide-gray-50">
+                  {shown.map((p, i) => (
+                    <div key={i} className="flex items-center gap-3 px-4 py-3.5">
+                      <span
+                        className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 shadow-sm"
+                        style={{ background: CAT_BCOLORS[i % CAT_BCOLORS.length], color: CAT_COLORS[i % CAT_COLORS.length] }}
+                      >
+                        {i + 1}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-gray-800 font-semibold text-base truncate">{p.name}</p>
+                        <p className="text-gray-400 text-sm">{p.quantity} {p.unit === "KG" ? "กก." : "ชิ้น"}</p>
+                      </div>
+                      <p className="font-bold text-base tabular-nums shrink-0"
+                        style={{ color: CAT_COLORS[i % CAT_COLORS.length] }}>
+                        ฿{formatMoney(p.amount)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+                {/* Show more / less toggle */}
+                {all.length > LIMIT && (
+                  <button
+                    onClick={() => setShowAllProducts(v => !v)}
+                    className="w-full py-3 border-t border-dashed border-gray-200 text-sm font-medium text-gray-500 active:bg-gray-50 transition-colors flex items-center justify-center gap-1.5"
+                  >
+                    <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${showAllProducts ? "rotate-180" : ""}`} />
+                    {showAllProducts ? "แสดงน้อยลง" : `ดูเพิ่มเติม ${hidden} รายการ`}
+                  </button>
+                )}
+                <div className="flex justify-between items-center px-4 py-3.5 border-t border-green-100"
+                  style={{ background: "linear-gradient(90deg, #f0fdf4, #dcfce7)" }}>
+                  <p className="text-green-700 font-semibold text-base">รวมทั้งหมด</p>
+                  <p className="text-green-700 font-bold text-xl tabular-nums">฿{formatMoneyFull(daily.totalAmount)}</p>
+                </div>
               </div>
-              <div className="flex justify-between items-center px-4 py-3.5 border-t border-green-100"
-                style={{ background: "linear-gradient(90deg, #f0fdf4, #dcfce7)" }}>
-                <p className="text-green-700 font-semibold text-base">รวมทั้งหมด</p>
-                <p className="text-green-700 font-bold text-xl tabular-nums">฿{formatMoneyFull(daily.totalAmount)}</p>
-              </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* ── Category breakdown (today) ── */}
           {daily && daily.categoryBreakdown.length > 0 && (

@@ -146,9 +146,9 @@ export default function ReceiptModal({ transaction, onClose }: ReceiptModalProps
 
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-3">
-      <div className="bg-white rounded-3xl w-full max-w-sm max-h-[92vh] overflow-y-auto shadow-2xl">
-        {/* Success header */}
-        <div className="bg-gradient-to-br from-green-500 to-emerald-500 rounded-t-3xl p-6 text-center text-white">
+      <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl flex flex-col" style={{ maxHeight: "92vh" }}>
+        {/* Success header (fixed) */}
+        <div className="bg-gradient-to-br from-green-500 to-emerald-500 rounded-t-3xl p-6 text-center text-white shrink-0">
           <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3">
             <CheckCircle2 className="w-9 h-9 text-white" />
           </div>
@@ -158,8 +158,8 @@ export default function ReceiptModal({ transaction, onClose }: ReceiptModalProps
           </p>
         </div>
 
-        {/* Receipt preview */}
-        <div ref={receiptRef} className="px-5 py-4">
+        {/* Receipt preview (scrollable) */}
+        <div ref={receiptRef} className="px-5 py-4 flex-1 overflow-y-auto">
           <div className="text-center mb-3">
             <p className="text-base font-medium text-gray-900">{shopName}</p>
             {shopAddress && <p className="text-gray-400 text-xs mt-0.5">{shopAddress}</p>}
@@ -220,8 +220,8 @@ export default function ReceiptModal({ transaction, onClose }: ReceiptModalProps
           </div>
         </div>
 
-        {/* Actions */}
-        <div className="px-5 pb-6 pt-1 space-y-2.5">
+        {/* Actions (fixed at bottom) */}
+        <div className="px-5 pb-6 pt-3 space-y-2.5 shrink-0 border-t border-gray-100">
           <button
             onClick={handlePrint}
             className="btn-staff bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-100"

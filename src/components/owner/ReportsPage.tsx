@@ -89,8 +89,10 @@ export default function ReportsPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
   const [drillExpandedId, setDrillExpandedId] = useState<string | null>(null);
+  const [showAllProducts, setShowAllProducts] = useState(false);
+  const [showAllTx, setShowAllTx] = useState(false);
 
-  useEffect(() => { load(); }, [period, anchor]);
+  useEffect(() => { load(); setShowAllProducts(false); setShowAllTx(false); }, [period, anchor]);
 
   const getRange = () => {
     if (period === "day") return { startDate: anchor, endDate: anchor };
@@ -305,39 +307,46 @@ export default function ReportsPage() {
           )}
 
           {/* ── Product breakdown (clickable) ── */}
-          {report.productBreakdown.length > 0 && (
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="px-4 py-3.5 border-b border-gray-50 flex items-center justify-between">
-                <p className="text-sm font-semibold text-gray-700">รายการสินค้า</p>
-                <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{report.productBreakdown.length} ชนิด</span>
-              </div>
-              <p className="text-xs text-gray-400 px-4 pt-2.5">กดสินค้าเพื่อดูรายละเอียดบิล</p>
-              <div className="divide-y divide-gray-50 mt-1">
-                {report.productBreakdown.map((p, i) => (
-                  <button
-                    key={i}
-                    onClick={() => { setSelectedProduct(p.name); setDrillExpandedId(null); }}
-                    className="w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-blue-50 hover:bg-gray-50 transition-colors"
-                  >
-                    <span className="w-8 h-8 rounded-xl flex items-center justify-center text-sm font-bold shrink-0"
-                      style={{ background: BGCOLORS[i % BGCOLORS.length], color: COLORS[i % COLORS.length] }}>
-                      {i + 1}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-gray-800 text-sm leading-tight">{p.name}</p>
-                      <p className="text-gray-400 text-xs mt-0.5">{p.quantity} {p.unit === "KG" ? "กก." : "ชิ้น"}</p>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <p className="font-bold tabular-nums text-sm" style={{ color: COLORS[i % COLORS.length] }}>
-                        ฿{formatMoney(p.amount)}
-                      </p>
-                      <ChevronRight className="w-4 h-4 text-gray-300" />
-                    </div>
+          {report.productBreakdown.length > 0 && (() => {
+            const LIMIT = 10;
+            const all = report.productBreakdown;
+            const shown = showAllProducts ? all : all.slice(0, LIMIT);
+            return (
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="px-4 py-3.5 border-b border-gray-50 flex items-center justify-between">
+                  <p className="text-sm font-semibold text-gray-700">รายการสินค้า</p>
+                  <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{all.length} ชนิด</span>
+                </div>
+                <p className="text-xs text-gray-400 px-4 pt-2.5">กดสินค้าเพื่อดูรายละเอียดบิล</p>
+                <div className="divide-y divide-gray-50 mt-1">
+                  {shown.map((p, i) => (
+                    <button key={i} onClick={() => { setSelectedProduct(p.name); setDrillExpandedId(null); }}
+                      className="w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-blue-50 hover:bg-gray-50 transition-colors">
+                      <span className="w-8 h-8 rounded-xl flex items-center justify-center text-sm font-bold shrink-0"
+                        style={{ background: BGCOLORS[i % BGCOLORS.length], color: COLORS[i % COLORS.length] }}>
+                        {i + 1}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-gray-800 text-sm leading-tight">{p.name}</p>
+                        <p className="text-gray-400 text-xs mt-0.5">{p.quantity} {p.unit === "KG" ? "กก." : "ชิ้น"}</p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <p className="font-bold tabular-nums text-sm" style={{ color: COLORS[i % COLORS.length] }}>฿{formatMoney(p.amount)}</p>
+                        <ChevronRight className="w-4 h-4 text-gray-300" />
+                      </div>
+                    </button>
+                  ))}
+                </div>
+                {all.length > LIMIT && (
+                  <button onClick={() => setShowAllProducts(v => !v)}
+                    className="w-full py-3 border-t border-dashed border-gray-200 text-sm font-medium text-gray-500 active:bg-gray-50 flex items-center justify-center gap-1.5">
+                    <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${showAllProducts ? "rotate-180" : ""}`} />
+                    {showAllProducts ? "แสดงน้อยลง" : `ดูเพิ่มเติม ${all.length - LIMIT} รายการ`}
                   </button>
-                ))}
+                )}
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* ── Transaction list ── */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -351,54 +360,68 @@ export default function ReportsPage() {
                 <p className="font-medium">ไม่มีรายการ</p>
                 <p className="text-sm mt-1">ลองเลือกช่วงเวลาอื่น</p>
               </div>
-            ) : (
-              <div className="divide-y divide-gray-50">
-                {report.transactions.map((t) => (
-                  <div key={t.id}>
-                    <button
-                      onClick={() => setExpandedId(expandedId === t.id ? null : t.id)}
-                      className="w-full px-4 py-3.5 flex items-center gap-3 text-left active:bg-gray-50 transition-colors"
-                    >
-                      <span className="font-mono text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-lg shrink-0">
-                        #{t.id.slice(-5).toUpperCase()}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-gray-500 text-xs">
-                            {period !== "day" && `${new Date(t.createdAt).toLocaleDateString("th-TH", { day: "numeric", month: "short" })} `}
-                            {formatTime(t.createdAt)}
+            ) : (() => {
+              const TX_LIMIT = 20;
+              const allTx = report.transactions;
+              const shownTx = showAllTx ? allTx : allTx.slice(0, TX_LIMIT);
+              return (
+                <>
+                  <div className="divide-y divide-gray-50">
+                    {shownTx.map((t) => (
+                      <div key={t.id}>
+                        <button
+                          onClick={() => setExpandedId(expandedId === t.id ? null : t.id)}
+                          className="w-full px-4 py-3.5 flex items-center gap-3 text-left active:bg-gray-50 transition-colors"
+                        >
+                          <span className="font-mono text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-lg shrink-0">
+                            #{t.id.slice(-5).toUpperCase()}
                           </span>
-                          <span className="text-blue-500 text-xs">· {t.staff.name}</span>
-                          {t.customerName && <span className="text-gray-400 text-xs">· {t.customerName}</span>}
-                        </div>
-                        <p className="text-sm text-gray-700 truncate mt-0.5">{t.items.map((i) => i.productName).join(", ")}</p>
-                      </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <span className="text-green-600 font-semibold text-sm tabular-nums">฿{formatMoney(t.totalAmount)}</span>
-                        {expandedId === t.id ? <ChevronUp className="w-3.5 h-3.5 text-gray-400" /> : <ChevronDown className="w-3.5 h-3.5 text-gray-400" />}
-                      </div>
-                    </button>
-                    {expandedId === t.id && (
-                      <div className="bg-gray-50 px-4 pb-3 pt-1 space-y-2">
-                        {t.items.map((item) => (
-                          <div key={item.id} className="flex justify-between items-center text-sm">
-                            <span className="text-gray-600">{item.productName}</span>
-                            <div className="flex items-center gap-3 text-xs">
-                              <span className="text-gray-400">{item.quantity} {item.unit === "KG" ? "กก." : "ชิ้น"}</span>
-                              <span className="text-green-600 font-medium tabular-nums">฿{formatMoney(item.subtotal)}</span>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-gray-500 text-xs">
+                                {period !== "day" && `${new Date(t.createdAt).toLocaleDateString("th-TH", { day: "numeric", month: "short" })} `}
+                                {formatTime(t.createdAt)}
+                              </span>
+                              <span className="text-blue-500 text-xs">· {t.staff.name}</span>
+                              {t.customerName && <span className="text-gray-400 text-xs">· {t.customerName}</span>}
+                            </div>
+                            <p className="text-sm text-gray-700 truncate mt-0.5">{t.items.map((i) => i.productName).join(", ")}</p>
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <span className="text-green-600 font-semibold text-sm tabular-nums">฿{formatMoney(t.totalAmount)}</span>
+                            {expandedId === t.id ? <ChevronUp className="w-3.5 h-3.5 text-gray-400" /> : <ChevronDown className="w-3.5 h-3.5 text-gray-400" />}
+                          </div>
+                        </button>
+                        {expandedId === t.id && (
+                          <div className="bg-gray-50 px-4 pb-3 pt-1 space-y-2">
+                            {t.items.map((item) => (
+                              <div key={item.id} className="flex justify-between items-center text-sm">
+                                <span className="text-gray-600">{item.productName}</span>
+                                <div className="flex items-center gap-3 text-xs">
+                                  <span className="text-gray-400">{item.quantity} {item.unit === "KG" ? "กก." : "ชิ้น"}</span>
+                                  <span className="text-green-600 font-medium tabular-nums">฿{formatMoney(item.subtotal)}</span>
+                                </div>
+                              </div>
+                            ))}
+                            <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+                              <span className="text-gray-500 text-xs font-medium">รวม</span>
+                              <span className="text-green-700 font-medium tabular-nums">฿{formatMoney(t.totalAmount)}</span>
                             </div>
                           </div>
-                        ))}
-                        <div className="flex justify-between items-center pt-2 border-t border-gray-200">
-                          <span className="text-gray-500 text-xs font-medium">รวม</span>
-                          <span className="text-green-700 font-medium tabular-nums">฿{formatMoney(t.totalAmount)}</span>
-                        </div>
+                        )}
                       </div>
-                    )}
+                    ))}
                   </div>
-                ))}
-              </div>
-            )}
+                  {allTx.length > TX_LIMIT && (
+                    <button onClick={() => setShowAllTx(v => !v)}
+                      className="w-full py-3 border-t border-dashed border-gray-200 text-sm font-medium text-gray-500 active:bg-gray-50 flex items-center justify-center gap-1.5">
+                      <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${showAllTx ? "rotate-180" : ""}`} />
+                      {showAllTx ? "แสดงน้อยลง" : `ดูเพิ่มเติม ${allTx.length - TX_LIMIT} บิล`}
+                    </button>
+                  )}
+                </>
+              );
+            })()}
           </div>
         </>
       )}

@@ -66,7 +66,7 @@ function HoldConfirmModal({
   const [label, setLabel] = useState(initialName);
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-[2px]">
-      <div className="bg-white w-full max-w-md rounded-t-3xl px-5 py-6">
+      <div className="bg-white w-full max-w-md rounded-t-3xl px-5 py-6 overflow-y-auto" style={{ maxHeight: "90vh" }}>
         <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-5" />
         <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center">
@@ -220,6 +220,32 @@ function PayConfirmModal({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  const groups = (() => {
+    const order: string[] = [];
+    const map: Record<string, CartItem[]> = {};
+    items.forEach(item => {
+      if (!order.includes(item.productId)) order.push(item.productId);
+      if (!map[item.productId]) map[item.productId] = [];
+      map[item.productId].push(item);
+    });
+    return order.map(pid => ({
+      productId: pid,
+      productName: map[pid][0].productName,
+      unit: map[pid][0].unit,
+      rounds: map[pid],
+      totalQty: map[pid].reduce((s, r) => s + r.quantity, 0),
+      totalSubtotal: map[pid].reduce((s, r) => s + r.subtotal, 0),
+    }));
+  })();
+
+  const toggle = (pid: string) => setExpanded(prev => {
+    const next = new Set(prev);
+    next.has(pid) ? next.delete(pid) : next.add(pid);
+    return next;
+  });
+
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-[2px]">
       <div className="bg-white w-full max-w-md rounded-t-3xl flex flex-col" style={{ maxHeight: "90vh" }}>
@@ -238,25 +264,49 @@ function PayConfirmModal({
               }
             </div>
             <span className="ml-auto bg-blue-50 text-blue-600 text-xs font-semibold px-2.5 py-1 rounded-full">
-              {items.length} รายการ
+              {groups.length} สินค้า · {items.length} รอบ
             </span>
           </div>
         </div>
 
-        {/* ── Items list (scrollable) ── */}
+        {/* ── Items list grouped (scrollable, collapsed by default) ── */}
         <div className="flex-1 overflow-y-auto mx-5 mb-0">
           <div className="bg-gray-50 rounded-2xl overflow-hidden">
-            <div className="divide-y divide-gray-100">
-              {items.map((item, i) => (
-                <div key={i} className="flex justify-between items-center px-4 py-2.5 text-sm">
-                  <span className="text-gray-700 flex-1 min-w-0 pr-2 truncate">
-                    {item.productName}
-                    <span className="text-gray-400 text-xs ml-1.5">{item.quantity} {item.unit === "KG" ? "กก." : "ชิ้น"}</span>
-                  </span>
-                  <span className="text-green-600 font-medium tabular-nums shrink-0">฿{formatMoney(item.subtotal)}</span>
+            {groups.map((group, gi) => {
+              const isExp = expanded.has(group.productId);
+              return (
+                <div key={group.productId} className={gi > 0 ? "border-t border-gray-200" : ""}>
+                  {/* Tappable group header */}
+                  <button
+                    onClick={() => toggle(group.productId)}
+                    className="w-full flex items-center gap-2 px-4 py-3 text-left active:bg-gray-200/60 transition-colors"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-gray-800 font-medium text-sm truncate">{group.productName}</p>
+                      <p className="text-gray-500 text-xs">
+                        <span className="bg-blue-50 text-blue-500 text-[10px] font-medium rounded px-1 mr-1">{group.rounds.length} รอบ</span>
+                        รวม {group.totalQty} {group.unit === "KG" ? "กก." : "ชิ้น"}
+                      </p>
+                    </div>
+                    <span className="text-green-600 font-semibold tabular-nums text-sm shrink-0">฿{formatMoney(group.totalSubtotal)}</span>
+                    <svg className={`w-4 h-4 text-gray-300 shrink-0 transition-transform duration-200 ${isExp ? "rotate-180" : ""}`}
+                      fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  {/* Round rows — collapsed by default */}
+                  {isExp && group.rounds.map((item, ri) => (
+                    <div key={ri} className="flex items-center gap-2 px-4 py-1.5 border-t border-gray-100 bg-white/60 pl-6">
+                      <span className="text-gray-300 text-[10px] w-10 shrink-0">รอบ {ri + 1}</span>
+                      <span className="text-gray-500 text-xs flex-1">
+                        {item.quantity} {item.unit === "KG" ? "กก." : "ชิ้น"} × ฿{item.unitPrice.toLocaleString()}
+                      </span>
+                      <span className="text-gray-600 text-xs tabular-nums shrink-0">฿{formatMoney(item.subtotal)}</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </div>
         </div>
 
@@ -372,15 +422,33 @@ export default function PurchasePage() {
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [quantity, setQuantity] = useState("");
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [step, setStep] = useState<Step>("category");
+  // ── Draft persistence ──────────────────────────────────────
+  const DRAFT_KEY = "purchase_cart_draft";
+  const loadDraft = (): { cart: CartItem[]; customerName: string } => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch {}
+    return { cart: [], customerName: "" };
+  };
+  const saveDraft = (c: CartItem[], name: string) => {
+    try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ cart: c, customerName: name })); } catch {}
+  };
+  const clearDraft = () => {
+    try { localStorage.removeItem(DRAFT_KEY); } catch {}
+  };
+
+  const _draft = loadDraft();
+  const [cart, setCart] = useState<CartItem[]>(_draft.cart);
+  const [step, setStep] = useState<Step>(_draft.cart.length > 0 ? "cart" : "category");
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
   const [savedTransaction, setSavedTransaction] = useState<{
     id: string; totalAmount: number; items: CartItem[]; createdAt: string; customerName?: string | null;
   } | null>(null);
   const [showReceipt, setShowReceipt] = useState(false);
 
-  const [customerName, setCustomerName] = useState("");
+  const [customerName, setCustomerName] = useState(_draft.customerName);
   const [heldBills, setHeldBills] = useState<HeldBill[]>([]);
   const [showHoldConfirm, setShowHoldConfirm] = useState(false);
   const [showPayConfirm, setShowPayConfirm] = useState(false);
@@ -396,6 +464,11 @@ export default function PurchasePage() {
     fetch("/api/categories").then((r) => r.json()).then(setCategories);
     loadHeldBills();
   }, []);
+
+  // Auto-save draft whenever cart or customerName changes
+  useEffect(() => {
+    saveDraft(cart, customerName);
+  }, [cart, customerName]);
 
   // Auto-resume held bill from query param ?held=<id>
   useEffect(() => {
@@ -417,10 +490,46 @@ export default function PurchasePage() {
 
   const totalAmount = cart.reduce((s, i) => s + i.subtotal, 0);
 
+  // Group cart items by product (preserving order of first appearance)
+  const cartGroups = (() => {
+    const order: string[] = [];
+    const map: Record<string, { item: CartItem; idx: number }[]> = {};
+    cart.forEach((item, idx) => {
+      if (!order.includes(item.productId)) order.push(item.productId);
+      if (!map[item.productId]) map[item.productId] = [];
+      map[item.productId].push({ item, idx });
+    });
+    return order.map(pid => ({
+      productId: pid,
+      productName: map[pid][0].item.productName,
+      unit: map[pid][0].item.unit,
+      unitPrice: map[pid][0].item.unitPrice,
+      customPrice: map[pid][0].item.customPrice,
+      rounds: map[pid],
+      totalQty: map[pid].reduce((s, r) => s + r.item.quantity, 0),
+      totalSubtotal: map[pid].reduce((s, r) => s + r.item.subtotal, 0),
+    }));
+  })();
+
+  const handleAddRound = (group: typeof cartGroups[0]) => {
+    setSelectedCategory(null);
+    setSelectedProduct({
+      id: group.productId,
+      name: group.productName,
+      unit: group.unit,
+      pricePerUnit: group.unitPrice,
+      customPrice: group.customPrice ?? false,
+      categoryId: "",
+    });
+    setCustomUnitPrice(group.customPrice ? String(group.unitPrice) : "");
+    setQuantity("");
+    setStep("quantity");
+  };
+
   const handleBack = () => {
     if (step === "category") cart.length > 0 ? setStep("cart") : router.push("/staff");
     else if (step === "product") setStep("category");
-    else if (step === "quantity") setStep("product");
+    else if (step === "quantity") selectedCategory ? setStep("product") : setStep("cart");
     else if (step === "cart") setStep("category");
   };
 
@@ -433,21 +542,13 @@ export default function PurchasePage() {
     const qty = parseFloat(quantity);
     const unitPrice = selectedProduct.customPrice ? parseFloat(customUnitPrice) : selectedProduct.pricePerUnit;
     const subtotal = qty * unitPrice;
-    const idx = cart.findIndex((i) => i.productId === selectedProduct.id);
-    if (idx >= 0) {
-      const updated = [...cart];
-      updated[idx].quantity += qty;
-      updated[idx].subtotal += subtotal;
-      setCart(updated);
-    } else {
-      setCart([...cart, {
-        productId: selectedProduct.id,
-        productName: selectedProduct.name,
-        quantity: qty, unitPrice, subtotal,
-        unit: selectedProduct.unit,
-        customPrice: selectedProduct.customPrice,
-      }]);
-    }
+    setCart([...cart, {
+      productId: selectedProduct.id,
+      productName: selectedProduct.name,
+      quantity: qty, unitPrice, subtotal,
+      unit: selectedProduct.unit,
+      customPrice: selectedProduct.customPrice,
+    }]);
     setStep("cart");
     setSelectedCategory(null);
     setSelectedProduct(null);
@@ -463,6 +564,7 @@ export default function PurchasePage() {
         body: JSON.stringify({ label: label || customerName || null, items: cart }),
       });
       if (res.ok) {
+        clearDraft();
         setCart([]); setCustomerName(""); setStep("category");
         setSelectedCategory(null); setSelectedProduct(null); setQuantity("");
         setShowHoldConfirm(false);
@@ -473,13 +575,7 @@ export default function PurchasePage() {
   };
 
   const handleResume = async (bill: HeldBill) => {
-    const merged = [...cart];
-    for (const incoming of bill.items) {
-      const idx = merged.findIndex((i) => i.productId === incoming.productId);
-      if (idx >= 0) { merged[idx].quantity += incoming.quantity; merged[idx].subtotal += incoming.subtotal; }
-      else merged.push(incoming);
-    }
-    setCart(merged);
+    setCart([...cart, ...bill.items]);
     if (bill.label) setCustomerName(bill.label);
     await fetch(`/api/held-bills/${bill.id}`, { method: "DELETE" });
     await loadHeldBills();
@@ -504,6 +600,7 @@ export default function PurchasePage() {
       if (res.ok) {
         const data = await res.json();
         setSavedTransaction({ ...data, items: cart, customerName: customerName.trim() || null });
+        clearDraft();
         setShowReceipt(true);
         setCart([]); setCustomerName(""); setStep("category");
       }
@@ -785,79 +882,156 @@ export default function PurchasePage() {
                   )}
                 </div>
 
-                {/* ── Items (compact table) ── */}
+                {/* ── Items (grouped, number-focused) ── */}
                 <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-                  {/* Header */}
+                  {/* Table header */}
                   <div className="flex items-center px-3 py-2 bg-gray-50 border-b border-gray-100">
-                    <span className="text-gray-400 text-xs font-medium flex-1">สินค้า ({cart.length} รายการ)</span>
-                    <span className="text-gray-400 text-xs font-medium w-20 text-center">จำนวน × ราคา</span>
-                    <span className="text-gray-400 text-xs font-medium w-16 text-right">ยอด</span>
-                    <span className="w-14" />
+                    <span className="text-gray-400 text-xs font-medium flex-1">
+                      {cartGroups.length} สินค้า · {cart.length} รอบ
+                    </span>
                   </div>
-                  {/* Rows */}
-                  {cart.map((item, i) => (
-                    <div key={i} className={`flex items-center gap-2 px-3 py-2 ${i > 0 ? "border-t border-gray-50" : ""}`}>
-                      <span className="w-5 h-5 rounded-full bg-green-50 text-green-600 flex items-center justify-center text-[10px] font-bold shrink-0">{i + 1}</span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-gray-800 font-medium text-sm leading-tight truncate">{item.productName}</p>
-                        <p className="text-gray-400 text-[11px] leading-tight">
-                          {item.quantity} {item.unit === "KG" ? "กก." : "ชิ้น"} × ฿{item.unitPrice.toLocaleString()}
-                        </p>
+                  {/* Product groups */}
+                  {cartGroups.map((group, gi) => {
+                    const isExpanded = expandedGroups.has(group.productId);
+                    const toggleGroup = () => setExpandedGroups(prev => {
+                      const next = new Set(prev);
+                      isExpanded ? next.delete(group.productId) : next.add(group.productId);
+                      return next;
+                    });
+                    return (
+                      <div key={group.productId} className={gi > 0 ? "border-t-2 border-gray-100" : ""}>
+                        {/* ── Group row ── */}
+                        <div className="flex items-stretch gap-0 px-3 pt-3 pb-2.5">
+                          {/* Left: number badge */}
+                          <button onClick={toggleGroup}
+                            className="w-7 h-7 rounded-full bg-green-50 text-green-700 flex items-center justify-center text-[11px] font-bold shrink-0 mt-1 mr-2.5 active:bg-green-100">
+                            {gi + 1}
+                          </button>
+                          {/* Center: name + BIG numbers */}
+                          <button onClick={toggleGroup} className="flex-1 text-left min-w-0">
+                            {/* Product name — small */}
+                            <p className="text-gray-400 text-xs leading-tight truncate mb-0.5">{group.productName}</p>
+                            {/* BIG numbers row */}
+                            <div className="flex items-baseline justify-between gap-2">
+                              {/* Qty — very prominent */}
+                              <p className="text-gray-900 font-bold tabular-nums leading-none" style={{ fontSize: 28 }}>
+                                {group.totalQty}
+                                <span className="text-base font-medium text-gray-500 ml-1">
+                                  {group.unit === "KG" ? "กก." : "ชิ้น"}
+                                </span>
+                              </p>
+                              {/* Amount — very prominent */}
+                              <p className="text-green-600 font-bold tabular-nums leading-none" style={{ fontSize: 28 }}>
+                                ฿{formatMoney(group.totalSubtotal)}
+                              </p>
+                            </div>
+                            {/* Round count */}
+                            <span className="inline-block mt-1 bg-blue-50 text-blue-500 rounded px-1.5 py-0.5 text-[10px] font-medium">
+                              {group.rounds.length} รอบ
+                            </span>
+                          </button>
+                          {/* Right: buttons */}
+                          <div className="flex flex-col items-center justify-center gap-1.5 ml-2 shrink-0">
+                            <button onClick={() => handleAddRound(group)}
+                              className="flex items-center gap-0.5 text-[11px] text-green-600 font-semibold bg-green-50 border border-green-200 px-2.5 py-1.5 rounded-xl active:bg-green-100 transition-colors">
+                              <Plus className="w-3 h-3" /> รอบ
+                            </button>
+                            <button onClick={toggleGroup}
+                              className={`text-gray-300 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}>
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* ── Round rows (expanded) ── */}
+                        {isExpanded && (
+                          <div className="bg-gray-50/70 border-t border-gray-100 pb-1">
+                            {group.rounds.map(({ item, idx }, ri) => (
+                              <div key={idx} className={`flex items-center gap-2 px-3 py-2.5 ${ri > 0 ? "border-t border-gray-100" : ""}`}>
+                                <span className="text-gray-300 text-[10px] w-8 pl-2 shrink-0">#{ri + 1}</span>
+                                <div className="flex-1 min-w-0">
+                                  {/* Round qty — big */}
+                                  <p className="text-gray-800 font-bold text-lg tabular-nums leading-none">
+                                    {item.quantity}
+                                    <span className="text-sm font-medium text-gray-500 ml-1">{item.unit === "KG" ? "กก." : "ชิ้น"}</span>
+                                  </p>
+                                  <p className="text-gray-400 text-[11px] mt-0.5">
+                                    × ฿{item.unitPrice.toLocaleString()}
+                                    {item.customPrice && <span className="ml-1 text-purple-400">(ราคาเอง)</span>}
+                                  </p>
+                                </div>
+                                <p className="text-green-600 font-semibold text-base tabular-nums shrink-0">฿{formatMoney(item.subtotal)}</p>
+                                <button onClick={() => setEditingCartIdx(idx)} className="w-7 h-7 flex items-center justify-center rounded-xl bg-blue-50 text-blue-400 shrink-0">
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </button>
+                                <button onClick={() => setCart(cart.filter((_, i) => i !== idx))} className="w-7 h-7 flex items-center justify-center rounded-xl bg-red-50 text-red-400 shrink-0">
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                      <p className="text-green-600 font-semibold text-sm tabular-nums shrink-0 w-16 text-right">฿{formatMoney(item.subtotal)}</p>
-                      <button onClick={() => setEditingCartIdx(i)} className="w-7 h-7 flex items-center justify-center rounded-xl bg-blue-50 text-blue-400 shrink-0">
-                        <Pencil className="w-3.5 h-3.5" />
-                      </button>
-                      <button onClick={() => setCart(cart.filter((_, idx) => idx !== i))} className="w-7 h-7 flex items-center justify-center rounded-xl bg-red-50 text-red-400 shrink-0">
-                        <X className="w-3.5 h-3.5" />
-                      </button>
+                    );
+                  })}
+                  {/* Total row — largest number on the page */}
+                  <div className="px-4 py-4 bg-green-50 border-t-2 border-green-200">
+                    <div className="flex items-end justify-between">
+                      <div>
+                        <p className="text-green-600 text-xs font-medium mb-0.5">{cartGroups.length} สินค้า · {cart.length} รอบ</p>
+                        <p className="text-green-700 text-sm font-semibold">ยอดรวมทั้งหมด</p>
+                      </div>
+                      <p className="text-green-700 font-bold tabular-nums leading-none" style={{ fontSize: 38 }}>
+                        ฿{formatMoney(totalAmount)}
+                      </p>
                     </div>
-                  ))}
-                  {/* Total row */}
-                  <div className="flex items-center justify-between px-3 py-3 bg-green-50 border-t border-green-100">
-                    <p className="text-green-700 text-sm font-semibold">ยอดรวม {cart.length} รายการ</p>
-                    <p className="text-green-700 font-bold text-xl tabular-nums">฿{formatMoney(totalAmount)}</p>
                   </div>
                 </div>
 
                 {/* ── Sticky Action Bar ── */}
                 <div className="sticky bottom-4 z-10 pt-1">
-                  <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-3 space-y-2.5">
-                    {/* จ่าย */}
+                  <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-3 space-y-2">
+
+                    {/* 1. เพิ่มสินค้า — ใช้บ่อยที่สุด, full width, อยู่บนสุด */}
+                    <button
+                      onClick={() => setStep("category")}
+                      className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-green-50 border-2 border-green-200 text-green-700 text-base font-semibold active:bg-green-100 transition-colors"
+                    >
+                      <Plus className="w-5 h-5" />
+                      <span>+ เพิ่มสินค้า</span>
+                    </button>
+
+                    {/* 2. จ่าย — สำคัญสุด, ใหญ่สุด, อยู่ล่างเพิ่มสินค้า */}
                     <button
                       onClick={() => setShowPayConfirm(true)}
                       disabled={saving}
-                      className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-blue-600 text-white font-bold text-lg active:bg-blue-700 transition-colors disabled:opacity-60 shadow-md shadow-blue-600/30"
+                      className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-blue-600 text-white font-bold text-xl active:bg-blue-700 transition-colors disabled:opacity-60 shadow-lg shadow-blue-600/30"
                     >
                       <Banknote className="w-6 h-6 shrink-0" />
                       <span>{saving ? "บันทึก..." : `จ่าย ฿${formatMoney(totalAmount)}`}</span>
                     </button>
-                    {/* เพิ่มสินค้า + พักบิล */}
-                    <div className="grid grid-cols-2 gap-2">
+
+                    {/* 3. ยกเลิก (ซ้าย/ไกลนิ้ว) + พักบิล (ขวา) — ทั้งคู่เล็กกว่า */}
+                    <div className="flex gap-2">
                       <button
-                        onClick={() => setStep("category")}
-                        className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-gray-50 border border-gray-200 text-gray-600 text-sm font-medium active:bg-gray-100 transition-colors"
+                        onClick={() => setShowCancelConfirm(true)}
+                        className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-2xl text-red-400 text-sm font-medium active:bg-red-50 transition-colors border border-red-100 flex-1"
                       >
-                        <Plus className="w-4 h-4" />
-                        <span>เพิ่มสินค้า</span>
+                        <Trash2 className="w-3.5 h-3.5 shrink-0" />
+                        <span>ยกเลิก</span>
                       </button>
                       <button
                         onClick={() => setShowHoldConfirm(true)}
                         disabled={holdingBill}
-                        className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-amber-50 border border-amber-200 text-amber-600 text-sm font-medium active:bg-amber-100 transition-colors disabled:opacity-50"
+                        className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-600 text-sm font-semibold active:bg-amber-100 transition-colors disabled:opacity-50 flex-[2]"
                       >
                         <Clock className="w-4 h-4 shrink-0" />
                         <span>พักบิล</span>
                       </button>
                     </div>
-                    {/* ยกเลิก */}
-                    <button
-                      onClick={() => setShowCancelConfirm(true)}
-                      className="w-full flex items-center justify-center gap-2 py-2 rounded-2xl text-red-400 text-sm font-medium active:bg-red-50 transition-colors"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      <span>ยกเลิกบิลนี้</span>
-                    </button>
+
                   </div>
                 </div>
               </>
@@ -894,7 +1068,7 @@ export default function PurchasePage() {
       )}
       {showCancelConfirm && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-[2px]">
-          <div className="bg-white w-full max-w-md rounded-t-3xl px-5 py-6">
+          <div className="bg-white w-full max-w-md rounded-t-3xl px-5 py-6 overflow-y-auto" style={{ maxHeight: "90vh" }}>
             <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-5" />
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center">
@@ -914,6 +1088,7 @@ export default function PurchasePage() {
               </button>
               <button
                 onClick={() => {
+                  clearDraft();
                   setCart([]); setCustomerName(""); setStep("category");
                   setSelectedCategory(null); setSelectedProduct(null); setQuantity("");
                   setShowCancelConfirm(false);

@@ -24,14 +24,14 @@ const Modal = ({
   saving: boolean; error: string; children: React.ReactNode;
 }) => (
   <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-    <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden">
-      <div className="px-6 py-5 border-b border-gray-50 flex items-center justify-between">
+    <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl flex flex-col" style={{ maxHeight: "90vh" }}>
+      <div className="px-6 py-5 border-b border-gray-50 flex items-center justify-between shrink-0">
         <h2 className="text-base font-medium text-gray-900">{title}</h2>
         <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-xl bg-gray-100 text-gray-400 hover:bg-gray-200"><X className="w-4 h-4" /></button>
       </div>
-      <div className="px-6 py-5 space-y-4">{children}</div>
-      {error && <div className="mx-6 mb-3 bg-red-50 text-red-600 rounded-xl px-4 py-2.5 text-sm">{error}</div>}
-      <div className="px-6 pb-5 flex gap-2.5">
+      <div className="px-6 py-5 space-y-4 flex-1 overflow-y-auto">{children}</div>
+      {error && <div className="mx-6 mb-3 bg-red-50 text-red-600 rounded-xl px-4 py-2.5 text-sm shrink-0">{error}</div>}
+      <div className="px-6 pb-5 flex gap-2.5 shrink-0 border-t border-gray-50 pt-4">
         <button onClick={onClose} className="flex-1 border border-gray-200 text-gray-600 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors">ยกเลิก</button>
         <button onClick={onSave} disabled={saving} className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white py-2.5 rounded-xl text-sm font-medium transition-colors">
           {saving ? "กำลังบันทึก..." : "บันทึก"}
