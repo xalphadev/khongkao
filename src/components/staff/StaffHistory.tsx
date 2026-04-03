@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import {
-  ClipboardList, User, ChevronDown, Pencil, X, Check, Plus, Trash2,
+  ClipboardList, User, ChevronDown, Pencil, X, Check, ChevronLeft, ChevronRight, Search,
 } from "lucide-react";
 import StaffTabBar from "./StaffTabBar";
 
@@ -31,10 +31,18 @@ function formatMoney(n: number) {
 function formatTime(s: string) {
   return new Date(s).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
 }
-function formatThaiDate() {
-  return new Date().toLocaleDateString("th-TH", {
+function formatThaiDate(dateStr: string) {
+  return new Date(dateStr + "T00:00:00").toLocaleDateString("th-TH", {
     weekday: "long", year: "numeric", month: "long", day: "numeric",
   });
+}
+function addDays(dateStr: string, n: number) {
+  const d = new Date(dateStr + "T00:00:00");
+  d.setDate(d.getDate() + n);
+  return d.toISOString().split("T")[0];
+}
+function isToday(dateStr: string) {
+  return dateStr === new Date().toISOString().split("T")[0];
 }
 
 // ── Edit Modal ────────────────────────────────────────────────
@@ -94,7 +102,6 @@ function EditTransactionModal({
   return (
     <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px] flex items-end justify-center">
       <div className="bg-white w-full max-w-md rounded-t-3xl flex flex-col" style={{ maxHeight: "90vh" }}>
-        {/* Header */}
         <div className="flex items-center justify-between px-5 pt-5 pb-3 shrink-0">
           <div>
             <h3 className="font-semibold text-gray-900">แก้ไขบิล</h3>
@@ -105,9 +112,7 @@ function EditTransactionModal({
           </button>
         </div>
 
-        {/* Body (scrollable) */}
         <div className="flex-1 overflow-y-auto px-5 pb-3 space-y-4">
-          {/* ชื่อลูกค้า */}
           <div className="bg-gray-50 rounded-2xl px-4 py-3 flex items-center gap-3 border-2 border-transparent focus-within:border-blue-400 transition-all">
             <User className="w-4 h-4 text-gray-400 shrink-0" />
             <input
@@ -123,7 +128,6 @@ function EditTransactionModal({
             )}
           </div>
 
-          {/* รายการสินค้า */}
           <div className="space-y-2.5">
             {items.map((item, idx) => (
               <div key={idx} className="bg-gray-50 rounded-2xl px-4 py-3">
@@ -172,7 +176,6 @@ function EditTransactionModal({
             ))}
           </div>
 
-          {/* ยอดรวม */}
           <div className="bg-green-50 rounded-2xl px-4 py-3 flex items-center justify-between">
             <p className="text-green-700 text-sm font-medium">ยอดรวมทั้งหมด</p>
             <p className="text-green-700 font-bold text-lg tabular-nums">฿{formatMoney(total)}</p>
@@ -181,7 +184,6 @@ function EditTransactionModal({
           {error && <p className="text-red-500 text-sm text-center">{error}</p>}
         </div>
 
-        {/* Footer */}
         <div className="px-5 pb-6 pt-3 shrink-0 space-y-2.5 border-t border-gray-50">
           <button
             onClick={handleSave}
@@ -204,74 +206,130 @@ function EditTransactionModal({
 export default function StaffHistory() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [search, setSearch] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
 
-  const todayTotal = transactions.reduce((s, t) => s + t.totalAmount, 0);
+  useEffect(() => { load(); }, [date]);
 
   const load = () => {
-    const date = new Date().toISOString().split("T")[0];
+    setLoading(true);
+    setExpandedId(null);
     fetch(`/api/transactions?date=${date}`)
       .then((r) => r.json())
       .then(setTransactions)
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { load(); }, []);
-
   const handleSaved = (updated: Transaction) => {
     setTransactions((prev) => prev.map((t) => t.id === updated.id ? updated : t));
     setEditingTx(null);
   };
 
+  const filtered = transactions.filter((t) => {
+    if (!search.trim()) return true;
+    const q = search.toLowerCase();
+    return (
+      t.customerName?.toLowerCase().includes(q) ||
+      t.items.some((i) => i.productName.toLowerCase().includes(q))
+    );
+  });
+
+  const total = filtered.reduce((s, t) => s + t.totalAmount, 0);
+
   return (
     <div className="min-h-screen bg-[#f4f6f9] flex flex-col">
       {/* ── HEADER ── */}
-      <div className="relative bg-gradient-to-br from-indigo-700 via-blue-600 to-blue-500 pt-12 pb-14 px-5 overflow-hidden">
+      <div className="relative bg-gradient-to-br from-indigo-700 via-blue-600 to-blue-500 pt-12 pb-6 px-4 overflow-hidden">
         <div className="absolute -top-8 -right-8 w-48 h-48 rounded-full bg-white/[0.06]" />
-        <div className="absolute top-12 right-8 w-20 h-20 rounded-full bg-white/[0.06]" />
 
-        <div className="relative mb-6">
-          <h1 className="text-white font-semibold text-xl">ประวัติวันนี้</h1>
-          <p className="text-blue-200 text-xs mt-0.5">{formatThaiDate()}</p>
+        <div className="relative mb-4">
+          <h1 className="text-white font-semibold text-xl">ประวัติรายการ</h1>
         </div>
 
+        {/* Date nav */}
+        <div className="relative flex items-center gap-2 mb-4">
+          <button
+            onClick={() => setDate(addDays(date, -1))}
+            className="w-11 h-11 flex items-center justify-center rounded-xl bg-white/20 text-white active:bg-white/30 transition-colors shrink-0"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <div className="flex-1 bg-white/20 rounded-xl px-3 py-2.5 text-center">
+            <p className="text-white text-sm font-medium leading-tight">
+              {isToday(date) ? "วันนี้" : formatThaiDate(date)}
+            </p>
+          </div>
+          <button
+            onClick={() => { if (!isToday(date)) setDate(addDays(date, 1)); }}
+            disabled={isToday(date)}
+            className="w-11 h-11 flex items-center justify-center rounded-xl bg-white/20 text-white active:bg-white/30 disabled:opacity-30 transition-colors shrink-0"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Stats */}
         <div className="relative grid grid-cols-2 gap-3">
           <div className="bg-white/15 rounded-2xl px-4 py-3.5">
             <p className="text-blue-200 text-xs mb-0.5">ยอดรวม</p>
-            <p className="text-white font-medium text-xl tabular-nums">฿{formatMoney(todayTotal)}</p>
+            <p className="text-white font-medium text-xl tabular-nums">฿{formatMoney(total)}</p>
           </div>
           <div className="bg-white/15 rounded-2xl px-4 py-3.5">
             <p className="text-blue-200 text-xs mb-0.5">จำนวนรายการ</p>
-            <p className="text-white font-medium text-xl">{transactions.length} รายการ</p>
+            <p className="text-white font-medium text-xl">{filtered.length} รายการ</p>
           </div>
         </div>
 
         <div className="absolute bottom-0 left-0 right-0">
-          <svg viewBox="0 0 390 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full" preserveAspectRatio="none">
-            <path d="M0 48 C97.5 0 292.5 0 390 48 L390 48 L0 48 Z" fill="#f4f6f9" />
+          <svg viewBox="0 0 390 32" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full" preserveAspectRatio="none">
+            <path d="M0 32 C97.5 0 292.5 0 390 32 L390 32 L0 32 Z" fill="#f4f6f9" />
           </svg>
         </div>
       </div>
 
+      {/* ── Search bar ── */}
+      <div className="px-4 pt-4 pb-2">
+        <div className="bg-white rounded-2xl px-4 py-3 flex items-center gap-3 shadow-sm">
+          <Search className="w-4 h-4 text-gray-400 shrink-0" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="ค้นหาชื่อลูกค้า หรือชื่อสินค้า..."
+            className="flex-1 bg-transparent text-sm text-gray-700 placeholder-gray-400 focus:outline-none"
+          />
+          {search && (
+            <button onClick={() => setSearch("")} className="text-gray-300 shrink-0">
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* ── LIST ── */}
-      <div className="flex-1 px-4 pt-4 pb-28">
+      <div className="flex-1 px-4 pt-2 pb-28">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3 text-gray-400">
             <div className="w-7 h-7 border-2 border-gray-200 border-t-blue-500 rounded-full animate-spin" />
             <p className="text-sm">กำลังโหลด...</p>
           </div>
-        ) : transactions.length === 0 ? (
+        ) : filtered.length === 0 ? (
           <div className="bg-white rounded-2xl py-14 flex flex-col items-center gap-2 shadow-sm">
             <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mb-1">
               <ClipboardList className="w-8 h-8 text-gray-300" />
             </div>
-            <p className="text-gray-600 font-medium text-sm">ยังไม่มีรายการวันนี้</p>
-            <p className="text-gray-400 text-xs">กลับไปบันทึกรายการรับซื้อ</p>
+            <p className="text-gray-600 font-medium text-sm">
+              {search ? "ไม่พบรายการที่ค้นหา" : "ไม่มีรายการในวันนี้"}
+            </p>
+            <p className="text-gray-400 text-xs">
+              {search ? `"${search}"` : "ลองเลือกวันอื่น หรือกลับไปบันทึกรายการ"}
+            </p>
           </div>
         ) : (
           <div className="space-y-2.5">
-            {transactions.map((t, idx) => (
+            {filtered.map((t, idx) => (
               <div key={t.id} className="bg-white rounded-2xl shadow-sm overflow-hidden">
                 <button
                   onClick={() => setExpandedId(expandedId === t.id ? null : t.id)}
@@ -324,7 +382,6 @@ export default function StaffHistory() {
                       <p className="text-gray-500 text-sm font-medium">รวม</p>
                       <p className="text-green-600 font-medium tabular-nums">฿{formatMoney(t.totalAmount)}</p>
                     </div>
-                    {/* Edit button */}
                     <button
                       onClick={() => setEditingTx(t)}
                       className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white border border-blue-200 text-blue-600 text-sm font-medium active:bg-blue-50 transition-colors"

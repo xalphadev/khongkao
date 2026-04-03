@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ClipboardList, Download, ChevronDown, ChevronUp } from "lucide-react";
+import { ClipboardList, Download, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 interface TransactionItem {
@@ -40,6 +40,15 @@ function formatDateThai(s: string) {
   return new Date(s).toLocaleDateString("th-TH", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 }
 
+function addDays(dateStr: string, n: number) {
+  const d = new Date(dateStr + "T00:00:00");
+  d.setDate(d.getDate() + n);
+  return d.toISOString().split("T")[0];
+}
+function isToday(dateStr: string) {
+  return dateStr === new Date().toISOString().split("T")[0];
+}
+
 export default function ReportsPage() {
   const [report, setReport] = useState<DailyReport | null>(null);
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
@@ -73,14 +82,9 @@ export default function ReportsPage() {
   return (
     <div>
       {/* ── Header card ── */}
-      <div className="bg-gradient-to-br from-green-600 to-green-500 rounded-2xl p-5 mb-5 shadow-lg shadow-green-600/20">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <p className="text-white/70 text-xs mb-0.5">รายงานประจำวัน</p>
-            {report && !loading && (
-              <p className="text-white/80 text-xs">{formatDateThai(date)}</p>
-            )}
-          </div>
+      <div className="bg-gradient-to-br from-green-600 to-green-500 rounded-2xl p-4 mb-5 shadow-lg shadow-green-600/20">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-white/80 text-sm font-medium">รายงานประจำวัน</p>
           <button
             onClick={handleExport}
             disabled={!report || report.totalTransactions === 0}
@@ -91,14 +95,39 @@ export default function ReportsPage() {
           </button>
         </div>
 
-        {/* Date picker */}
-        <input
-          type="date"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          className="w-full bg-white/20 text-white placeholder-white/60 border-0 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:bg-white/30 transition-all"
-          style={{ colorScheme: "dark" }}
-        />
+        {/* Prev / date / Next */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setDate(addDays(date, -1))}
+            className="w-11 h-11 flex items-center justify-center rounded-xl bg-white/20 text-white active:bg-white/30 transition-colors shrink-0"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <div className="flex-1">
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="w-full bg-white/20 text-white border-0 rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none focus:bg-white/30 transition-all text-center"
+              style={{ colorScheme: "dark" }}
+            />
+          </div>
+          <button
+            onClick={() => { if (!isToday(date)) setDate(addDays(date, 1)); }}
+            disabled={isToday(date)}
+            className="w-11 h-11 flex items-center justify-center rounded-xl bg-white/20 text-white active:bg-white/30 disabled:opacity-30 transition-colors shrink-0"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
+        {!isToday(date) && (
+          <button
+            onClick={() => setDate(new Date().toISOString().split("T")[0])}
+            className="mt-2 w-full py-2 text-center text-white/80 text-xs font-medium bg-white/10 rounded-xl active:bg-white/20 transition-colors"
+          >
+            กลับไปวันนี้
+          </button>
+        )}
       </div>
 
       {loading ? (
@@ -111,32 +140,20 @@ export default function ReportsPage() {
       ) : !report ? null : (
         <>
           {/* ── Summary tiles ── */}
-          <div className="grid grid-cols-3 gap-2.5 mb-5">
-            <div className="bg-white rounded-2xl px-3 py-3.5 shadow-sm border border-gray-100 border-t-4 border-t-green-500">
-              <p className="text-gray-400 text-xs leading-tight mb-1.5">ยอดรวม</p>
-              <p className="text-green-600 font-medium text-base tabular-nums leading-tight">
-                ฿{report.totalAmount >= 1000
-                  ? `${(report.totalAmount / 1000).toFixed(1)}k`
-                  : formatMoney(report.totalAmount)}
-              </p>
-            </div>
-            <div className="bg-white rounded-2xl px-3 py-3.5 shadow-sm border border-gray-100 border-t-4 border-t-blue-500">
-              <p className="text-gray-400 text-xs leading-tight mb-1.5">รายการ</p>
-              <p className="text-blue-600 font-medium text-base tabular-nums leading-tight">
-                {report.totalTransactions}
-                <span className="text-xs text-gray-400 ml-1">รายการ</span>
-              </p>
-            </div>
-            <div className="bg-white rounded-2xl px-3 py-3.5 shadow-sm border border-gray-100 border-t-4 border-t-orange-500">
-              <p className="text-gray-400 text-xs leading-tight mb-1.5">เฉลี่ย</p>
-              <p className="text-orange-500 font-medium text-base tabular-nums leading-tight">
-                ฿{report.totalTransactions > 0
-                  ? (report.totalAmount / report.totalTransactions >= 1000
-                    ? `${(report.totalAmount / report.totalTransactions / 1000).toFixed(1)}k`
-                    : formatMoney(report.totalAmount / report.totalTransactions))
-                  : "0"}
-              </p>
-            </div>
+          <div className="grid grid-cols-3 gap-2 mb-5">
+            {[
+              { label: "ยอดรวม", color: "text-green-600", borderColor: "border-t-green-500",
+                value: `฿${report.totalAmount >= 1000 ? `${(report.totalAmount / 1000).toFixed(1)}k` : formatMoney(report.totalAmount)}` },
+              { label: "รายการ", color: "text-blue-600", borderColor: "border-t-blue-500",
+                value: `${report.totalTransactions} รายการ` },
+              { label: "เฉลี่ย", color: "text-orange-500", borderColor: "border-t-orange-500",
+                value: `฿${report.totalTransactions > 0 ? (report.totalAmount / report.totalTransactions >= 1000 ? `${(report.totalAmount / report.totalTransactions / 1000).toFixed(1)}k` : formatMoney(report.totalAmount / report.totalTransactions)) : "0"}` },
+            ].map((tile) => (
+              <div key={tile.label} className={`bg-white rounded-2xl px-2.5 py-3 shadow-sm border border-gray-100 border-t-4 ${tile.borderColor} min-w-0`}>
+                <p className="text-gray-400 text-xs leading-tight mb-1 truncate">{tile.label}</p>
+                <p className={`${tile.color} font-semibold text-sm tabular-nums leading-tight break-all`}>{tile.value}</p>
+              </div>
+            ))}
           </div>
 
           {/* ── Category chart ── */}
@@ -160,8 +177,8 @@ export default function ReportsPage() {
                   <YAxis
                     type="category"
                     dataKey="name"
-                    tick={{ fontSize: 12, fill: "#374151" }}
-                    width={80}
+                    tick={{ fontSize: 11, fill: "#374151" }}
+                    width={72}
                     axisLine={false}
                     tickLine={false}
                   />

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { CheckCircle2, Printer, X, User } from "lucide-react";
+import { CheckCircle2, Printer, X, User, Share2 } from "lucide-react";
 
 interface CartItem {
   productId: string;
@@ -53,6 +53,41 @@ export default function ReceiptModal({ transaction, onClose }: ReceiptModalProps
         if (d.receiptNote) setReceiptNote(d.receiptNote);
       });
   }, []);
+
+  const buildReceiptText = () => {
+    const lines: string[] = [
+      shopName,
+      shopPhone ? `โทร: ${shopPhone}` : "",
+      "─────────────────",
+      "ใบรับซื้อของเก่า",
+      transaction.customerName ? `ลูกค้า: ${transaction.customerName}` : "",
+      `วันที่: ${formatDateTime(transaction.createdAt)}`,
+      `เลขที่: ${transaction.id.slice(-8).toUpperCase()}`,
+      "─────────────────",
+      ...transaction.items.map((i) =>
+        `${i.productName}  ${i.quantity}${i.unit === "KG" ? "กก." : "ชิ้น"}  ฿${formatMoney(i.subtotal)}`
+      ),
+      "─────────────────",
+      `รวม: ฿${formatMoney(transaction.totalAmount)}`,
+      receiptNote,
+    ].filter(Boolean);
+    return lines.join("\n");
+  };
+
+  const handleShare = async () => {
+    const text = buildReceiptText();
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "ใบรับซื้อของเก่า", text });
+        return;
+      } catch {
+        // fallback
+      }
+    }
+    // LINE share URL fallback
+    const lineUrl = `https://line.me/R/msg/text/?${encodeURIComponent(text)}`;
+    window.open(lineUrl, "_blank");
+  };
 
   const handlePrint = () => {
     const w = window.open("", "_blank");
@@ -188,6 +223,14 @@ export default function ReceiptModal({ transaction, onClose }: ReceiptModalProps
           >
             <Printer className="w-5 h-5" />
             พิมพ์ใบเสร็จ
+          </button>
+          <button
+            onClick={handleShare}
+            className="btn-staff bg-green-600 hover:bg-green-700 text-white shadow-md shadow-green-100"
+            style={{ minHeight: 52 }}
+          >
+            <Share2 className="w-5 h-5" />
+            ส่งให้ลูกค้า (LINE)
           </button>
           <button
             onClick={onClose}

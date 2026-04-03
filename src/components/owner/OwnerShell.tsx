@@ -50,7 +50,7 @@ export default function OwnerShell({ children }: { children: React.ReactNode }) 
   );
 
   return (
-    <div className="min-h-screen bg-[#f4f6f9] flex">
+    <div className="min-h-screen bg-[#f4f6f9] flex overflow-x-hidden">
 
       {/* ── Desktop Sidebar ── */}
       <aside className="hidden lg:flex flex-col w-56 bg-white border-r border-gray-100 fixed h-full z-20">
@@ -117,7 +117,7 @@ export default function OwnerShell({ children }: { children: React.ReactNode }) 
       </aside>
 
       {/* ── Main content ── */}
-      <div className="flex-1 lg:ml-56 flex flex-col min-h-screen">
+      <div className="flex-1 lg:ml-56 flex flex-col min-h-screen overflow-x-hidden w-full">
 
         {/* Mobile top bar */}
         <header className="lg:hidden bg-white border-b border-gray-100 px-4 py-3 flex items-center gap-3 sticky top-0 z-20 shadow-sm">
@@ -144,8 +144,11 @@ export default function OwnerShell({ children }: { children: React.ReactNode }) 
       </div>
 
       {/* ── Mobile Bottom Tab Bar ── */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-20 bg-white border-t border-gray-100 shadow-[0_-4px_16px_rgba(0,0,0,0.06)]">
-        <div className="grid grid-cols-6">
+      <nav
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-20 bg-white border-t border-gray-100"
+        style={{ boxShadow: "0 -4px 16px rgba(0,0,0,0.06)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+      >
+        <div className="flex items-stretch">
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item);
@@ -153,14 +156,17 @@ export default function OwnerShell({ children }: { children: React.ReactNode }) 
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex flex-col items-center justify-center py-2.5 gap-1 transition-colors ${
-                  active ? "text-green-600" : "text-gray-400 active:text-gray-600"
-                }`}
+                className="flex-1 flex flex-col items-center justify-center py-2 gap-0.5 transition-colors active:bg-gray-50 min-w-0"
               >
-                <div className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all ${active ? "bg-green-50" : ""}`}>
-                  <Icon className={`w-5 h-5 ${active ? "stroke-[2.2]" : ""}`} />
+                <div className={`w-8 h-8 flex items-center justify-center rounded-xl transition-all ${active ? "bg-green-50" : ""}`}>
+                  <Icon className={`w-[18px] h-[18px] transition-colors ${active ? "text-green-600 stroke-[2.2]" : "text-gray-400"}`} />
                 </div>
-                <span className={`text-[10px] leading-none ${active ? "font-medium" : ""}`}>{item.label}</span>
+                <span
+                  className="text-[9px] leading-none font-medium truncate w-full text-center px-0.5"
+                  style={{ color: active ? "#16a34a" : "#9ca3af" }}
+                >
+                  {item.label}
+                </span>
               </Link>
             );
           })}

@@ -5,7 +5,7 @@ import { signOut } from "next-auth/react";
 import { useState, useEffect } from "react";
 import {
   LogOut, ShoppingBag, ChevronRight,
-  Recycle, TrendingUp, Clock, ArrowRight,
+  Recycle, Clock, ArrowRight, Wallet,
 } from "lucide-react";
 import StaffTabBar from "./StaffTabBar";
 
@@ -59,145 +59,176 @@ export default function StaffHome({ userName }: StaffHomeProps) {
   const initial = firstName.charAt(0).toUpperCase();
 
   return (
-    <div className="min-h-screen bg-[#f5f7fa] flex flex-col">
+    <div className="min-h-screen flex flex-col" style={{ background: "#f0f2f5" }}>
 
-      {/* ── HEADER CARD ── */}
+      {/* ── HEADER ── */}
       <div
-        className="relative overflow-hidden"
-        style={{
-          background: "linear-gradient(150deg, #15803d 0%, #16a34a 100%)",
-          borderRadius: "0 0 32px 32px",
-        }}
+        className="relative overflow-hidden px-5 pt-14"
+        style={{ background: "linear-gradient(160deg, #166534 0%, #16a34a 60%, #22c55e 100%)" }}
       >
-        {/* decorative circles */}
-        <div
-          className="absolute -top-10 -right-10 w-52 h-52 rounded-full"
-          style={{ background: "rgba(255,255,255,0.07)" }}
-        />
-        <div
-          className="absolute top-8 -right-4 w-28 h-28 rounded-full"
-          style={{ background: "rgba(255,255,255,0.07)" }}
-        />
-        <div
-          className="absolute -bottom-6 -left-6 w-36 h-36 rounded-full"
-          style={{ background: "rgba(0,0,0,0.07)" }}
-        />
+        {/* Decorative blobs */}
+        <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full"
+          style={{ background: "rgba(255,255,255,0.06)" }} />
+        <div className="absolute top-10 right-10 w-32 h-32 rounded-full"
+          style={{ background: "rgba(255,255,255,0.05)" }} />
+        <div className="absolute top-24 -left-12 w-48 h-48 rounded-full"
+          style={{ background: "rgba(0,0,0,0.06)" }} />
 
-        {/* top bar */}
-        <div className="relative flex items-center justify-between px-5 pt-14 pb-5">
+        {/* Top bar */}
+        <div className="relative flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
             <div
-              className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 text-white font-semibold text-lg"
-              style={{ background: "rgba(255,255,255,0.2)", backdropFilter: "blur(4px)" }}
+              className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 text-green-700 font-bold text-xl shadow-lg"
+              style={{ background: "rgba(255,255,255,0.92)" }}
             >
               {initial}
             </div>
             <div>
-              <div className="flex items-center gap-1.5 mb-0.5">
-                <Recycle className="w-3.5 h-3.5 text-green-100 opacity-80" />
-                <span className="text-green-100 text-xs opacity-80">มือสองของเก่า</span>
+              <div className="flex items-center gap-1.5">
+                <Recycle className="w-3 h-3 text-green-200" />
+                <span className="text-green-200 text-xs">มือสองของเก่า</span>
               </div>
-              <p className="text-white font-semibold text-base leading-none">สวัสดี, {firstName}</p>
+              <p className="text-white font-semibold text-lg leading-tight mt-0.5">
+                สวัสดี, {firstName}
+              </p>
             </div>
           </div>
           <button
             onClick={() => signOut({ callbackUrl: "/login" })}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs text-white"
-            style={{ background: "rgba(0,0,0,0.2)" }}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs text-white/80 transition-all active:scale-95"
+            style={{ background: "rgba(0,0,0,0.18)" }}
           >
             <LogOut className="w-3.5 h-3.5" />
             ออก
           </button>
         </div>
 
-        {/* stats panel */}
-        <div className="relative px-5 pb-8">
-          <p className="text-green-100 text-xs opacity-75 mb-3">{formatThaiDate()}</p>
-          <div
-            className="rounded-2xl px-5 py-4"
-            style={{ background: "rgba(255,255,255,0.15)", backdropFilter: "blur(8px)" }}
-          >
-            <p className="text-green-50 text-xs opacity-80 mb-1">ยอดรับซื้อวันนี้</p>
-            {loading ? (
-              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin my-2" />
-            ) : (
-              <p className="text-white tabular-nums leading-none" style={{ fontSize: "2.4rem", fontWeight: 600 }}>
-                ฿{formatMoney(todayTotal)}
-              </p>
-            )}
-            <div className="flex items-center gap-1.5 mt-2">
-              <TrendingUp className="w-3.5 h-3.5 text-green-200" />
-              <p className="text-green-100 text-xs opacity-85">
-                {todayTransactions.length} รายการวันนี้
-                {todayTransactions.length > 0 && todayTotal > 0 && (
-                  <span className="opacity-70"> · เฉลี่ย ฿{formatMoney(todayTotal / todayTransactions.length)}</span>
-                )}
-              </p>
+        {/* Stats */}
+        <div className="relative mb-2">
+          <p className="text-green-200 text-xs mb-1">{formatThaiDate()}</p>
+          <p className="text-green-100 text-sm font-medium mb-1">ยอดรับซื้อวันนี้</p>
+          {loading ? (
+            <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin my-3" />
+          ) : (
+            <p className="text-white tabular-nums font-bold leading-none" style={{ fontSize: "3rem" }}>
+              ฿{formatMoney(todayTotal)}
+            </p>
+          )}
+          <div className="flex items-center gap-3 mt-3">
+            <div className="flex items-center gap-1.5 bg-white/15 rounded-full px-3 py-1.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-green-300" />
+              <span className="text-white text-xs">{todayTransactions.length} รายการ</span>
             </div>
+            {todayTransactions.length > 0 && todayTotal > 0 && (
+              <div className="flex items-center gap-1.5 bg-white/15 rounded-full px-3 py-1.5">
+                <Wallet className="w-3 h-3 text-green-300" />
+                <span className="text-white text-xs">เฉลี่ย ฿{formatMoney(todayTotal / todayTransactions.length)}</span>
+              </div>
+            )}
           </div>
         </div>
+
+        {/* Overlap card area */}
+        <div className="h-8" />
+        <div
+          className="absolute bottom-0 left-0 right-0 h-8"
+          style={{ background: "#f0f2f5", borderRadius: "24px 24px 0 0" }}
+        />
       </div>
 
       {/* ── CONTENT ── */}
-      <div className="flex-1 px-4 pt-5 pb-28 space-y-5">
+      <div className="flex-1 px-4 -mt-1 pb-28 space-y-4">
 
-        {/* ── BIG ACTION BUTTON ── */}
+        {/* ── PURCHASE BUTTON ── */}
         <button
           onClick={() => router.push("/staff/purchase")}
-          className="w-full flex items-center gap-4 px-5 py-5 rounded-3xl active:scale-[0.98] transition-all text-left"
+          className="w-full relative overflow-hidden rounded-3xl active:scale-[0.98] transition-all text-left"
           style={{
-            background: "linear-gradient(135deg, #f59e0b 0%, #f97316 100%)",
-            boxShadow: "0 10px 30px rgba(245,158,11,0.4)",
+            background: "linear-gradient(135deg, #ea580c 0%, #f97316 50%, #fb923c 100%)",
+            boxShadow: "0 12px 32px rgba(234,88,12,0.38)",
+            padding: "20px 22px",
           }}
         >
-          <div
-            className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0"
-            style={{ background: "rgba(255,255,255,0.2)" }}
-          >
-            <ShoppingBag className="w-7 h-7 text-white" />
+          {/* decorative circle */}
+          <div className="absolute -top-6 -right-6 w-32 h-32 rounded-full bg-white/10" />
+          <div className="absolute -bottom-8 right-16 w-24 h-24 rounded-full bg-black/10" />
+
+          <div className="relative flex items-center gap-4">
+            <div
+              className="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 shadow-lg"
+              style={{ background: "rgba(255,255,255,0.22)" }}
+            >
+              <ShoppingBag className="w-8 h-8 text-white" />
+            </div>
+            <div className="flex-1">
+              <p className="text-white font-bold text-2xl leading-tight">รับซื้อของเก่า</p>
+              <p className="text-orange-100 text-sm mt-0.5">เริ่มบันทึกรายการรับซื้อใหม่</p>
+            </div>
+            <div
+              className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+              style={{ background: "rgba(255,255,255,0.2)" }}
+            >
+              <ChevronRight className="w-5 h-5 text-white" />
+            </div>
           </div>
-          <div className="flex-1">
-            <p className="text-white font-semibold text-xl leading-tight">รับซื้อของเก่า</p>
-            <p className="text-amber-100 text-sm mt-0.5">เริ่มบันทึกรายการรับซื้อใหม่</p>
-          </div>
-          <ChevronRight className="w-5 h-5 text-white opacity-60 shrink-0" />
         </button>
 
         {/* ── HELD BILLS ── */}
         {heldBills.length > 0 && (
           <div>
-            <div className="flex items-center gap-2 mb-3 px-1">
-              <Clock className="w-4 h-4 text-amber-500" />
-              <p className="text-gray-700 font-semibold text-sm">บิลที่พักไว้ ({heldBills.length})</p>
+            <div className="flex items-center gap-2 px-1 mb-2.5">
+              <div className="w-5 h-5 rounded-full bg-amber-100 flex items-center justify-center">
+                <Clock className="w-3 h-3 text-amber-600" />
+              </div>
+              <p className="text-gray-600 font-semibold text-sm">
+                บิลที่พักไว้
+                <span className="ml-1.5 bg-amber-500 text-white text-xs rounded-full px-1.5 py-0.5">{heldBills.length}</span>
+              </p>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               {heldBills.map((bill) => {
                 const total = bill.items.reduce((s, i) => s + i.subtotal, 0);
                 return (
                   <button
                     key={bill.id}
                     onClick={() => router.push(`/staff/purchase?held=${bill.id}`)}
-                    className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-white shadow-sm active:scale-[0.98] transition-all text-left"
-                    style={{ border: "1.5px solid #fde68a" }}
+                    className="w-full flex items-center gap-3.5 rounded-2xl bg-white active:scale-[0.98] transition-all text-left overflow-hidden"
+                    style={{
+                      boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
+                      border: "1.5px solid #fef3c7",
+                    }}
                   >
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                      style={{ background: "#fef3c7" }}>
-                      <Clock className="w-5 h-5 text-amber-500" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      {bill.label && (
-                        <p className="text-gray-800 text-sm font-medium truncate">{bill.label}</p>
-                      )}
-                      <p className={`truncate ${bill.label ? "text-gray-400 text-xs" : "text-gray-700 text-sm font-medium"}`}>
-                        {bill.items.map((i) => i.productName).join(", ")}
-                      </p>
-                      {bill.heldBy && (
-                        <p className="text-gray-400 text-xs mt-0.5">พักโดย {bill.heldBy}</p>
-                      )}
-                    </div>
-                    <div className="text-right shrink-0">
-                      <p className="text-amber-600 font-semibold text-sm tabular-nums">฿{formatMoney(total)}</p>
-                      <ArrowRight className="w-4 h-4 text-amber-400 mt-0.5 ml-auto" />
+                    {/* Left accent bar */}
+                    <div className="w-1 self-stretch bg-amber-400 shrink-0 rounded-l-2xl" />
+                    <div className="flex items-center gap-3 flex-1 min-w-0 py-3.5 pr-4">
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                        style={{ background: "#fef3c7" }}>
+                        <Clock className="w-5 h-5 text-amber-500" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        {bill.label ? (
+                          <>
+                            <p className="text-gray-800 text-sm font-semibold truncate">{bill.label}</p>
+                            <p className="text-gray-400 text-xs truncate mt-0.5">
+                              {bill.items.map((i) => i.productName).join(", ")}
+                            </p>
+                          </>
+                        ) : (
+                          <p className="text-gray-700 text-sm font-medium truncate">
+                            {bill.items.map((i) => i.productName).join(", ")}
+                          </p>
+                        )}
+                        {bill.heldBy && (
+                          <p className="text-gray-400 text-xs mt-0.5">พักโดย {bill.heldBy}</p>
+                        )}
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-amber-600 font-bold text-base tabular-nums">฿{formatMoney(total)}</p>
+                        <div className="flex items-center justify-end gap-1 mt-0.5">
+                          <p className="text-amber-400 text-xs">ดำเนินการ</p>
+                          <ArrowRight className="w-3 h-3 text-amber-400" />
+                        </div>
+                      </div>
                     </div>
                   </button>
                 );
@@ -205,7 +236,6 @@ export default function StaffHome({ userName }: StaffHomeProps) {
             </div>
           </div>
         )}
-
 
       </div>
 

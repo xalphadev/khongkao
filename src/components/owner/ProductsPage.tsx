@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { X, Plus } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { X, Plus, Pencil, Check } from "lucide-react";
 
 interface Category { id: string; name: string; }
 interface Product {
@@ -55,6 +55,9 @@ export default function ProductsPage() {
   const [form, setForm] = useState({ categoryId: "", name: "", unit: "KG", pricePerUnit: "", customPrice: false });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [inlineEditId, setInlineEditId] = useState<string | null>(null);
+  const [inlinePrice, setInlinePrice] = useState("");
+  const inlineRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { loadData(); }, []);
 
@@ -93,6 +96,25 @@ export default function ProductsPage() {
   const toggleActive = async (p: Product) => {
     await fetch(`/api/products/${p.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ isActive: !p.isActive }) });
     loadData();
+  };
+
+  const startInlineEdit = (p: Product) => {
+    setInlineEditId(p.id);
+    setInlinePrice(String(p.pricePerUnit));
+    setTimeout(() => { inlineRef.current?.focus(); inlineRef.current?.select(); }, 50);
+  };
+
+  const saveInlinePrice = async (p: Product) => {
+    const price = parseFloat(inlinePrice);
+    if (!isNaN(price) && price >= 0 && price !== p.pricePerUnit) {
+      await fetch(`/api/products/${p.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pricePerUnit: price }),
+      });
+      loadData();
+    }
+    setInlineEditId(null);
   };
 
   const filtered = products.filter((p) => {
@@ -142,18 +164,51 @@ export default function ProductsPage() {
             {filtered.map((p) => (
               <div key={p.id} className={`bg-white rounded-2xl px-4 py-4 shadow-sm border border-gray-100 transition-all ${!p.isActive ? "opacity-50" : ""}`}>
                 <div className="flex items-start justify-between gap-2 mb-3">
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <p className="font-medium text-gray-900">{p.name}</p>
+                      <p className="font-semibold text-gray-900 text-base">{p.name}</p>
                       {p.customPrice && (
                         <span className="text-xs bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded-lg font-medium">กำหนดเอง</span>
                       )}
                     </div>
-                    <p className="text-gray-400 text-xs mt-0.5">{p.category.name} · {p.unit === "KG" ? "กก." : "ชิ้น"}</p>
+                    <p className="text-gray-400 text-sm mt-0.5">{p.category.name} · {p.unit === "KG" ? "กก." : "ชิ้น"}</p>
                   </div>
-                  <p className="text-green-600 font-medium tabular-nums text-lg shrink-0">
-                    {p.customPrice ? <span className="text-purple-500 text-sm">ราคาเอง</span> : `฿${formatMoney(p.pricePerUnit)}`}
-                  </p>
+                  {/* Inline price edit */}
+                  {!p.customPrice && (
+                    <div className="shrink-0">
+                      {inlineEditId === p.id ? (
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-gray-400 text-sm">฿</span>
+                          <input
+                            ref={inlineRef}
+                            type="number"
+                            value={inlinePrice}
+                            onChange={(e) => setInlinePrice(e.target.value)}
+                            onBlur={() => saveInlinePrice(p)}
+                            onKeyDown={(e) => { if (e.key === "Enter") saveInlinePrice(p); if (e.key === "Escape") setInlineEditId(null); }}
+                            className="w-20 border-2 border-green-400 rounded-xl px-2 py-1.5 text-base font-bold text-center focus:outline-none"
+                            min="0"
+                            step="0.5"
+                            inputMode="decimal"
+                          />
+                          <button onClick={() => saveInlinePrice(p)} className="w-8 h-8 bg-green-600 rounded-xl flex items-center justify-center">
+                            <Check className="w-4 h-4 text-white" />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => startInlineEdit(p)}
+                          className="flex items-center gap-1.5 bg-green-50 border border-green-200 rounded-xl px-3 py-2 active:bg-green-100 transition-colors"
+                        >
+                          <span className="text-green-700 font-bold text-lg tabular-nums">฿{formatMoney(p.pricePerUnit)}</span>
+                          <Pencil className="w-3.5 h-3.5 text-green-500" />
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  {p.customPrice && (
+                    <span className="text-purple-500 text-sm shrink-0">ราคาเอง</span>
+                  )}
                 </div>
                 <div className="flex gap-2 pt-3 border-t border-gray-50">
                   <button
@@ -198,10 +253,31 @@ export default function ProductsPage() {
                         </span>
                       </td>
                       <td className="px-5 py-3.5 text-right font-medium tabular-nums">
-                        {p.customPrice
-                          ? <span className="text-purple-500 text-xs bg-purple-50 px-2 py-0.5 rounded-lg">กำหนดเอง</span>
-                          : <span className="text-green-600">฿{formatMoney(p.pricePerUnit)}</span>
-                        }
+                        {p.customPrice ? (
+                          <span className="text-purple-500 text-xs bg-purple-50 px-2 py-0.5 rounded-lg">กำหนดเอง</span>
+                        ) : inlineEditId === p.id ? (
+                          <div className="flex items-center justify-end gap-1.5">
+                            <span className="text-gray-400 text-sm">฿</span>
+                            <input
+                              ref={inlineRef}
+                              type="number"
+                              value={inlinePrice}
+                              onChange={(e) => setInlinePrice(e.target.value)}
+                              onBlur={() => saveInlinePrice(p)}
+                              onKeyDown={(e) => { if (e.key === "Enter") saveInlinePrice(p); if (e.key === "Escape") setInlineEditId(null); }}
+                              className="w-24 border-2 border-green-400 rounded-xl px-2 py-1 text-sm font-bold text-center focus:outline-none"
+                              min="0" step="0.5" inputMode="decimal"
+                            />
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => startInlineEdit(p)}
+                            className="flex items-center gap-1.5 ml-auto text-green-600 hover:bg-green-50 rounded-lg px-2 py-1 transition-colors"
+                          >
+                            <span>฿{formatMoney(p.pricePerUnit)}</span>
+                            <Pencil className="w-3 h-3 text-green-400" />
+                          </button>
+                        )}
                       </td>
                       <td className="px-5 py-3.5 text-center">
                         <button onClick={() => toggleActive(p)}

@@ -60,6 +60,17 @@ export async function GET(req: NextRequest) {
     });
   });
 
+  // Group by staff
+  const staffBreakdown: Record<string, { name: string; amount: number; count: number }> = {};
+  transactions.forEach((t) => {
+    const staffName = t.staff.name;
+    if (!staffBreakdown[staffName]) {
+      staffBreakdown[staffName] = { name: staffName, amount: 0, count: 0 };
+    }
+    staffBreakdown[staffName].amount += t.totalAmount;
+    staffBreakdown[staffName].count += 1;
+  });
+
   return NextResponse.json({
     date,
     totalAmount,
@@ -67,5 +78,6 @@ export async function GET(req: NextRequest) {
     transactions,
     categoryBreakdown: Object.values(categoryBreakdown).sort((a, b) => b.amount - a.amount),
     productBreakdown: Object.values(productBreakdown).sort((a, b) => b.amount - a.amount),
+    staffBreakdown: Object.values(staffBreakdown).sort((a, b) => b.amount - a.amount),
   });
 }
