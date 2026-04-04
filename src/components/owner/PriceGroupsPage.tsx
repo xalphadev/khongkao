@@ -682,7 +682,7 @@ export default function PriceGroupsPage() {
         <ConfirmModal
           variant="danger"
           title={`ลบกลุ่ม "${confirmDelete.name}"?`}
-          message={`ลูกค้า ${confirmDelete.customerCount} คนในกลุ่มนี้จะกลับไปใช้ราคาปกติ`}
+          description={`ลูกค้า ${confirmDelete.customerCount} คนในกลุ่มนี้จะกลับไปใช้ราคาปกติ`}
           confirmLabel="ลบกลุ่ม"
           onConfirm={handleDelete}
           onCancel={() => setConfirmDelete(null)}

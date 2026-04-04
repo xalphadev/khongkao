@@ -537,7 +537,7 @@ function CustomerDetailView({ customerId, priceGroups, onBack }: {
         <ConfirmModal
           variant={customer.isActive ? "danger" : "success"}
           title={customer.isActive ? "ปิดใช้งานลูกค้า?" : "เปิดใช้งานลูกค้า?"}
-          message={`ต้องการ${customer.isActive ? "ปิดใช้งาน" : "เปิดใช้งาน"}ลูกค้า "${customer.name}" ใช่ไหม?`}
+          description={`ต้องการ${customer.isActive ? "ปิดใช้งาน" : "เปิดใช้งาน"}ลูกค้า "${customer.name}" ใช่ไหม?`}
           confirmLabel={customer.isActive ? "ปิดใช้งาน" : "เปิดใช้งาน"}
           onConfirm={handleToggle}
           onCancel={() => setConfirm(null)}
