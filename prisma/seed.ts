@@ -141,6 +141,39 @@ async function main() {
     }
   }
 
+  // ── Customers (skip if already have data) ─────────────────────
+  const custCount = await prisma.customer.count();
+  if (custCount === 0) {
+    console.log("  Creating sample customers...");
+
+    const customerDefs = [
+      { name: "ลุงสมชาย",    nickname: "ลุง",    phone: "081-111-2222", address: "ซอยลาดพร้าว 10",  notes: "มาทุกอาทิตย์" },
+      { name: "ป้าสมศรี",    nickname: "ป้าศรี", phone: "082-222-3333", address: "ตลาดมีนบุรี",     notes: "ขายกระดาษและขวดเป็นหลัก" },
+      { name: "นายประสิทธิ์", nickname: "ต้น",    phone: "083-333-4444", address: "บางนา",           notes: "" },
+      { name: "แม่ค้าตลาด",  nickname: "แม่ค้า", phone: "084-444-5555", address: "ตลาดอินทรา",     notes: "ขายพลาสติกและแก้ว" },
+      { name: "คุณวิชัย",    nickname: "ไวย์",   phone: "085-555-6666", address: "ลาดกระบัง",       notes: "เครื่องใช้ไฟฟ้ามือสอง" },
+      { name: "ป้าจันทร์",   nickname: "ป้าจัน", phone: "086-666-7777", address: "มีนบุรี",         notes: "" },
+      { name: "คุณสมบัติ",   nickname: "บัติ",   phone: "087-777-8888", address: "รังสิต",          notes: "โลหะเป็นหลัก" },
+      { name: "ยายแดง",      nickname: "ยาย",    phone: "088-888-9999", address: "ปทุมธานี",        notes: "" },
+    ];
+
+    for (const c of customerDefs) {
+      await prisma.customer.create({
+        data: {
+          name: c.name,
+          nickname: c.nickname || null,
+          phone: c.phone || null,
+          address: c.address || null,
+          notes: c.notes || null,
+        },
+      });
+    }
+
+    console.log(`  ✓ Created ${customerDefs.length} sample customers`);
+  } else {
+    console.log(`  ⚠ Skipped sample customers (${custCount} already exist)`);
+  }
+
   // ── Sample Transactions (skip if already have data) ────────────
   const txCount = await prisma.transaction.count();
   if (txCount === 0) {

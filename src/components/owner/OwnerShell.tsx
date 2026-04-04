@@ -6,23 +6,55 @@ import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import {
   Recycle, LayoutDashboard, BarChart2, Tag, FolderOpen,
-  Users, Settings, LogOut, X, Menu, ChevronRight, History,
+  Users, Settings, LogOut, X, Menu, ChevronRight, History, UserCircle2, Layers,
 } from "lucide-react";
 
 const BRAND = "#16a34a";
 
-const navItems = [
-  { href: "/owner",                label: "หน้าหลัก",       icon: LayoutDashboard, exact: true  },
-  { href: "/owner/reports",        label: "รายงาน",         icon: BarChart2,        exact: false },
-  { href: "/owner/products",       label: "สินค้า",         icon: Tag,              exact: false },
-  { href: "/owner/price-history",  label: "ประวัติราคา",    icon: History,          exact: false },
-  { href: "/owner/categories",     label: "หมวดหมู่",       icon: FolderOpen,       exact: false },
-  { href: "/owner/staff",          label: "พนักงาน",        icon: Users,            exact: false },
-  { href: "/owner/settings",       label: "ตั้งค่า",        icon: Settings,         exact: false },
+type NavItem = { href: string; label: string; icon: React.ElementType; exact: boolean };
+type NavSection = { section: string; items: NavItem[] };
+
+const navSections: NavSection[] = [
+  {
+    section: "ภาพรวม",
+    items: [
+      { href: "/owner",         label: "หน้าหลัก",  icon: LayoutDashboard, exact: true  },
+      { href: "/owner/reports", label: "รายงาน",    icon: BarChart2,        exact: false },
+    ],
+  },
+  {
+    section: "สินค้า",
+    items: [
+      { href: "/owner/products",      label: "สินค้า",       icon: Tag,       exact: false },
+      { href: "/owner/categories",    label: "หมวดหมู่",     icon: FolderOpen, exact: false },
+      { href: "/owner/price-history", label: "ประวัติราคา",  icon: History,   exact: false },
+      { href: "/owner/price-groups",  label: "กลุ่มราคา",    icon: Layers,    exact: false },
+    ],
+  },
+  {
+    section: "ลูกค้า",
+    items: [
+      { href: "/owner/customers", label: "ลูกค้าประจำ", icon: UserCircle2, exact: false },
+    ],
+  },
+  {
+    section: "ระบบ",
+    items: [
+      { href: "/owner/staff",    label: "พนักงาน", icon: Users,    exact: false },
+      { href: "/owner/settings", label: "ตั้งค่า",  icon: Settings, exact: false },
+    ],
+  },
 ];
 
-// Only 4 most-used items in the bottom tab bar; the rest go in the drawer
-const tabBarItems = navItems.slice(0, 4);
+const navItems = navSections.flatMap((s) => s.items);
+
+// Bottom tab bar: the 4 most-used pages
+const tabBarItems: NavItem[] = [
+  navItems.find((n) => n.href === "/owner")!,
+  navItems.find((n) => n.href === "/owner/reports")!,
+  navItems.find((n) => n.href === "/owner/products")!,
+  navItems.find((n) => n.href === "/owner/customers")!,
+];
 
 export default function OwnerShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -33,36 +65,48 @@ export default function OwnerShell({ children }: { children: React.ReactNode }) 
 
   const currentPage = navItems.find((n) => isActive(n));
 
+  const NavLink = ({ item, onNav }: { item: NavItem; onNav?: () => void }) => {
+    const Icon = item.icon;
+    const active = isActive(item);
+    return (
+      <Link
+        href={item.href}
+        onClick={onNav}
+        className={`flex items-center gap-3 px-3 py-2.5 rounded-2xl text-sm transition-all ${
+          active ? "shadow-sm" : "hover:bg-gray-50 active:bg-gray-100"
+        }`}
+        style={active ? { background: "#f0fdf4", color: BRAND } : { color: "#6b7280" }}
+      >
+        <div
+          className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-all"
+          style={active ? { background: BRAND } : { background: "#f3f4f6" }}
+        >
+          <Icon
+            className="w-4 h-4"
+            style={{ color: active ? "#fff" : "#9ca3af" }}
+            strokeWidth={active ? 2.2 : 1.8}
+          />
+        </div>
+        <span className={`flex-1 ${active ? "font-semibold" : "font-medium"}`}>{item.label}</span>
+        {active && <ChevronRight className="w-3.5 h-3.5 opacity-40" style={{ color: BRAND }} />}
+      </Link>
+    );
+  };
+
   const SidebarNav = ({ onNav }: { onNav?: () => void }) => (
-    <nav className="flex-1 px-3 py-3 space-y-1">
-      {navItems.map((item) => {
-        const Icon = item.icon;
-        const active = isActive(item);
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            onClick={onNav}
-            className={`flex items-center gap-3 px-3.5 py-3 rounded-2xl text-sm transition-all ${
-              active ? "shadow-sm" : "hover:bg-gray-50"
-            }`}
-            style={active ? { background: "#f0fdf4", color: BRAND } : { color: "#6b7280" }}
-          >
-            <div
-              className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-all"
-              style={active ? { background: BRAND } : { background: "#f3f4f6" }}
-            >
-              <Icon
-                className="w-4 h-4"
-                style={{ color: active ? "#fff" : "#9ca3af" }}
-                strokeWidth={active ? 2.2 : 1.8}
-              />
-            </div>
-            <span className={`flex-1 ${active ? "font-semibold" : "font-medium"}`}>{item.label}</span>
-            {active && <ChevronRight className="w-3.5 h-3.5 opacity-40" style={{ color: BRAND }} />}
-          </Link>
-        );
-      })}
+    <nav className="flex-1 px-3 py-3 overflow-y-auto space-y-4">
+      {navSections.map((sec) => (
+        <div key={sec.section}>
+          <p className="px-3 mb-1 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+            {sec.section}
+          </p>
+          <div className="space-y-0.5">
+            {sec.items.map((item) => (
+              <NavLink key={item.href} item={item} onNav={onNav} />
+            ))}
+          </div>
+        </div>
+      ))}
     </nav>
   );
 

@@ -28,8 +28,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
   const { id } = await params;
   const body = await req.json();
-  const { customerName, items } = body as {
+  const { customerName, customerId, items } = body as {
     customerName?: string;
+    customerId?: string | null;
     items: { id?: string; productId: string; productName: string; quantity: number; unitPrice: number; subtotal: number; unit: string }[];
   };
 
@@ -46,6 +47,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     where: { id },
     data: {
       customerName: customerName ?? null,
+      customerId: customerId ?? null,
       totalAmount,
       items: {
         create: items.map((item) => ({

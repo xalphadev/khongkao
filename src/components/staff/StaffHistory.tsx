@@ -8,6 +8,7 @@ import {
 import StaffTabBar from "./StaffTabBar";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import DatePickerModal from "@/components/ui/DatePickerModal";
+import NumberPadDialog from "@/components/ui/NumberPadDialog";
 import { getIconComponent, getCategoryGradient } from "@/components/owner/CategoriesPage";
 
 interface TransactionItem {
@@ -32,8 +33,15 @@ interface Transaction {
   totalAmount: number;
   createdAt: string;
   customerName: string | null;
+  customerId: string | null;
   note: string | null;
   items: TransactionItem[];
+  customer: {
+    id: string;
+    name: string;
+    nickname: string | null;
+    priceGroup: { id: string; name: string; color: string | null } | null;
+  } | null;
 }
 
 function formatMoney(n: number) {
@@ -88,15 +96,14 @@ function EditTransactionModal({
   const [addProduct, setAddProduct] = useState<CatProduct | null>(null);
   const [addQty, setAddQty] = useState("");
   const [addPrice, setAddPrice] = useState("");
-  const addQtyRef = useRef<HTMLInputElement>(null);
+  // NumberPad dialog state
+  const [editingRound, setEditingRound] = useState<{ idx: number; field: "qty" | "price" } | null>(null);
+  const [showAddQtyPad, setShowAddQtyPad] = useState(false);
+  const [showAddPricePad, setShowAddPricePad] = useState(false);
 
   useEffect(() => {
     fetch("/api/categories").then(r => r.json()).then(setCategories);
   }, []);
-
-  useEffect(() => {
-    if (addStep === "quantity") setTimeout(() => addQtyRef.current?.focus(), 100);
-  }, [addStep]);
 
   const total = items.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
 
@@ -120,16 +127,14 @@ function EditTransactionModal({
     }));
   })();
 
-  const updateQty = (idx: number, val: string) => {
-    const qty = parseFloat(val) || 0;
+  const updateQty = (idx: number, val: number) => {
     setItems(items.map((item, i) =>
-      i === idx ? { ...item, quantity: qty, subtotal: qty * item.unitPrice } : item
+      i === idx ? { ...item, quantity: val, subtotal: val * item.unitPrice } : item
     ));
   };
-  const updatePrice = (idx: number, val: string) => {
-    const price = parseFloat(val) || 0;
+  const updatePrice = (idx: number, val: number) => {
     setItems(items.map((item, i) =>
-      i === idx ? { ...item, unitPrice: price, subtotal: item.quantity * price } : item
+      i === idx ? { ...item, unitPrice: val, subtotal: item.quantity * val } : item
     ));
   };
   const removeItem = (idx: number) => setItems(items.filter((_, i) => i !== idx));
@@ -273,15 +278,21 @@ function EditTransactionModal({
                     {isExpanded && (
                       <div className="bg-gray-50/60 border-t border-gray-100">
                         {group.rounds.map(({ item, idx }, ri) => (
-                          <div key={idx} className={`flex items-center gap-1 px-3 py-2 ${ri > 0 ? "border-t border-gray-100" : ""}`}>
+                          <div key={idx} className={`flex items-center gap-1.5 px-3 py-2 ${ri > 0 ? "border-t border-gray-100" : ""}`}>
                             <span className="text-gray-300 text-[10px] w-10 pl-2 shrink-0">รอบ {ri + 1}</span>
-                            <input type="number" value={item.quantity || ""} onChange={(e) => updateQty(idx, e.target.value)}
-                              className="w-14 border border-gray-200 rounded-lg px-1 py-1 text-xs text-center focus:border-blue-400 focus:outline-none bg-white tabular-nums"
-                              min="0" step={item.unit === "KG" ? "0.1" : "1"} inputMode="decimal" />
+                            <button
+                              onClick={() => setEditingRound({ idx, field: "qty" })}
+                              className="w-14 border border-gray-200 rounded-lg px-1 py-1 text-xs text-center bg-white tabular-nums font-medium text-gray-700 active:bg-blue-50 active:border-blue-300 transition-colors"
+                            >
+                              {item.quantity || "0"}
+                            </button>
                             <span className="text-gray-300 text-xs">×</span>
-                            <input type="number" value={item.unitPrice || ""} onChange={(e) => updatePrice(idx, e.target.value)}
-                              className="w-14 border border-gray-200 rounded-lg px-1 py-1 text-xs text-center focus:border-blue-400 focus:outline-none bg-white tabular-nums"
-                              min="0" step="0.01" inputMode="decimal" />
+                            <button
+                              onClick={() => setEditingRound({ idx, field: "price" })}
+                              className="w-14 border border-gray-200 rounded-lg px-1 py-1 text-xs text-center bg-white tabular-nums font-medium text-gray-700 active:bg-amber-50 active:border-amber-300 transition-colors"
+                            >
+                              {item.unitPrice || "0"}
+                            </button>
                             <p className="text-emerald-600 text-xs font-medium tabular-nums flex-1 text-right">฿{formatMoney(item.quantity * item.unitPrice)}</p>
                             <button onClick={() => setRemoveConfirmIdx(idx)}
                               className="w-6 h-6 flex items-center justify-center rounded-lg bg-red-50 text-red-400 ml-1 shrink-0">
@@ -368,39 +379,63 @@ function EditTransactionModal({
               <p className="font-medium text-gray-900">{addProduct.name}</p>
               <p className="text-gray-400 text-sm mt-0.5">{addProduct.unit === "KG" ? "วัดเป็นกิโลกรัม" : "วัดเป็นชิ้น"}</p>
             </div>
-            <div className="bg-white rounded-2xl px-5 py-6 shadow-sm space-y-4">
-              {/* Price input (for custom price or allow override) */}
-              <div>
-                <div className="flex items-center justify-center gap-2 text-gray-400 text-sm mb-3">
-                  <Banknote className="w-4 h-4" />
+            <div className="bg-white rounded-2xl px-5 py-5 shadow-sm space-y-3">
+              {/* Price — tap to open pad */}
+              <button
+                onClick={() => setShowAddPricePad(true)}
+                className="w-full rounded-2xl px-4 py-4 text-center active:bg-blue-50 transition-colors"
+                style={{ border: `2px solid ${addPrice && parseFloat(addPrice) > 0 ? (addProduct.customPrice ? "#a855f7" : "#60a5fa") : "#e5e7eb"}` }}
+              >
+                <div className="flex items-center justify-center gap-2 text-gray-400 text-xs mb-1">
+                  <Banknote className="w-3.5 h-3.5" />
                   <span>ราคารับซื้อ (บาท / {addProduct.unit === "KG" ? "กก." : "ชิ้น"})</span>
                 </div>
-                <input type="number" value={addPrice} onChange={(e) => setAddPrice(e.target.value)}
-                  className="w-full bg-white rounded-2xl px-4 py-4 text-4xl font-medium text-center focus:outline-none tabular-nums"
-                  style={{ border: `3px solid ${addProduct.customPrice ? "#a855f7" : "#60a5fa"}` }}
-                  placeholder="0" min="0" step="0.01" inputMode="decimal" />
-              </div>
-              {/* Quantity input */}
-              <div>
-                <div className="flex items-center justify-center gap-2 text-gray-400 text-sm mb-3">
-                  {addProduct.unit === "KG" ? <Scale className="w-4 h-4" /> : <Hash className="w-4 h-4" />}
-                  <span>{addProduct.unit === "KG" ? "ใส่น้ำหนัก (กิโลกรัม)" : "ใส่จำนวน (ชิ้น)"}</span>
+                <p className={`text-4xl font-bold tabular-nums ${addPrice && parseFloat(addPrice) > 0 ? (addProduct.customPrice ? "text-purple-600" : "text-blue-600") : "text-gray-300"}`}>
+                  {addPrice || "0"}
+                </p>
+              </button>
+              {/* Quantity — tap to open pad */}
+              <button
+                onClick={() => setShowAddQtyPad(true)}
+                className="w-full rounded-2xl px-4 py-4 text-center active:bg-emerald-50 transition-colors"
+                style={{ border: `2px solid ${addQty && parseFloat(addQty) > 0 ? "#22c55e" : "#e5e7eb"}` }}
+              >
+                <div className="flex items-center justify-center gap-2 text-gray-400 text-xs mb-1">
+                  {addProduct.unit === "KG" ? <Scale className="w-3.5 h-3.5" /> : <Hash className="w-3.5 h-3.5" />}
+                  <span>{addProduct.unit === "KG" ? "น้ำหนัก (กิโลกรัม)" : "จำนวน (ชิ้น)"}</span>
                 </div>
-                <input ref={addQtyRef} type="number" value={addQty} onChange={(e) => setAddQty(e.target.value)}
-                  className="w-full bg-white rounded-2xl px-4 py-5 text-6xl font-medium text-center focus:outline-none tabular-nums"
-                  style={{ border: "3px solid #22c55e" }}
-                  placeholder="0" min="0" step={addProduct.unit === "KG" ? "0.1" : "1"} inputMode="decimal" />
-              </div>
+                <p className={`text-5xl font-bold tabular-nums ${addQty && parseFloat(addQty) > 0 ? "text-gray-800" : "text-gray-300"}`}>
+                  {addQty || "0"}
+                </p>
+              </button>
               {/* Preview total */}
               {addQty && parseFloat(addQty) > 0 && addPrice && parseFloat(addPrice) > 0 && (
-                <div className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3">
-                  <p className="text-gray-400 text-sm">ยอดที่ต้องจ่าย</p>
-                  <p className="text-emerald-600 font-medium text-xl tabular-nums">
+                <div className="flex items-center justify-between bg-emerald-50 rounded-xl px-4 py-3">
+                  <p className="text-emerald-600 text-sm font-medium">ยอดที่ต้องจ่าย</p>
+                  <p className="text-emerald-700 font-bold text-xl tabular-nums">
                     ฿{formatMoney(parseFloat(addQty) * parseFloat(addPrice))}
                   </p>
                 </div>
               )}
             </div>
+
+            {/* NumberPad dialogs for add step */}
+            <NumberPadDialog
+              open={showAddQtyPad}
+              onClose={() => setShowAddQtyPad(false)}
+              title={addProduct.unit === "KG" ? "น้ำหนัก (กิโลกรัม)" : "จำนวน (ชิ้น)"}
+              unit={addProduct.unit === "KG" ? "กก." : "ชิ้น"}
+              initialValue={addQty ? parseFloat(addQty) : null}
+              onConfirm={(v) => { setAddQty(String(v)); setShowAddQtyPad(false); }}
+            />
+            <NumberPadDialog
+              open={showAddPricePad}
+              onClose={() => setShowAddPricePad(false)}
+              title={`ราคารับซื้อ (บาท / ${addProduct.unit === "KG" ? "กก." : "ชิ้น"})`}
+              unit="บาท"
+              initialValue={addPrice ? parseFloat(addPrice) : null}
+              onConfirm={(v) => { setAddPrice(String(v)); setShowAddPricePad(false); }}
+            />
           </div>
         )}
 
@@ -435,6 +470,29 @@ function EditTransactionModal({
           onCancel={() => setRemoveConfirmIdx(null)}
         />
       )}
+
+      {/* NumberPad for inline round row editing */}
+      {editingRound && (() => {
+        const roundItem = items[editingRound.idx];
+        if (!roundItem) return null;
+        const isQty = editingRound.field === "qty";
+        return (
+          <NumberPadDialog
+            open
+            onClose={() => setEditingRound(null)}
+            title={isQty
+              ? (roundItem.unit === "KG" ? "น้ำหนัก (กิโลกรัม)" : "จำนวน (ชิ้น)")
+              : "ราคารับซื้อ (บาท / หน่วย)"}
+            unit={isQty ? (roundItem.unit === "KG" ? "กก." : "ชิ้น") : "บาท"}
+            initialValue={isQty ? roundItem.quantity : roundItem.unitPrice}
+            onConfirm={(v) => {
+              if (isQty) updateQty(editingRound.idx, v);
+              else updatePrice(editingRound.idx, v);
+              setEditingRound(null);
+            }}
+          />
+        );
+      })()}
     </div>
   );
 }
@@ -588,13 +646,36 @@ export default function StaffHistory() {
 
                     {/* Info */}
                     <div className="flex-1 min-w-0">
-                      {t.customerName ? (
-                        <div className="flex items-center gap-1 mb-0.5">
-                          <User className="w-3 h-3 text-gray-400 shrink-0" />
-                          <p className="text-gray-900 text-sm font-semibold truncate">{t.customerName}</p>
-                        </div>
-                      ) : null}
-                      <p className={`truncate ${t.customerName ? "text-gray-400 text-xs" : "text-gray-800 text-sm font-semibold"}`}>
+                      {/* Customer row */}
+                      <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
+                        {t.customerName ? (
+                          <>
+                            <User className="w-3 h-3 text-gray-400 shrink-0" />
+                            <p className="text-gray-900 text-sm font-semibold truncate max-w-[120px]">{t.customerName}</p>
+                          </>
+                        ) : (
+                          <>
+                            <User className="w-3 h-3 text-gray-300 shrink-0" />
+                            <p className="text-gray-400 text-xs">ไม่ระบุลูกค้า</p>
+                          </>
+                        )}
+                        {/* Price group badge */}
+                        {t.customer?.priceGroup ? (
+                          <span
+                            className="text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0"
+                            style={{
+                              background: (t.customer.priceGroup.color ?? "#16a34a") + "22",
+                              color: t.customer.priceGroup.color ?? "#16a34a",
+                            }}
+                          >
+                            กลุ่ม {t.customer.priceGroup.name}
+                          </span>
+                        ) : t.customerId ? (
+                          <span className="text-[10px] text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded-full shrink-0">ราคาปกติ</span>
+                        ) : null}
+                      </div>
+                      {/* Products */}
+                      <p className="text-gray-400 text-xs truncate">
                         {t.items.map(i => i.productName).join(", ")}
                       </p>
                       <div className="flex items-center gap-1.5 mt-1">
@@ -618,6 +699,28 @@ export default function StaffHistory() {
 
                 {expandedId === t.id && (
                   <div className="border-t border-emerald-50 bg-emerald-50/40 px-4 py-3">
+                    {/* Customer + price group detail */}
+                    {(t.customerName || t.customer) && (
+                      <div className="flex items-center gap-2 mb-3 bg-white rounded-xl px-3 py-2.5">
+                        <div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+                          <User className="w-3.5 h-3.5 text-gray-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-gray-800 text-sm font-semibold truncate">
+                            {t.customerName || t.customer?.name || "ไม่ระบุ"}
+                          </p>
+                          {t.customer?.priceGroup ? (
+                            <p className="text-xs mt-0.5 font-medium" style={{ color: t.customer.priceGroup.color ?? "#16a34a" }}>
+                              กลุ่มราคา: {t.customer.priceGroup.name}
+                            </p>
+                          ) : t.customer ? (
+                            <p className="text-gray-400 text-xs mt-0.5">ลูกค้าประจำ · ราคาปกติ</p>
+                          ) : (
+                            <p className="text-gray-400 text-xs mt-0.5">ลูกค้าทั่วไป</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
                     <p className="text-emerald-400 text-xs font-mono mb-2.5">#{t.id.slice(-8).toUpperCase()}</p>
                     <div className="space-y-2">
                       {t.items.map((item) => (

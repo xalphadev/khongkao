@@ -4,11 +4,12 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft, ShoppingCart, Clock, Plus, X, Check,
-  Package,
+  Package, Search,
   Scale, Hash, Banknote, User, CheckCircle2, ChevronRight, Pencil, Trash2,
 } from "lucide-react";
 import ReceiptModal from "./ReceiptModal";
 import { getIconComponent, getCategoryGradient } from "@/components/owner/CategoriesPage";
+import NumberPadDialog, { NumberPadHistoryItem } from "@/components/ui/NumberPadDialog";
 
 interface Category {
   id: string;
@@ -25,6 +26,17 @@ interface Product {
   pricePerUnit: number;
   customPrice: boolean;
   categoryId: string;
+}
+
+interface CustomerPriceInfo {
+  priceGroupId: string | null;
+  priceGroupName: string | null;
+  priceGroupColor: string | null;
+  prices: { productId: string; pricePerUnit: number; source: "override" | "group" | "default" }[];
+}
+
+interface PriceGroup {
+  id: string; name: string; color: string | null;
 }
 
 interface CartItem {
@@ -110,82 +122,76 @@ function EditCartItemModal({
   onConfirm: (newQty: number, newPrice?: number) => void;
   onCancel: () => void;
 }) {
-  const [qty, setQty] = useState(String(item.quantity));
-  const [price, setPrice] = useState(String(item.unitPrice));
-  const qtyRef = useRef<HTMLInputElement>(null);
-  const priceRef = useRef<HTMLInputElement>(null);
-  useEffect(() => {
-    setTimeout(() => (item.customPrice ? priceRef : qtyRef).current?.select(), 100);
-  }, [item.customPrice]);
+  const [qty, setQty] = useState(item.quantity);
+  const [price, setPrice] = useState(item.unitPrice);
+  const [priceOverride, setPriceOverride] = useState(item.customPrice);
+  const [showQtyPad, setShowQtyPad] = useState(false);
+  const [showPricePad, setShowPricePad] = useState(false);
 
-  const parsedQty = parseFloat(qty);
-  const parsedPrice = parseFloat(price);
-  const effectivePrice = item.customPrice ? parsedPrice : item.unitPrice;
-  const isQtyValid = !isNaN(parsedQty) && parsedQty > 0;
-  const isPriceValid = !item.customPrice || (!isNaN(parsedPrice) && parsedPrice > 0);
+  const unitLabel = item.unit === "KG" ? "กก." : "ชิ้น";
+  const effectivePrice = priceOverride ? price : item.unitPrice;
+  const isQtyValid = qty > 0;
+  const isPriceValid = !priceOverride || price > 0;
   const isValid = isQtyValid && isPriceValid;
-  const newTotal = isValid ? parsedQty * effectivePrice : 0;
+  const newTotal = isValid ? qty * effectivePrice : 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-[2px]">
       <div className="bg-white w-full max-w-md rounded-t-3xl px-5 py-6">
         <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-4" />
-        <div className="flex items-center gap-3 mb-5">
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${item.customPrice ? "bg-purple-50" : "bg-blue-50"}`}>
-            <Pencil className={`w-5 h-5 ${item.customPrice ? "text-purple-500" : "text-blue-500"}`} />
+        <div className="flex items-center gap-3 mb-4">
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${priceOverride ? "bg-amber-50" : "bg-blue-50"}`}>
+            <Pencil className={`w-5 h-5 ${priceOverride ? "text-amber-500" : "text-blue-500"}`} />
           </div>
-          <div>
-            <h3 className="font-medium text-gray-900">{item.productName}</h3>
-            {item.customPrice
-              ? <p className="text-purple-500 text-xs font-medium">กรอกราคาเอง</p>
-              : <p className="text-gray-400 text-xs">฿{item.unitPrice.toLocaleString()} / {item.unit === "KG" ? "กก." : "ชิ้น"}</p>
-            }
+          <div className="flex-1 min-w-0">
+            <h3 className="font-medium text-gray-900 truncate">{item.productName}</h3>
+            <p className="text-gray-400 text-xs">ราคาปกติ ฿{item.unitPrice.toLocaleString()} / {unitLabel}</p>
           </div>
+          {!item.customPrice && (
+            <button onClick={() => setPriceOverride(v => !v)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all shrink-0 ${
+                priceOverride ? "bg-amber-500 text-white border-amber-500" : "bg-white text-gray-400 border-gray-200"
+              }`}>
+              <Banknote className="w-3.5 h-3.5" />
+              {priceOverride ? "ราคาพิเศษ" : "ปรับราคา"}
+            </button>
+          )}
         </div>
 
-        {/* ── ราคา/หน่วย (เฉพาะ customPrice) ── */}
-        {item.customPrice && (
-          <div className="mb-4">
-            <div className="flex items-center justify-center gap-2 text-gray-400 text-sm mb-2">
-              <Banknote className="w-4 h-4" />
-              <span>ราคารับซื้อ / หน่วย (บาท)</span>
+        {/* Price field (tap to open pad) */}
+        {priceOverride && (
+          <button
+            onClick={() => setShowPricePad(true)}
+            className="w-full mb-4 rounded-2xl px-4 py-4 text-center active:bg-amber-50 transition-colors"
+            style={{ border: `3px solid ${price > 0 ? "#f59e0b" : "#e5e7eb"}` }}
+          >
+            <div className="flex items-center justify-center gap-2 text-amber-500 text-xs mb-1">
+              <Banknote className="w-3.5 h-3.5" />
+              <span>{item.customPrice ? "ราคารับซื้อ / หน่วย" : "ราคาพิเศษรอบนี้ (บาท)"}</span>
             </div>
-            <input
-              ref={priceRef}
-              type="number"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              className="w-full bg-white rounded-2xl px-4 py-4 text-5xl font-medium text-center focus:outline-none tabular-nums"
-              style={{ border: `3px solid ${isPriceValid && price ? "#a855f7" : "#e5e7eb"}` }}
-              min="0"
-              step="0.01"
-              inputMode="decimal"
-              placeholder="0"
-            />
-          </div>
+            <p className={`text-5xl font-bold tabular-nums ${price > 0 ? "text-amber-600" : "text-gray-300"}`}>
+              {price > 0 ? price : "0"}
+            </p>
+            {!item.customPrice && <p className="text-xs text-amber-400 mt-1">ปกติ ฿{item.unitPrice.toLocaleString()} · รอบนี้เท่านั้น</p>}
+          </button>
         )}
 
-        {/* ── จำนวน ── */}
-        <div className={item.customPrice ? "" : ""}>
-          <div className="flex items-center justify-center gap-2 text-gray-400 text-sm mb-2">
-            {item.unit === "KG" ? <Scale className="w-4 h-4" /> : <Hash className="w-4 h-4" />}
+        {/* Quantity field (tap to open pad) */}
+        <button
+          onClick={() => setShowQtyPad(true)}
+          className="w-full rounded-2xl px-4 py-4 text-center active:bg-blue-50 transition-colors"
+          style={{ border: `3px solid ${isQtyValid ? "#60a5fa" : "#e5e7eb"}` }}
+        >
+          <div className="flex items-center justify-center gap-2 text-gray-400 text-xs mb-1">
+            {item.unit === "KG" ? <Scale className="w-3.5 h-3.5" /> : <Hash className="w-3.5 h-3.5" />}
             <span>{item.unit === "KG" ? "น้ำหนัก (กิโลกรัม)" : "จำนวน (ชิ้น)"}</span>
           </div>
-          <input
-            ref={qtyRef}
-            type="number"
-            value={qty}
-            onChange={(e) => setQty(e.target.value)}
-            className="w-full bg-white rounded-2xl px-4 py-4 text-5xl font-medium text-center focus:outline-none transition-all tabular-nums"
-            style={{ border: `3px solid ${isQtyValid ? "#60a5fa" : "#e5e7eb"}` }}
-            min="0"
-            step={item.unit === "KG" ? "0.1" : "1"}
-            inputMode="decimal"
-            placeholder="0"
-          />
-        </div>
+          <p className={`text-5xl font-bold tabular-nums ${isQtyValid ? "text-blue-600" : "text-gray-300"}`}>
+            {qty > 0 ? qty : "0"}
+          </p>
+        </button>
 
-        {/* ── ยอดใหม่ ── */}
+        {/* Total preview */}
         <div className={`flex items-center justify-between rounded-xl px-4 py-3 mt-3 mb-4 ${isValid ? "bg-emerald-50" : "bg-gray-50"}`}>
           <p className="text-gray-400 text-sm">ยอดใหม่</p>
           <p className={`font-semibold text-xl tabular-nums ${isValid ? "text-emerald-600" : "text-gray-300"}`}>
@@ -198,13 +204,31 @@ function EditCartItemModal({
             ยกเลิก
           </button>
           <button
-            onClick={() => isValid && onConfirm(parsedQty, item.customPrice ? parsedPrice : undefined)}
+            onClick={() => isValid && onConfirm(qty, priceOverride ? price : undefined)}
             disabled={!isValid}
             className="py-3.5 rounded-2xl bg-blue-500 disabled:bg-gray-100 disabled:text-gray-300 text-white font-medium text-sm active:scale-[0.97] transition-all shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2"
           >
             <Check className="w-4 h-4" /> บันทึก
           </button>
         </div>
+
+        {/* Pads */}
+        <NumberPadDialog
+          open={showQtyPad}
+          onClose={() => setShowQtyPad(false)}
+          title={item.unit === "KG" ? "น้ำหนัก (กิโลกรัม)" : "จำนวน (ชิ้น)"}
+          unit={unitLabel}
+          initialValue={qty}
+          onConfirm={(v) => { setQty(v); setShowQtyPad(false); }}
+        />
+        <NumberPadDialog
+          open={showPricePad}
+          onClose={() => setShowPricePad(false)}
+          title="ราคาพิเศษ (บาท / หน่วย)"
+          unit="บาท"
+          initialValue={price}
+          onConfirm={(v) => { setPrice(v); setShowPricePad(false); }}
+        />
       </div>
     </div>
   );
@@ -424,23 +448,22 @@ export default function PurchasePage() {
   const [quantity, setQuantity] = useState("");
   // ── Draft persistence ──────────────────────────────────────
   const DRAFT_KEY = "purchase_cart_draft";
-  const loadDraft = (): { cart: CartItem[]; customerName: string } => {
+  const loadDraft = (): { cart: CartItem[]; customerName: string; customerId?: string | null } => {
     try {
       const raw = localStorage.getItem(DRAFT_KEY);
       if (raw) return JSON.parse(raw);
     } catch {}
     return { cart: [], customerName: "" };
   };
-  const saveDraft = (c: CartItem[], name: string) => {
-    try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ cart: c, customerName: name })); } catch {}
+  const saveDraft = (c: CartItem[], name: string, cid?: string | null) => {
+    try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ cart: c, customerName: name, customerId: cid ?? null })); } catch {}
   };
   const clearDraft = () => {
     try { localStorage.removeItem(DRAFT_KEY); } catch {}
   };
 
-  const _draft = loadDraft();
-  const [cart, setCart] = useState<CartItem[]>(_draft.cart);
-  const [step, setStep] = useState<Step>(_draft.cart.length > 0 ? "cart" : "category");
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [step, setStep] = useState<Step>("category");
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
   const [savedTransaction, setSavedTransaction] = useState<{
@@ -448,7 +471,12 @@ export default function PurchasePage() {
   } | null>(null);
   const [showReceipt, setShowReceipt] = useState(false);
 
-  const [customerName, setCustomerName] = useState(_draft.customerName);
+  const [customerName, setCustomerName] = useState("");
+  const [customerId, setCustomerId] = useState<string | null>(null);
+  const [customerMode, setCustomerMode] = useState<"new" | "regular">("new");
+  const [customerPriceInfo, setCustomerPriceInfo] = useState<CustomerPriceInfo | null>(null);
+  const [customerSuggestions, setCustomerSuggestions] = useState<{ id: string; name: string; nickname: string | null; phone: string | null }[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [heldBills, setHeldBills] = useState<HeldBill[]>([]);
   const [showHoldConfirm, setShowHoldConfirm] = useState(false);
   const [showPayConfirm, setShowPayConfirm] = useState(false);
@@ -458,17 +486,41 @@ export default function PurchasePage() {
   const [holdingBill, setHoldingBill] = useState(false);
 
   const [customUnitPrice, setCustomUnitPrice] = useState("");
+  const [priceGroups, setPriceGroups] = useState<PriceGroup[]>([]);
+  const [sessionGroupId, setSessionGroupId] = useState<string>("");
+  const [sessionGroupPrices, setSessionGroupPrices] = useState<Record<string, number>>({});
+  const [showCustomerModal, setShowCustomerModal] = useState(false);
   const quantityRef = useRef<HTMLInputElement>(null);
+
+  // NumberPad dialog state
+  const [showQtyPad, setShowQtyPad] = useState(false);
+  const [showPricePad, setShowPricePad] = useState(false);
+  const [padHistory, setPadHistory] = useState<NumberPadHistoryItem[]>([]);
+
+  // Load draft from localStorage only after mount to avoid SSR/hydration mismatch
+  useEffect(() => {
+    const draft = loadDraft();
+    if (draft.cart.length > 0) {
+      setCart(draft.cart);
+      setStep("cart");
+      setCustomerName(draft.customerName);
+      setCustomerId(draft.customerId ?? null);
+      setCustomerMode(draft.customerId ? "regular" : "new");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     fetch("/api/categories").then((r) => r.json()).then(setCategories);
+    fetch("/api/price-groups").then((r) => r.json()).then(setPriceGroups);
     loadHeldBills();
   }, []);
 
-  // Auto-save draft whenever cart or customerName changes
+  // Auto-save draft whenever cart, customerName, or customerId changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    saveDraft(cart, customerName);
-  }, [cart, customerName]);
+    saveDraft(cart, customerName, customerId);
+  }, [cart, customerName, customerId]); // saveDraft is stable (no deps)
 
   // Auto-resume held bill from query param ?held=<id>
   useEffect(() => {
@@ -479,14 +531,78 @@ export default function PurchasePage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [heldBills]);
 
-  useEffect(() => {
-    if (step === "quantity") setTimeout(() => quantityRef.current?.focus(), 150);
-  }, [step]);
 
   const loadHeldBills = useCallback(async () => {
     const res = await fetch("/api/held-bills");
     if (res.ok) setHeldBills(await res.json());
   }, []);
+
+  const loadCustomerPrices = useCallback(async (cid: string, currentCart: CartItem[]) => {
+    const res = await fetch(`/api/customers/${cid}/prices`);
+    if (!res.ok) return;
+    const info: CustomerPriceInfo = await res.json();
+    setCustomerPriceInfo(info);
+    // Re-price existing cart items (non-customPrice) using the new customer's resolved prices
+    if (currentCart.length > 0) {
+      setCart((prev) => prev.map((item) => {
+        if (item.customPrice) return item;
+        const resolved = info.prices.find((p) => p.productId === item.productId);
+        if (!resolved) return item;
+        return { ...item, unitPrice: resolved.pricePerUnit, subtotal: item.quantity * resolved.pricePerUnit };
+      }));
+    }
+  }, []);
+
+  // Load prices for a session group (temp apply without linking customer to the group)
+  const applySessionGroup = useCallback(async (groupId: string, currentCart: CartItem[]) => {
+    if (!groupId) {
+      setSessionGroupId("");
+      setSessionGroupPrices({});
+      // Re-price cart back to customer/default prices
+      setCart((prev) => prev.map((item) => {
+        if (item.customPrice) return item;
+        // will be re-derived by getProductPrice when next item is added; existing items keep current price
+        return item;
+      }));
+      return;
+    }
+    const res = await fetch(`/api/price-groups/${groupId}/items`);
+    if (!res.ok) return;
+    const items: { productId: string; pricePerUnit: number }[] = await res.json();
+    const map: Record<string, number> = {};
+    items.forEach((i) => { map[i.productId] = i.pricePerUnit; });
+    setSessionGroupId(groupId);
+    setSessionGroupPrices(map);
+    // Re-price existing cart items (non-customPrice, non-customer-override)
+    if (currentCart.length > 0) {
+      setCart((prev) => prev.map((item) => {
+        if (item.customPrice) return item;
+        const groupPrice = map[item.productId];
+        if (groupPrice === undefined) return item;
+        return { ...item, unitPrice: groupPrice, subtotal: item.quantity * groupPrice };
+      }));
+    }
+  }, []);
+
+  // Get resolved price for a product:
+  // priority: customer override > session group > customer's registered group > default
+  const getProductPrice = useCallback((product: Product): { price: number; source: "override" | "group" | "default"; groupLabel?: string } => {
+    if (product.customPrice) return { price: product.pricePerUnit, source: "default" };
+    // 1. Customer-specific override (highest priority)
+    const customerOverride = customerPriceInfo?.prices.find(
+      (p) => p.productId === product.id && p.source === "override"
+    );
+    if (customerOverride) return { price: customerOverride.pricePerUnit, source: "override" };
+    // 2. Session group override (temp, for this transaction only)
+    if (sessionGroupId && sessionGroupPrices[product.id] !== undefined) {
+      const sg = priceGroups.find((g) => g.id === sessionGroupId);
+      return { price: sessionGroupPrices[product.id], source: "group", groupLabel: sg?.name };
+    }
+    // 3. Customer's registered group / default
+    const resolved = customerPriceInfo?.prices.find((p) => p.productId === product.id);
+    if (resolved) return { price: resolved.pricePerUnit, source: resolved.source };
+    return { price: product.pricePerUnit, source: "default" };
+  }, [customerPriceInfo, sessionGroupId, sessionGroupPrices, priceGroups]);
 
   const totalAmount = cart.reduce((s, i) => s + i.subtotal, 0);
 
@@ -534,12 +650,20 @@ export default function PurchasePage() {
   };
 
   const handleCategorySelect = (cat: Category) => { setSelectedCategory(cat); setStep("product"); };
-  const handleProductSelect = (p: Product) => { setSelectedProduct(p); setQuantity(""); setCustomUnitPrice(""); setStep("quantity"); };
+  const handleProductSelect = (p: Product) => {
+    if (!p.customPrice) {
+      const { price } = getProductPrice(p);
+      setSelectedProduct({ ...p, pricePerUnit: price });
+    } else {
+      setSelectedProduct(p);
+    }
+    setQuantity(""); setCustomUnitPrice(""); setStep("quantity");
+  };
 
-  const handleAddToCart = () => {
-    if (!selectedProduct || !quantity || parseFloat(quantity) <= 0) return;
+  const handleAddToCart = (qtyOverride?: number) => {
+    const qty = qtyOverride ?? (quantity ? parseFloat(quantity) : 0);
+    if (!selectedProduct || !qty || qty <= 0) return;
     if (selectedProduct.customPrice && (!customUnitPrice || parseFloat(customUnitPrice) <= 0)) return;
-    const qty = parseFloat(quantity);
     const unitPrice = selectedProduct.customPrice ? parseFloat(customUnitPrice) : selectedProduct.pricePerUnit;
     const subtotal = qty * unitPrice;
     setCart([...cart, {
@@ -565,7 +689,9 @@ export default function PurchasePage() {
       });
       if (res.ok) {
         clearDraft();
-        setCart([]); setCustomerName(""); setStep("category");
+        setCart([]); setCustomerName(""); setCustomerId(null); setCustomerMode("new"); setCustomerPriceInfo(null);
+        setSessionGroupId(""); setSessionGroupPrices({});
+        setStep("category");
         setSelectedCategory(null); setSelectedProduct(null); setQuantity("");
         setShowHoldConfirm(false);
         await loadHeldBills();
@@ -595,14 +721,16 @@ export default function PurchasePage() {
       const res = await fetch("/api/transactions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: cart, customerName: customerName.trim() || null }),
+        body: JSON.stringify({ items: cart, customerName: customerName.trim() || null, customerId: customerId || null }),
       });
       if (res.ok) {
         const data = await res.json();
         setSavedTransaction({ ...data, items: cart, customerName: customerName.trim() || null });
         clearDraft();
         setShowReceipt(true);
-        setCart([]); setCustomerName(""); setStep("category");
+        setCart([]); setCustomerName(""); setCustomerId(null); setCustomerMode("new"); setCustomerPriceInfo(null);
+        setSessionGroupId(""); setSessionGroupPrices({});
+        setStep("category");
       }
     } finally { setSaving(false); }
   };
@@ -615,22 +743,78 @@ export default function PurchasePage() {
   };
   const stepNums: Record<Step, number> = { category: 1, product: 2, quantity: 3, cart: 4 };
 
-  // ── Cart action block (reused in category preview + cart step) ──
+  // ── Customer name search with autocomplete ────────────────────────────────
+  const searchCustomerTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleCustomerInput = (val: string) => {
+    setCustomerName(val);
+    setCustomerId(null); // unlink if user types manually
+    if (searchCustomerTimer.current) clearTimeout(searchCustomerTimer.current);
+    if (val.trim().length >= 1) {
+      searchCustomerTimer.current = setTimeout(async () => {
+        const res = await fetch(`/api/customers?q=${encodeURIComponent(val.trim())}&limit=5`);
+        if (res.ok) {
+          const data = await res.json();
+          const list = Array.isArray(data) ? data : (data.customers ?? []);
+          setCustomerSuggestions(list.slice(0, 5));
+          setShowSuggestions(list.length > 0);
+        }
+      }, 300);
+    } else {
+      setCustomerSuggestions([]);
+      setShowSuggestions(false);
+    }
+  };
+
+  const selectCustomer = (c: { id: string; name: string; nickname: string | null; phone: string | null }) => {
+    setCustomerName(c.name);
+    setCustomerId(c.id);
+    setShowSuggestions(false);
+    loadCustomerPrices(c.id, cart);
+  };
+
   const CustomerNameInput = () => (
-    <div className="flex items-center gap-2 bg-gray-50 rounded-2xl px-3 py-2.5 border-2 border-transparent focus-within:border-emerald-400 transition-all">
-      <User className="w-4 h-4 text-gray-400 shrink-0" />
-      <input
-        type="text"
-        value={customerName}
-        onChange={(e) => setCustomerName(e.target.value)}
-        className="flex-1 bg-transparent text-sm text-gray-800 placeholder-gray-400 focus:outline-none"
-        placeholder="ชื่อลูกค้า (ไม่บังคับ)"
-        maxLength={40}
-      />
-      {customerName && (
-        <button onClick={() => setCustomerName("")} className="text-gray-300 hover:text-gray-500">
-          <X className="w-3.5 h-3.5" />
-        </button>
+    <div className="relative">
+      <div className={`flex items-center gap-2 bg-gray-50 rounded-2xl px-3 py-2.5 border-2 transition-all ${customerId ? "border-emerald-400 bg-emerald-50/40" : "border-transparent focus-within:border-emerald-400"}`}>
+        <User className={`w-4 h-4 shrink-0 ${customerId ? "text-emerald-500" : "text-gray-400"}`} />
+        <input
+          type="text"
+          value={customerName}
+          onChange={(e) => handleCustomerInput(e.target.value)}
+          onFocus={() => customerName.trim().length >= 1 && setShowSuggestions(customerSuggestions.length > 0)}
+          onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+          className="flex-1 bg-transparent text-sm text-gray-800 placeholder-gray-400 focus:outline-none"
+          placeholder="พิมพ์ชื่อเพื่อค้นหา..."
+          maxLength={40}
+        />
+        {customerId && customerPriceInfo?.priceGroupName ? (
+          <span className="text-[10px] text-white rounded-md px-1.5 py-0.5 shrink-0 font-semibold" style={{ background: customerPriceInfo.priceGroupColor ?? "#16a34a" }}>
+            กลุ่ม {customerPriceInfo.priceGroupName}
+          </span>
+        ) : customerId ? (
+          <span className="text-[10px] bg-emerald-100 text-emerald-700 rounded-md px-1.5 py-0.5 shrink-0 font-medium">ประจำ</span>
+        ) : null}
+        {customerName && (
+          <button onMouseDown={(e) => { e.preventDefault(); setCustomerName(""); setCustomerId(null); setCustomerPriceInfo(null); setShowSuggestions(false); }} className="text-gray-300 hover:text-gray-500">
+            <X className="w-3.5 h-3.5" />
+          </button>
+        )}
+      </div>
+      {showSuggestions && customerSuggestions.length > 0 && (
+        <div className="absolute left-0 right-0 top-full mt-1 bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden z-30">
+          {customerSuggestions.map((c) => (
+            <button key={c.id} onMouseDown={() => selectCustomer(c)}
+              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-emerald-50 active:bg-emerald-100 transition-colors text-left border-b border-gray-50 last:border-0">
+              <div className="w-8 h-8 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
+                <User className="w-4 h-4 text-emerald-600" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-gray-800 truncate">{c.name}{c.nickname ? ` (${c.nickname})` : ""}</p>
+                {c.phone && <p className="text-xs text-gray-400">{c.phone}</p>}
+              </div>
+            </button>
+          ))}
+        </div>
       )}
     </div>
   );
@@ -685,7 +869,62 @@ export default function PurchasePage() {
         {/* ── STEP 1: Category ── */}
         {step === "category" && (
           <div>
-            <p className="text-gray-400 text-sm mb-4">เลือกประเภทของที่ลูกค้านำมาขาย</p>
+            {/* ── Customer chip — compact, tap to open modal ── */}
+            {/* div not button — contains a nested clear button inside */}
+            <div role="button" onClick={() => setShowCustomerModal(true)}
+              className={`w-full flex items-center gap-3 mb-4 rounded-2xl px-4 py-3 shadow-sm transition-all active:scale-[0.98] cursor-pointer select-none ${
+                customerId
+                  ? "bg-white border-2 border-emerald-200"
+                  : sessionGroupId
+                  ? "bg-white border-2 border-amber-200"
+                  : "bg-white border border-gray-100"
+              }`}>
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                customerId ? "bg-emerald-100" : "bg-gray-100"
+              }`}>
+                <User className={`w-5 h-5 ${customerId ? "text-emerald-600" : "text-gray-400"}`} />
+              </div>
+              <div className="flex-1 text-left min-w-0">
+                {customerId ? (
+                  <>
+                    <p className="font-semibold text-gray-800 text-sm truncate">{customerName}</p>
+                    <p className="text-xs mt-0.5">
+                      {sessionGroupId
+                        ? <span className="text-amber-600">ราคากลุ่ม {priceGroups.find(g => g.id === sessionGroupId)?.name} (รอบนี้)</span>
+                        : customerPriceInfo?.priceGroupName
+                          ? <span style={{ color: customerPriceInfo.priceGroupColor ?? "#16a34a" }}>กลุ่ม {customerPriceInfo.priceGroupName}</span>
+                          : <span className="text-gray-400">ราคาปกติ</span>
+                      }
+                    </p>
+                  </>
+                ) : sessionGroupId ? (
+                  <>
+                    <p className="font-semibold text-amber-700 text-sm">ราคากลุ่ม {priceGroups.find(g => g.id === sessionGroupId)?.name}</p>
+                    <p className="text-xs text-amber-500">ใช้เฉพาะรอบนี้ · ยังไม่ระบุลูกค้า</p>
+                  </>
+                ) : customerName ? (
+                  <>
+                    <p className="font-medium text-gray-700 text-sm truncate">{customerName}</p>
+                    <p className="text-xs text-gray-400">ลูกค้าใหม่</p>
+                  </>
+                ) : (
+                  <p className="text-sm text-gray-400">แตะเพื่อเลือกลูกค้า (ไม่บังคับ)</p>
+                )}
+              </div>
+              {(customerId || customerName || sessionGroupId) ? (
+                <button onMouseDown={(e) => {
+                  e.stopPropagation();
+                  setCustomerName(""); setCustomerId(null); setCustomerMode("new");
+                  setCustomerPriceInfo(null); setSessionGroupId(""); setSessionGroupPrices({});
+                }} className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center shrink-0 active:bg-gray-200">
+                  <X className="w-3.5 h-3.5 text-gray-400" />
+                </button>
+              ) : (
+                <ChevronRight className="w-4 h-4 text-gray-300 shrink-0" />
+              )}
+            </div>
+
+            <p className="text-gray-400 text-sm mb-3">เลือกประเภทของที่ลูกค้านำมาขาย</p>
 
             <div className="grid grid-cols-2 gap-3">
               {categories.map((cat) => {
@@ -764,8 +1003,23 @@ export default function PurchasePage() {
                     <p className="text-gray-400 text-xs mt-0.5">{product.unit === "KG" ? "วัดเป็นกิโลกรัม" : "วัดเป็นชิ้น"}</p>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-emerald-600 font-medium text-lg tabular-nums">฿{product.pricePerUnit.toLocaleString()}</p>
-                    <p className="text-gray-400 text-xs">/{product.unit === "KG" ? "กก." : "ชิ้น"}</p>
+                    {(() => {
+                      if (product.customPrice) return <p className="text-purple-500 text-sm font-medium">กรอกเอง</p>;
+                      const { price, source } = getProductPrice(product);
+                      return (
+                        <>
+                          <p className="text-emerald-600 font-medium text-lg tabular-nums">฿{price.toLocaleString()}</p>
+                          <p className="text-xs mt-0.5">
+                            {source === "override"
+                              ? <span className="text-purple-500 font-medium">เฉพาะบุคคล</span>
+                              : source === "group"
+                              ? <span className="font-semibold" style={{ color: customerPriceInfo?.priceGroupColor ?? "#16a34a" }}>กลุ่ม {customerPriceInfo?.priceGroupName}</span>
+                              : <span className="text-gray-400">/{product.unit === "KG" ? "กก." : "ชิ้น"}</span>
+                            }
+                          </p>
+                        </>
+                      );
+                    })()}
                   </div>
                   <ChevronRight className="w-4 h-4 text-gray-300" />
                 </button>
@@ -775,98 +1029,112 @@ export default function PurchasePage() {
         )}
 
         {/* ── STEP 3: Quantity ── */}
-        {step === "quantity" && selectedProduct && (
-          <div>
-            <div className="bg-white rounded-2xl p-4 shadow-sm mb-4 flex items-center gap-3">
-              {(() => {
-                const g = getCategoryGradient(selectedCategory?.color ?? "#16a34a");
-                const I = getIconComponent(selectedCategory?.icon ?? "Package");
-                return (
-                  <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
-                    style={{ background: `linear-gradient(135deg, ${g.from}, ${g.to})` }}>
-                    <I className="w-6 h-6 text-white" />
-                  </div>
-                );
-              })()}
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-gray-900">{selectedProduct.name}</p>
-                {selectedProduct.customPrice
-                  ? <p className="text-purple-600 text-sm font-medium">กรอกราคาเอง</p>
-                  : <p className="text-emerald-600 text-sm">฿{selectedProduct.pricePerUnit.toLocaleString()} / {selectedProduct.unit === "KG" ? "กก." : "ชิ้น"}</p>
-                }
-              </div>
-            </div>
+        {step === "quantity" && selectedProduct && (() => {
+          const unitLabel = selectedProduct.unit === "KG" ? "กก." : "ชิ้น";
+          const unitPrice = selectedProduct.customPrice
+            ? (customUnitPrice ? parseFloat(customUnitPrice) : 0)
+            : selectedProduct.pricePerUnit;
+          const qty = quantity ? parseFloat(quantity) : 0;
+          const subtotalPreview = qty > 0 && (!selectedProduct.customPrice || unitPrice > 0)
+            ? qty * unitPrice : null;
+          const { from: gFrom, to: gTo } = getCategoryGradient(selectedCategory?.color ?? "#16a34a");
+          const CatIcon = getIconComponent(selectedCategory?.icon ?? "Package");
 
-            <div className="bg-white rounded-2xl px-5 py-6 shadow-sm space-y-4">
-              {/* ── ราคาต่อหน่วย (เฉพาะ customPrice) ── */}
-              {selectedProduct.customPrice && (
-                <div>
-                  <div className="flex items-center justify-center gap-2 text-gray-400 text-sm mb-3">
-                    <Banknote className="w-4 h-4" />
-                    <span>ราคารับซื้อ (บาท / {selectedProduct.unit === "KG" ? "กก." : "ชิ้น"})</span>
-                  </div>
-                  <input
-                    type="number"
-                    value={customUnitPrice}
-                    onChange={(e) => setCustomUnitPrice(e.target.value)}
-                    className="w-full bg-white rounded-2xl px-4 py-4 text-5xl font-medium text-center focus:outline-none transition-all tabular-nums"
-                    style={{ border: "3px solid #a855f7" }}
-                    placeholder="0"
-                    min="0"
-                    step="0.01"
-                    inputMode="decimal"
-                  />
+          return (
+            <div className="flex flex-col gap-3">
+              {/* Product chip */}
+              <div className="bg-white rounded-2xl px-4 py-3 shadow-sm flex items-center gap-3">
+                <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+                  style={{ background: `linear-gradient(135deg, ${gFrom}, ${gTo})` }}>
+                  <CatIcon className="w-5 h-5 text-white" />
                 </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-gray-900 leading-tight">{selectedProduct.name}</p>
+                  {selectedProduct.customPrice
+                    ? <p className="text-purple-500 text-xs mt-0.5">กรอกราคาเอง</p>
+                    : <p className="text-emerald-600 text-xs mt-0.5">฿{selectedProduct.pricePerUnit.toLocaleString()} / {unitLabel}</p>
+                  }
+                </div>
+              </div>
+
+              {/* Custom price — tap to open pad */}
+              {selectedProduct.customPrice && (
+                <button
+                  onClick={() => setShowPricePad(true)}
+                  className="bg-white rounded-2xl px-4 py-4 shadow-sm text-center w-full active:bg-gray-50 transition-colors"
+                  style={{ border: `2px solid ${customUnitPrice ? "#a855f7" : "#e5e7eb"}` }}
+                >
+                  <div className="flex items-center gap-2 text-gray-400 text-xs mb-1.5 justify-center">
+                    <Banknote className="w-3.5 h-3.5" />
+                    <span>ราคารับซื้อ (บาท / {unitLabel})</span>
+                  </div>
+                  <p className={`text-4xl font-bold tabular-nums ${customUnitPrice ? "text-purple-600" : "text-gray-300"}`}>
+                    {customUnitPrice || "แตะเพื่อใส่ราคา"}
+                  </p>
+                </button>
               )}
 
-              {/* ── จำนวน ── */}
-              <div>
-                <div className="flex items-center justify-center gap-2 text-gray-400 text-sm mb-3">
-                  {selectedProduct.unit === "KG" ? <Scale className="w-4 h-4" /> : <Hash className="w-4 h-4" />}
-                  <span>{selectedProduct.unit === "KG" ? "ใส่น้ำหนัก (กิโลกรัม)" : "ใส่จำนวน (ชิ้น)"}</span>
+              {/* Quantity — tap to open pad */}
+              <button
+                onClick={() => setShowQtyPad(true)}
+                className="bg-white rounded-2xl shadow-sm overflow-hidden w-full text-left active:bg-gray-50 transition-colors"
+                style={{ border: `2px solid ${qty > 0 ? "#22c55e" : "#e5e7eb"}` }}
+              >
+                <div className="flex items-center gap-2 px-4 pt-3 pb-1 text-gray-400 text-xs justify-center">
+                  {selectedProduct.unit === "KG" ? <Scale className="w-3.5 h-3.5" /> : <Hash className="w-3.5 h-3.5" />}
+                  <span>{selectedProduct.unit === "KG" ? "น้ำหนัก (กิโลกรัม)" : "จำนวน (ชิ้น)"} · แตะเพื่อใส่</span>
                 </div>
-                <input
-                  ref={quantityRef}
-                  type="number"
-                  value={quantity}
-                  onChange={(e) => setQuantity(e.target.value)}
-                  className="w-full bg-white rounded-2xl px-4 py-5 text-7xl font-medium text-center focus:outline-none transition-all tabular-nums"
-                  style={{ border: "3px solid #22c55e" }}
-                  placeholder="0"
-                  min="0"
-                  step={selectedProduct.unit === "KG" ? "0.1" : "1"}
-                  inputMode="decimal"
-                />
-              </div>
-
-              {/* ── ยอดเงิน: secondary ── */}
-              {quantity && parseFloat(quantity) > 0 && (!selectedProduct.customPrice || (customUnitPrice && parseFloat(customUnitPrice) > 0)) ? (
-                <div className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3">
-                  <p className="text-gray-400 text-sm">ยอดที่ต้องจ่าย</p>
-                  <p className="text-emerald-600 font-medium text-xl tabular-nums">
-                    ฿{formatMoney(parseFloat(quantity) * (selectedProduct.customPrice ? parseFloat(customUnitPrice || "0") : selectedProduct.pricePerUnit))}
+                <div className="px-4 pb-3 text-center">
+                  <p className={`font-bold tabular-nums text-6xl leading-none ${qty > 0 ? "text-gray-800" : "text-gray-300"}`}>
+                    {qty > 0 ? quantity : "0"}
                   </p>
                 </div>
-              ) : (
-                <div className="bg-gray-50 rounded-xl px-4 py-3 text-center">
-                  <p className="text-gray-300 text-sm">ยอดเงินจะแสดงเมื่อใส่จำนวน{selectedProduct.customPrice ? "และราคา" : ""}</p>
-                </div>
-              )}
+                {subtotalPreview !== null ? (
+                  <div className="mx-3 mb-3 flex items-center justify-between bg-emerald-50 rounded-xl px-4 py-2.5">
+                    <p className="text-emerald-600 text-xs font-medium">ยอดที่ต้องจ่าย</p>
+                    <p className="text-emerald-700 font-bold text-lg tabular-nums">฿{formatMoney(subtotalPreview)}</p>
+                  </div>
+                ) : (
+                  <div className="mx-3 mb-3 bg-gray-50 rounded-xl px-4 py-2.5 text-center">
+                    <p className="text-gray-300 text-xs">ยอดเงินจะแสดงเมื่อใส่จำนวน{selectedProduct.customPrice ? "และราคา" : ""}</p>
+                  </div>
+                )}
+              </button>
 
+              {/* Confirm button */}
               <button
-                onClick={handleAddToCart}
-                disabled={
-                  !quantity || parseFloat(quantity) <= 0 ||
-                  (selectedProduct.customPrice && (!customUnitPrice || parseFloat(customUnitPrice) <= 0))
-                }
-                className="btn-staff bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-100 disabled:text-gray-300 text-white shadow-lg shadow-emerald-600/25 disabled:shadow-none"
-                style={{ minHeight: 60 }}
+                onClick={() => handleAddToCart()}
+                disabled={qty <= 0 || (selectedProduct.customPrice && (!customUnitPrice || parseFloat(customUnitPrice) <= 0))}
+                className="btn-staff bg-emerald-600 disabled:bg-gray-100 disabled:text-gray-300 text-white shadow-lg shadow-emerald-600/25 disabled:shadow-none"
+                style={{ minHeight: 56 }}
               >
                 <Check className="w-5 h-5" /> เพิ่มรายการ
               </button>
+
+              {/* NumberPad dialogs */}
+              <NumberPadDialog
+                open={showQtyPad}
+                onClose={() => setShowQtyPad(false)}
+                title={selectedProduct.unit === "KG" ? "ใส่น้ำหนัก (กิโลกรัม)" : "ใส่จำนวน (ชิ้น)"}
+                unit={unitLabel}
+                initialValue={qty > 0 ? qty : null}
+                history={padHistory}
+                onHistoryChange={setPadHistory}
+                onConfirm={(val) => { setQuantity(String(val)); setShowQtyPad(false); }}
+              />
+              <NumberPadDialog
+                open={showPricePad}
+                onClose={() => setShowPricePad(false)}
+                title={`ราคารับซื้อ (บาท / ${unitLabel})`}
+                unit="บาท"
+                initialValue={customUnitPrice ? parseFloat(customUnitPrice) : null}
+                history={padHistory}
+                onHistoryChange={setPadHistory}
+                onConfirm={(val) => { setCustomUnitPrice(String(val)); setShowPricePad(false); }}
+              />
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* ── STEP 4: Cart ── */}
         {step === "cart" && (
@@ -882,22 +1150,37 @@ export default function PurchasePage() {
               </div>
             ) : (
               <>
-                {/* ── Customer name ── */}
-                <div className="bg-white rounded-2xl px-4 py-2.5 shadow-sm flex items-center gap-3 border-2 border-transparent focus-within:border-emerald-400 transition-all">
-                  <User className="w-4 h-4 text-gray-400 shrink-0" />
-                  <input
-                    type="text"
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    className="flex-1 bg-transparent text-sm text-gray-800 placeholder-gray-400 focus:outline-none"
-                    placeholder="ชื่อลูกค้า (ไม่บังคับ)"
-                    maxLength={40}
-                  />
-                  {customerName && (
-                    <button onClick={() => setCustomerName("")} className="text-gray-300 shrink-0">
-                      <X className="w-3.5 h-3.5" />
+                {/* ── Customer Section — compact summary in cart ── */}
+                <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+                  <div className="flex items-center gap-3 px-3.5 py-2.5">
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${customerId ? "bg-emerald-100" : "bg-gray-100"}`}>
+                      <User className={`w-4 h-4 ${customerId ? "text-emerald-600" : "text-gray-400"}`} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      {customerId ? (
+                        <>
+                          <p className="text-sm font-semibold text-gray-800 truncate">{customerName}</p>
+                          <p className="text-[11px] text-gray-400">
+                            {customerPriceInfo?.priceGroupName
+                              ? <span style={{ color: customerPriceInfo.priceGroupColor ?? "#16a34a" }}>กลุ่ม {customerPriceInfo.priceGroupName}</span>
+                              : "ลูกค้าประจำ · ราคาปกติ"}
+                          </p>
+                        </>
+                      ) : customerName ? (
+                        <>
+                          <p className="text-sm font-medium text-gray-700 truncate">{customerName}</p>
+                          <p className="text-[11px] text-gray-400">ลูกค้าใหม่</p>
+                        </>
+                      ) : (
+                        <p className="text-sm text-gray-400">ไม่ระบุลูกค้า</p>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => setStep("category")}
+                      className="text-xs text-emerald-600 font-medium bg-emerald-50 rounded-lg px-2.5 py-1.5 shrink-0 active:bg-emerald-100">
+                      แก้ไข
                     </button>
-                  )}
+                  </div>
                 </div>
 
                 {/* ── Items (grouped, number-focused) ── */}
@@ -1099,9 +1382,9 @@ export default function PurchasePage() {
               <button
                 onClick={() => {
                   clearDraft();
-                  setCart([]); setCustomerName(""); setStep("category");
-                  setSelectedCategory(null); setSelectedProduct(null); setQuantity("");
-                  setShowCancelConfirm(false);
+        setCart([]); setCustomerName(""); setCustomerId(null); setCustomerMode("new"); setCustomerPriceInfo(null); setStep("category");
+        setSelectedCategory(null); setSelectedProduct(null); setQuantity("");
+        setShowCancelConfirm(false);
                   router.push("/staff");
                 }}
                 className="py-3.5 rounded-2xl bg-red-500 text-white font-medium text-sm active:scale-[0.97] transition-all shadow-lg shadow-red-500/25"
@@ -1118,6 +1401,231 @@ export default function PurchasePage() {
       {showReceipt && savedTransaction && (
         <ReceiptModal transaction={savedTransaction} onClose={() => { setShowReceipt(false); setSavedTransaction(null); router.push("/staff"); }} />
       )}
+
+      {/* ── Customer Select Modal ── */}
+      {showCustomerModal && (
+        <CustomerSelectModal
+          priceGroups={priceGroups}
+          sessionGroupId={sessionGroupId}
+          currentCustomerId={customerId}
+          currentCustomerName={customerName}
+          onSelectCustomer={(c) => {
+            setCustomerMode("regular");
+            selectCustomer(c);
+            setShowCustomerModal(false);
+          }}
+          onNewCustomer={(name) => {
+            setCustomerMode("new");
+            setCustomerName(name);
+            setCustomerId(null);
+            setCustomerPriceInfo(null);
+            setShowCustomerModal(false);
+          }}
+          onSelectGroup={(groupId) => {
+            applySessionGroup(groupId, cart);
+          }}
+          onClear={() => {
+            setCustomerName(""); setCustomerId(null); setCustomerMode("new");
+            setCustomerPriceInfo(null); setSessionGroupId(""); setSessionGroupPrices({});
+          }}
+          onClose={() => setShowCustomerModal(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+// ── Customer Select Modal (bottom sheet) ─────────────────────
+function CustomerSelectModal({
+  priceGroups, sessionGroupId, currentCustomerId, currentCustomerName,
+  onSelectCustomer, onNewCustomer, onSelectGroup, onClear, onClose,
+}: {
+  priceGroups: PriceGroup[];
+  sessionGroupId: string;
+  currentCustomerId: string | null;
+  currentCustomerName: string;
+  onSelectCustomer: (c: { id: string; name: string; nickname: string | null; phone: string | null; priceGroupId?: string | null }) => void;
+  onNewCustomer: (name: string) => void;
+  onSelectGroup: (groupId: string) => void;
+  onClear: () => void;
+  onClose: () => void;
+}) {
+  const [q, setQ] = useState("");
+  const [customers, setCustomers] = useState<{ id: string; name: string; nickname: string | null; phone: string | null; priceGroupId: string | null }[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [newName, setNewName] = useState(currentCustomerId ? "" : currentCustomerName);
+  const [tab, setTab] = useState<"list" | "new">(currentCustomerId ? "list" : "list");
+  const [showGroupPicker, setShowGroupPicker] = useState(!!sessionGroupId);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    // Load initial list
+    loadCustomers("");
+    setTimeout(() => searchRef.current?.focus(), 150);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const loadCustomers = async (search: string) => {
+    setLoading(true);
+    const params = new URLSearchParams({ limit: "20" });
+    if (search) params.set("q", search);
+    const res = await fetch(`/api/customers?${params}`);
+    if (res.ok) {
+      const data = await res.json();
+      setCustomers(Array.isArray(data) ? data : (data.customers ?? []));
+    }
+    setLoading(false);
+  };
+
+  const handleSearch = (val: string) => {
+    setQ(val);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => loadCustomers(val), 300);
+  };
+
+  const activeGroup = priceGroups.find((g) => g.id === sessionGroupId);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-[2px]"
+      onClick={onClose}>
+      <div className="bg-white w-full max-w-md rounded-t-3xl flex flex-col"
+        style={{ maxHeight: "88vh" }}
+        onClick={(e) => e.stopPropagation()}>
+
+        {/* Handle */}
+        <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mt-3 mb-0 shrink-0" />
+
+        {/* Header */}
+        <div className="flex items-center gap-3 px-5 pt-4 pb-3 shrink-0">
+          <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
+            <User className="w-5 h-5 text-emerald-600" />
+          </div>
+          <p className="font-bold text-gray-800 flex-1">เลือกลูกค้า</p>
+          <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+            <X className="w-4 h-4 text-gray-500" />
+          </button>
+        </div>
+
+        {/* Search */}
+        <div className="px-5 pb-3 shrink-0">
+          <div className="flex items-center gap-2 bg-gray-100 rounded-2xl px-3.5 py-2.5">
+            <Search className="w-4 h-4 text-gray-400 shrink-0" />
+            <input ref={searchRef} type="text" value={q} onChange={(e) => handleSearch(e.target.value)}
+              placeholder="ค้นหาชื่อ, ชื่อเล่น, เบอร์..."
+              className="flex-1 bg-transparent text-sm text-gray-800 placeholder-gray-400 focus:outline-none" />
+            {q && <button onClick={() => handleSearch("")}><X className="w-3.5 h-3.5 text-gray-400" /></button>}
+          </div>
+        </div>
+
+        {/* Customer list */}
+        <div className="flex-1 overflow-y-auto px-5 pb-2">
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <div className="w-6 h-6 border-2 border-emerald-200 border-t-emerald-500 rounded-full animate-spin" />
+            </div>
+          ) : customers.length === 0 ? (
+            <div className="text-center py-8 text-gray-400">
+              <User className="w-10 h-10 mx-auto mb-2 opacity-30" />
+              <p className="text-sm">{q ? `ไม่พบ "${q}"` : "ยังไม่มีลูกค้า"}</p>
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              {customers.map((c) => {
+                const isSelected = c.id === currentCustomerId;
+                const pg = priceGroups.find((g) => g.id === c.priceGroupId);
+                return (
+                  <button key={c.id} onClick={() => onSelectCustomer(c)}
+                    className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl text-left transition-all active:scale-[0.98] ${
+                      isSelected ? "bg-emerald-50 border-2 border-emerald-200" : "bg-gray-50 border border-gray-100"
+                    }`}>
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isSelected ? "bg-emerald-200" : "bg-white"}`}>
+                      <User className={`w-5 h-5 ${isSelected ? "text-emerald-700" : "text-gray-400"}`} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-gray-800 text-sm truncate">{c.name}</p>
+                        {c.nickname && <span className="text-xs text-gray-400 shrink-0">"{c.nickname}"</span>}
+                      </div>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        {pg
+                          ? <span className="text-[10px] text-white rounded px-1.5 py-0.5 font-bold" style={{ background: pg.color ?? "#16a34a" }}>กลุ่ม {pg.name}</span>
+                          : <span className="text-[10px] text-gray-400">ราคาปกติ</span>
+                        }
+                        {c.phone && <span className="text-[10px] text-gray-400">{c.phone}</span>}
+                      </div>
+                    </div>
+                    {isSelected && <Check className="w-4 h-4 text-emerald-500 shrink-0" />}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Bottom actions */}
+        <div className="shrink-0 border-t border-gray-100 px-5 pt-3 pb-5 space-y-2.5"
+          style={{ paddingBottom: "max(20px, env(safe-area-inset-bottom))" }}>
+
+          {/* ราคาพิเศษรอบนี้ — collapsible */}
+          <button onClick={() => setShowGroupPicker((v) => !v)}
+            className="w-full flex items-center gap-2 py-2 text-xs font-semibold text-gray-500">
+            <Banknote className="w-3.5 h-3.5" />
+            ราคาพิเศษรอบนี้ (ไม่ใช้กลุ่มของลูกค้า)
+            <ChevronRight className={`w-3.5 h-3.5 ml-auto transition-transform ${showGroupPicker ? "rotate-90" : ""}`} />
+            {sessionGroupId && (
+              <span className="text-white text-[10px] rounded-md px-1.5 py-0.5 font-bold"
+                style={{ background: priceGroups.find(g => g.id === sessionGroupId)?.color ?? "#16a34a" }}>
+                กลุ่ม {activeGroup?.name}
+              </span>
+            )}
+          </button>
+          {showGroupPicker && (
+            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none" style={{ scrollbarWidth: "none" }}>
+              <button onClick={() => onSelectGroup("")}
+                className={`flex-none px-3 py-2 rounded-xl text-xs font-semibold border transition-all ${!sessionGroupId ? "bg-gray-800 text-white border-gray-800" : "bg-gray-50 text-gray-500 border-gray-200"}`}>
+                ปกติ
+              </button>
+              {priceGroups.map((g) => (
+                <button key={g.id} onClick={() => onSelectGroup(sessionGroupId === g.id ? "" : g.id)}
+                  className={`flex-none px-3 py-2 rounded-xl text-xs font-semibold border transition-all ${sessionGroupId === g.id ? "text-white border-transparent" : "bg-gray-50 border-gray-200"}`}
+                  style={sessionGroupId === g.id ? { background: g.color ?? "#16a34a" } : { color: g.color ?? "#16a34a" }}>
+                  กลุ่ม {g.name}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* New customer name input */}
+          <div className="flex items-center gap-2 bg-gray-50 rounded-2xl px-3.5 py-2.5 border border-gray-200">
+            <Plus className="w-4 h-4 text-gray-400 shrink-0" />
+            <input type="text" value={newName} onChange={(e) => setNewName(e.target.value)}
+              placeholder="หรือพิมพ์ชื่อลูกค้าใหม่..."
+              className="flex-1 bg-transparent text-sm placeholder-gray-400 focus:outline-none"
+              maxLength={40} />
+            {newName.trim() && (
+              <button onClick={() => onNewCustomer(newName.trim())}
+                className="bg-gray-800 text-white text-xs font-semibold rounded-xl px-3 py-1.5 shrink-0">
+                ใช้ชื่อนี้
+              </button>
+            )}
+          </div>
+
+          {/* Clear + Close */}
+          <div className="flex gap-2">
+            {(currentCustomerId || currentCustomerName || sessionGroupId) && (
+              <button onClick={() => { onClear(); onClose(); }}
+                className="flex-1 py-3 rounded-2xl bg-gray-100 text-gray-500 text-sm font-semibold active:bg-gray-200">
+                ล้างการเลือก
+              </button>
+            )}
+            <button onClick={onClose}
+              className="flex-1 py-3 rounded-2xl bg-emerald-500 text-white text-sm font-semibold active:bg-emerald-600">
+              {currentCustomerId ? "ยืนยัน" : "ข้ามไปก่อน"}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

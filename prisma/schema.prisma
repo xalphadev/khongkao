@@ -46,8 +46,61 @@ model Product {
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
   category       Category          @relation(fields: [categoryId], references: [id])
-  transactionItems TransactionItem[]
-  priceHistory     ProductPriceHistory[]
+  transactionItems   TransactionItem[]
+  priceHistory       ProductPriceHistory[]
+  priceGroupItems    PriceGroupItem[]
+  customerPrices     CustomerProductPrice[]
+}
+
+model PriceGroup {
+  id          String           @id @default(cuid())
+  name        String
+  description String?
+  color       String?
+  isActive    Boolean          @default(true)
+  sortOrder   Int              @default(0)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  items       PriceGroupItem[]
+  customers   Customer[]
+}
+
+model PriceGroupItem {
+  id           String     @id @default(cuid())
+  priceGroupId String
+  productId    String
+  pricePerUnit Float
+  priceGroup   PriceGroup @relation(fields: [priceGroupId], references: [id], onDelete: Cascade)
+  product      Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([priceGroupId, productId])
+}
+
+model CustomerProductPrice {
+  id           String   @id @default(cuid())
+  customerId   String
+  productId    String
+  pricePerUnit Float
+  customer     Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  product      Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([customerId, productId])
+}
+
+model Customer {
+  id             String                 @id @default(cuid())
+  name           String
+  nickname       String?
+  phone          String?
+  address        String?
+  notes          String?
+  priceGroupId   String?
+  isActive       Boolean                @default(true)
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+  priceGroup     PriceGroup?            @relation(fields: [priceGroupId], references: [id])
+  transactions   Transaction[]
+  productPrices  CustomerProductPrice[]
 }
 
 model Transaction {
@@ -55,10 +108,12 @@ model Transaction {
   staffId      String
   totalAmount  Float
   customerName String?
+  customerId   String?
   note         String?
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @updatedAt
   staff        User              @relation(fields: [staffId], references: [id])
+  customer     Customer?         @relation(fields: [customerId], references: [id])
   items        TransactionItem[]
 }
 

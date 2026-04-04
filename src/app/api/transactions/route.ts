@@ -34,6 +34,14 @@ export async function GET(req: NextRequest) {
     include: {
       staff: { select: { id: true, name: true } },
       items: true,
+      customer: {
+        select: {
+          id: true,
+          name: true,
+          nickname: true,
+          priceGroup: { select: { id: true, name: true, color: true } },
+        },
+      },
     },
     orderBy: { createdAt: "desc" },
   });
@@ -46,7 +54,7 @@ export async function POST(req: NextRequest) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
-  const { items, note, customerName } = body;
+  const { items, note, customerName, customerId } = body;
 
   if (!items || !Array.isArray(items) || items.length === 0) {
     return NextResponse.json({ error: "ต้องมีรายการสินค้าอย่างน้อย 1 รายการ" }, { status: 400 });
@@ -62,6 +70,7 @@ export async function POST(req: NextRequest) {
       staffId: session.user.id,
       totalAmount,
       customerName: customerName || null,
+      customerId: customerId || null,
       note,
       items: {
         create: items.map((item: {
