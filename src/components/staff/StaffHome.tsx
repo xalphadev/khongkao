@@ -5,9 +5,8 @@ import { signOut } from "next-auth/react";
 import { useState, useEffect } from "react";
 import {
   LogOut, ShoppingBag, Clock, ArrowRight, AlertCircle,
-  TrendingUp, Banknote, BarChart2,
+  TrendingUp, Banknote, BarChart2, ClipboardList, ChevronRight,
 } from "lucide-react";
-import StaffTabBar from "./StaffTabBar";
 
 interface StaffHomeProps { userName: string; }
 interface Transaction {
@@ -33,7 +32,6 @@ function localDate() {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 }
 
-// Derive customer group breakdown from transactions
 function getGroupBreakdown(txns: Transaction[]) {
   const map: Record<string, { name: string; color: string | null; count: number; amount: number }> = {};
   txns.forEach((t) => {
@@ -46,7 +44,6 @@ function getGroupBreakdown(txns: Transaction[]) {
   return Object.values(map).sort((a, b) => b.amount - a.amount);
 }
 
-// Derive top products from transactions
 function getTopProducts(txns: Transaction[]) {
   const map: Record<string, { name: string; total: number }> = {};
   txns.forEach(t => t.items.forEach(i => {
@@ -153,7 +150,7 @@ export default function StaffHome({ userName }: StaffHomeProps) {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-white/60 text-xs hidden sm:block">{thaiDate}</span>
+            <span className="text-white/60 text-xs">{thaiDate}</span>
             <button onClick={() => signOut({ callbackUrl: "/login" })}
               className="w-9 h-9 flex items-center justify-center rounded-xl active:scale-95 transition-all"
               style={{ background: "rgba(0,0,0,0.15)" }}>
@@ -162,7 +159,7 @@ export default function StaffHome({ userName }: StaffHomeProps) {
           </div>
         </div>
 
-        {/* Total card floating */}
+        {/* Total card */}
         <div className="relative mx-5 mb-3 rounded-2xl px-5 py-4"
           style={{ background: "rgba(255,255,255,0.18)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.3)" }}>
           <p className="text-white/70 text-xs font-medium mb-1">ยอดรับซื้อวันนี้</p>
@@ -197,7 +194,8 @@ export default function StaffHome({ userName }: StaffHomeProps) {
       </div>
 
       {/* ── CONTENT ── */}
-      <div className="flex-1 px-4 pt-3 pb-28 space-y-3">
+      <div className="flex-1 px-4 pt-3 space-y-3"
+        style={{ paddingBottom: "max(env(safe-area-inset-bottom, 0px), 24px)" }}>
 
         {/* Draft recovery */}
         {draftItems > 0 && (
@@ -238,7 +236,7 @@ export default function StaffHome({ userName }: StaffHomeProps) {
                   <div className="w-1.5 self-stretch bg-amber-400 shrink-0" />
                   <div className="flex items-center gap-3 flex-1 min-w-0 py-3.5 px-3.5">
                     <div className="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
-                      <Clock className="w-4.5 h-4.5 text-amber-500" />
+                      <Clock className="w-4 h-4 text-amber-500" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-gray-800 text-sm font-semibold truncate">{bill.label || "บิลไม่มีชื่อ"}</p>
@@ -255,40 +253,67 @@ export default function StaffHome({ userName }: StaffHomeProps) {
           </div>
         )}
 
-        {/* ── BIG CTA ── */}
-        <button onClick={() => router.push("/staff/purchase")}
-          className="w-full relative overflow-hidden rounded-3xl active:scale-[0.96] transition-all"
-          style={{
-            background: "linear-gradient(135deg, #84cc16 0%, #22c55e 55%, #16a34a 100%)",
-            boxShadow: "0 16px 48px rgba(132,204,22,0.45), 0 4px 16px rgba(34,197,94,0.4)",
-            padding: "26px 24px",
-          }}>
-          {/* Decorative glow blobs */}
-          <div className="absolute -top-10 -right-10 w-44 h-44 rounded-full" style={{ background: "rgba(255,255,255,0.12)" }} />
-          <div className="absolute -bottom-8 -left-8 w-32 h-32 rounded-full" style={{ background: "rgba(255,255,255,0.08)" }} />
-          <div className="absolute top-3 right-24 w-16 h-16 rounded-full" style={{ background: "rgba(255,255,255,0.07)" }} />
-          <div className="relative flex items-center gap-4">
-            {/* Icon with pulsing ring */}
-            <div className="relative shrink-0">
-              <div className="absolute inset-0 rounded-2xl animate-ping opacity-30"
-                style={{ background: "rgba(255,255,255,0.5)", animationDuration: "2s" }} />
-              <div className="w-18 h-18 rounded-2xl flex items-center justify-center relative"
-                style={{ width: 72, height: 72, background: "rgba(255,255,255,0.28)", boxShadow: "0 4px 16px rgba(0,0,0,0.12)" }}>
-                <ShoppingBag className="w-9 h-9 text-white" strokeWidth={2} />
+        {/* ── MAIN ACTIONS: รับซื้อ + ประวัติ ── */}
+        <div className="grid grid-cols-5 gap-2.5">
+          {/* Primary CTA — รับซื้อของเก่า */}
+          <button
+            onClick={() => router.push("/staff/purchase")}
+            className="col-span-3 relative overflow-hidden rounded-3xl active:scale-[0.96] transition-all text-left"
+            style={{
+              background: "linear-gradient(135deg, #84cc16 0%, #22c55e 55%, #16a34a 100%)",
+              boxShadow: "0 12px 36px rgba(132,204,22,0.4), 0 4px 12px rgba(34,197,94,0.35)",
+              padding: "22px 20px",
+            }}
+          >
+            <div className="absolute -top-8 -right-8 w-36 h-36 rounded-full" style={{ background: "rgba(255,255,255,0.1)" }} />
+            <div className="absolute -bottom-6 -left-4 w-24 h-24 rounded-full" style={{ background: "rgba(255,255,255,0.07)" }} />
+            <div className="relative">
+              <div className="relative w-14 h-14 mb-3">
+                <div className="absolute inset-0 rounded-2xl animate-ping opacity-25"
+                  style={{ background: "rgba(255,255,255,0.5)", animationDuration: "2s" }} />
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center relative"
+                  style={{ background: "rgba(255,255,255,0.28)" }}>
+                  <ShoppingBag className="w-7 h-7 text-white" strokeWidth={2} />
+                </div>
               </div>
-            </div>
-            <div className="flex-1">
-              <p className="text-white/75 text-sm font-medium mb-0.5">
-                {draftItems > 0 ? "เปิดบิลใหม่" : "กดเพื่อเริ่มบันทึก"}
+              <p className="text-white/75 text-xs font-medium leading-none mb-1">
+                {draftItems > 0 ? "เปิดบิลใหม่" : "กดเพื่อเริ่ม"}
               </p>
-              <p className="text-white font-black leading-tight" style={{ fontSize: "1.75rem" }}>รับซื้อของเก่า</p>
+              <p className="text-white font-black text-xl leading-tight">รับซื้อ<br />ของเก่า</p>
             </div>
-            <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
-              style={{ background: "rgba(255,255,255,0.3)", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
-              <ArrowRight className="w-6 h-6 text-white" strokeWidth={2.5} />
+            <div className="absolute bottom-4 right-4 w-8 h-8 rounded-xl flex items-center justify-center"
+              style={{ background: "rgba(255,255,255,0.3)" }}>
+              <ArrowRight className="w-4 h-4 text-white" strokeWidth={2.5} />
             </div>
-          </div>
-        </button>
+          </button>
+
+          {/* Secondary — ประวัติ */}
+          <button
+            onClick={() => router.push("/staff/history")}
+            className="col-span-2 relative overflow-hidden rounded-3xl active:scale-[0.96] transition-all flex flex-col justify-between text-left"
+            style={{
+              background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
+              boxShadow: "0 12px 36px rgba(79,70,229,0.35), 0 4px 12px rgba(124,58,237,0.3)",
+              padding: "22px 18px",
+            }}
+          >
+            <div className="absolute -top-6 -right-6 w-28 h-28 rounded-full" style={{ background: "rgba(255,255,255,0.1)" }} />
+            <div className="relative">
+              <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3"
+                style={{ background: "rgba(255,255,255,0.2)" }}>
+                <ClipboardList className="w-6 h-6 text-white" strokeWidth={1.8} />
+              </div>
+              <p className="text-white/70 text-xs font-medium leading-none mb-1">ดู</p>
+              <p className="text-white font-black text-xl leading-tight">ประวัติ</p>
+            </div>
+            <div className="flex items-center gap-1 mt-3">
+              <span className="text-white/60 text-xs font-medium">
+                {todayTransactions.length > 0 ? `${todayTransactions.length} บิลวันนี้` : "ไม่มีบิล"}
+              </span>
+              <ChevronRight className="w-3 h-3 text-white/40" />
+            </div>
+          </button>
+        </div>
 
         {/* ── QUICK STATS ── */}
         <div className="grid grid-cols-3 gap-2">
@@ -333,12 +358,10 @@ export default function StaffHome({ userName }: StaffHomeProps) {
                 <div key={p.name}
                   className="flex items-center gap-1.5 rounded-full px-3 py-1.5"
                   style={{ background: CHIP_COLORS[i % CHIP_COLORS.length].bg }}>
-                  <span className="text-xs font-semibold"
-                    style={{ color: CHIP_COLORS[i % CHIP_COLORS.length].text }}>
+                  <span className="text-xs font-semibold" style={{ color: CHIP_COLORS[i % CHIP_COLORS.length].text }}>
                     {p.name}
                   </span>
-                  <span className="text-xs font-bold tabular-nums"
-                    style={{ color: CHIP_COLORS[i % CHIP_COLORS.length].text }}>
+                  <span className="text-xs font-bold tabular-nums" style={{ color: CHIP_COLORS[i % CHIP_COLORS.length].text }}>
                     ฿{formatMoneyShort(p.total)}
                   </span>
                 </div>
@@ -358,10 +381,7 @@ export default function StaffHome({ userName }: StaffHomeProps) {
               {groupBreakdown.map((g, i) => (
                 <div key={i}
                   className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold"
-                  style={{
-                    background: g.color ?? "#6b7280",
-                    color: "#fff",
-                  }}>
+                  style={{ background: g.color ?? "#6b7280", color: "#fff" }}>
                   <span>{g.name}</span>
                   <span className="opacity-80">·</span>
                   <span>{g.count} บิล</span>
@@ -382,8 +402,6 @@ export default function StaffHome({ userName }: StaffHomeProps) {
         )}
 
       </div>
-
-      <StaffTabBar />
     </div>
   );
 }

@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import {
   ClipboardList, User, ChevronDown, Pencil, X, Check, ChevronLeft, ChevronRight, Search, Calendar,
-  Plus, ArrowLeft, Package, Scale, Hash, Banknote,
+  Plus, ArrowLeft, Package, Scale, Hash, Banknote, Home,
 } from "lucide-react";
-import StaffTabBar from "./StaffTabBar";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import DatePickerModal from "@/components/ui/DatePickerModal";
 import NumberPadDialog from "@/components/ui/NumberPadDialog";
@@ -499,6 +499,7 @@ function EditTransactionModal({
 
 // ── Main Component ─────────────────────────────────────────────
 export default function StaffHistory() {
+  const router = useRouter();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [date, setDate] = useState(() => localDateString());
@@ -545,8 +546,14 @@ export default function StaffHistory() {
           style={{ background: "#fff" }} />
 
         {/* Title */}
-        <div className="relative flex items-center gap-2 px-5 pb-3"
+        <div className="relative flex items-center gap-3 px-5 pb-3"
           style={{ paddingTop: "max(env(safe-area-inset-top), 56px)" }}>
+          <button
+            onClick={() => router.push("/staff")}
+            className="w-9 h-9 flex items-center justify-center rounded-xl active:bg-white/20 transition-all shrink-0"
+            style={{ background: "rgba(255,255,255,0.2)" }}>
+            <Home className="w-4 h-4 text-white" />
+          </button>
           <h1 className="text-white font-bold text-xl">ประวัติรายการ</h1>
         </div>
 
@@ -608,7 +615,7 @@ export default function StaffHistory() {
       </div>
 
       {/* ── LIST ── */}
-      <div className="flex-1 px-4 pt-1 pb-28">
+      <div className="flex-1 px-4 pt-1" style={{ paddingBottom: "max(env(safe-area-inset-bottom, 0px), 24px)" }}>
         {loading ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3 text-gray-400">
             <div className="w-7 h-7 border-2 border-gray-200 border-t-indigo-500 rounded-full animate-spin" />
@@ -754,7 +761,6 @@ export default function StaffHistory() {
         )}
       </div>
 
-      <StaffTabBar />
 
       {editingTx && (
         <EditTransactionModal
