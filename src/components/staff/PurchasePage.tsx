@@ -725,18 +725,17 @@ export default function PurchasePage() {
             {cart.length > 0 && (
               <button
                 onClick={() => setStep("cart")}
-                className="mt-4 w-full rounded-2xl px-4 py-4 flex items-center gap-3 active:scale-[0.98] transition-all"
-                style={{ background: "linear-gradient(135deg, #059669, #0ea5e9)", boxShadow: "0 6px 20px rgba(16,185,129,0.35)" }}
+                className="mt-4 w-full rounded-2xl px-4 py-4 flex items-center gap-3 active:scale-[0.98] transition-all bg-white"
+                style={{ border: "2px dashed #10b981", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}
               >
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                  style={{ background: "rgba(255,255,255,0.25)" }}>
-                  <ShoppingCart className="w-5 h-5 text-white" />
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-emerald-50">
+                  <ShoppingCart className="w-5 h-5 text-emerald-600" />
                 </div>
                 <div className="flex-1 text-left">
-                  <p className="text-white font-semibold text-sm">ดูรายการในตะกร้า</p>
-                  <p className="text-white/75 text-xs">{cart.length} รายการ · ฿{formatMoney(totalAmount)}</p>
+                  <p className="text-emerald-700 font-semibold text-sm">ดูรายการในตะกร้า</p>
+                  <p className="text-emerald-500 text-xs">{cart.length} รายการ · ฿{formatMoney(totalAmount)}</p>
                 </div>
-                <ChevronRight className="w-4 h-4 text-white/80" />
+                <ChevronRight className="w-4 h-4 text-emerald-400" />
               </button>
             )}
           </div>
