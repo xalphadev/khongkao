@@ -141,20 +141,72 @@ async function main() {
     }
   }
 
+  // ── Price Groups (skip if already have data) ──────────────────
+  const pgCount = await prisma.priceGroup.count();
+  let pgA: { id: string } | null = null;
+  let pgB: { id: string } | null = null;
+  let pgC: { id: string } | null = null;
+
+  if (pgCount === 0) {
+    console.log("  Creating sample price groups...");
+    pgA = await prisma.priceGroup.create({
+      data: { name: "ก", description: "ลูกค้าประจำ ราคาพิเศษสูง", color: "#dc2626", sortOrder: 1 },
+    });
+    pgB = await prisma.priceGroup.create({
+      data: { name: "ข", description: "ลูกค้าทั่วไป ราคากลาง", color: "#2563eb", sortOrder: 2 },
+    });
+    pgC = await prisma.priceGroup.create({
+      data: { name: "ค", description: "ลูกค้าปริมาณมาก ราคาพิเศษ", color: "#16a34a", sortOrder: 3 },
+    });
+
+    // Price overrides per group (some products only)
+    const overrides = [
+      // กลุ่ม ก — ราคาสูงกว่าปกติ
+      { group: pgA, product: "เหล็ก",        price: 10  },
+      { group: pgA, product: "ทองแดง",       price: 200 },
+      { group: pgA, product: "อลูมิเนียม",   price: 50  },
+      { group: pgA, product: "กระดาษขาว",    price: 5   },
+      { group: pgA, product: "กล่องกระดาษ",  price: 4   },
+      // กลุ่ม ข — ราคาปกติส่วนใหญ่ ยกเว้นพลาสติก
+      { group: pgB, product: "ขวดพลาสติกใส (PET)", price: 14 },
+      { group: pgB, product: "พลาสติกแข็ง (HDPE)", price: 10 },
+      // กลุ่ม ค — ราคาลดสำหรับโลหะ (ปริมาณมาก)
+      { group: pgC, product: "เหล็ก",        price: 7   },
+      { group: pgC, product: "สังกะสี",      price: 22  },
+      { group: pgC, product: "สเตนเลส",      price: 28  },
+    ];
+
+    for (const o of overrides) {
+      if (!o.group) continue;
+      const productId = prodMap[o.product];
+      if (!productId) continue;
+      await prisma.priceGroupItem.create({
+        data: { priceGroupId: o.group.id, productId, pricePerUnit: o.price },
+      });
+    }
+
+    console.log("  ✓ Created 3 price groups (ก, ข, ค)");
+  } else {
+    console.log(`  ⚠ Skipped price groups (${pgCount} already exist)`);
+    pgA = await prisma.priceGroup.findFirst({ where: { name: "ก" } });
+    pgB = await prisma.priceGroup.findFirst({ where: { name: "ข" } });
+    pgC = await prisma.priceGroup.findFirst({ where: { name: "ค" } });
+  }
+
   // ── Customers (skip if already have data) ─────────────────────
   const custCount = await prisma.customer.count();
   if (custCount === 0) {
     console.log("  Creating sample customers...");
 
     const customerDefs = [
-      { name: "ลุงสมชาย",    nickname: "ลุง",    phone: "081-111-2222", address: "ซอยลาดพร้าว 10",  notes: "มาทุกอาทิตย์" },
-      { name: "ป้าสมศรี",    nickname: "ป้าศรี", phone: "082-222-3333", address: "ตลาดมีนบุรี",     notes: "ขายกระดาษและขวดเป็นหลัก" },
-      { name: "นายประสิทธิ์", nickname: "ต้น",    phone: "083-333-4444", address: "บางนา",           notes: "" },
-      { name: "แม่ค้าตลาด",  nickname: "แม่ค้า", phone: "084-444-5555", address: "ตลาดอินทรา",     notes: "ขายพลาสติกและแก้ว" },
-      { name: "คุณวิชัย",    nickname: "ไวย์",   phone: "085-555-6666", address: "ลาดกระบัง",       notes: "เครื่องใช้ไฟฟ้ามือสอง" },
-      { name: "ป้าจันทร์",   nickname: "ป้าจัน", phone: "086-666-7777", address: "มีนบุรี",         notes: "" },
-      { name: "คุณสมบัติ",   nickname: "บัติ",   phone: "087-777-8888", address: "รังสิต",          notes: "โลหะเป็นหลัก" },
-      { name: "ยายแดง",      nickname: "ยาย",    phone: "088-888-9999", address: "ปทุมธานี",        notes: "" },
+      { name: "ลุงสมชาย",    nickname: "ลุง",    phone: "081-111-2222", address: "ซอยลาดพร้าว 10",  notes: "มาทุกอาทิตย์",           priceGroup: pgA },
+      { name: "ป้าสมศรี",    nickname: "ป้าศรี", phone: "082-222-3333", address: "ตลาดมีนบุรี",     notes: "ขายกระดาษและขวดเป็นหลัก", priceGroup: pgA },
+      { name: "นายประสิทธิ์", nickname: "ต้น",    phone: "083-333-4444", address: "บางนา",           notes: "",                         priceGroup: pgB },
+      { name: "แม่ค้าตลาด",  nickname: "แม่ค้า", phone: "084-444-5555", address: "ตลาดอินทรา",     notes: "ขายพลาสติกและแก้ว",        priceGroup: pgB },
+      { name: "คุณวิชัย",    nickname: "ไวย์",   phone: "085-555-6666", address: "ลาดกระบัง",       notes: "เครื่องใช้ไฟฟ้ามือสอง",    priceGroup: null },
+      { name: "ป้าจันทร์",   nickname: "ป้าจัน", phone: "086-666-7777", address: "มีนบุรี",         notes: "",                         priceGroup: pgC },
+      { name: "คุณสมบัติ",   nickname: "บัติ",   phone: "087-777-8888", address: "รังสิต",          notes: "โลหะเป็นหลัก",             priceGroup: pgC },
+      { name: "ยายแดง",      nickname: "ยาย",    phone: "088-888-9999", address: "ปทุมธานี",        notes: "",                         priceGroup: null },
     ];
 
     for (const c of customerDefs) {
@@ -165,6 +217,7 @@ async function main() {
           phone: c.phone || null,
           address: c.address || null,
           notes: c.notes || null,
+          priceGroupId: c.priceGroup?.id || null,
         },
       });
     }
@@ -350,8 +403,10 @@ async function main() {
   console.log("  Staff  : username=pa_daeng, password=staff123");
   console.log("  Staff  : username=pa_noi,   password=staff123");
   console.log("");
-  console.log("  หมวดหมู่ : 6 หมวด");
-  console.log("  สินค้า   : 22 รายการ (รวม 2 รายการแบบกำหนดราคาเอง)");
+  console.log("  หมวดหมู่  : 6 หมวด");
+  console.log("  สินค้า    : 22 รายการ (รวม 2 รายการแบบกำหนดราคาเอง)");
+  console.log("  กลุ่มราคา : 3 กลุ่ม (ก, ข, ค)");
+  console.log("  ลูกค้า    : 8 คน (ก=2, ข=2, ค=2, ไม่มีกลุ่ม=2)");
 }
 
 main()
