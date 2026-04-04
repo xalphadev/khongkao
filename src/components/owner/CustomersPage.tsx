@@ -470,18 +470,35 @@ function CustomerDetailView({ customerId, priceGroups, onBack }: {
             </div>
           )}
         </div>
-        <div className="grid grid-cols-3 divide-x divide-white/20 border-t border-white/20">
+        <div className="grid grid-cols-4 divide-x divide-white/20 border-t border-white/20">
           {[
             { label: "ยอดรวม", value: `฿${(customer.totalSpend / 1000).toFixed(1)}K` },
             { label: "จำนวนบิล", value: String(customer.billCount) },
+            {
+              label: "เฉลี่ย/บิล",
+              value: customer.billCount > 0
+                ? `฿${Math.round(customer.totalSpend / customer.billCount).toLocaleString()}`
+                : "—",
+            },
             { label: "ล่าสุด", value: customer.lastVisit ? fmtDateShort(customer.lastVisit) : "ยังไม่มี" },
           ].map((s) => (
-            <div key={s.label} className="flex flex-col items-center py-3 px-2">
-              <p className="text-white font-black text-lg leading-tight">{s.value}</p>
-              <p className="text-white/70 text-[10px] mt-0.5">{s.label}</p>
+            <div key={s.label} className="flex flex-col items-center py-3 px-1">
+              <p className="text-white font-black text-base leading-tight">{s.value}</p>
+              <p className="text-white/70 text-[10px] mt-0.5 text-center">{s.label}</p>
             </div>
           ))}
         </div>
+        {/* Suggest group assignment if frequent customer without a group */}
+        {!customer.priceGroupId && customer.billCount >= 3 && (
+          <div className="mx-4 mb-4 mt-1 flex items-center gap-2.5 bg-amber-400/20 rounded-xl px-3 py-2.5">
+            <div className="w-5 h-5 rounded-full bg-amber-400 flex items-center justify-center shrink-0">
+              <span className="text-white text-[10px] font-black">!</span>
+            </div>
+            <p className="text-white/90 text-xs">
+              ลูกค้าประจำ {customer.billCount} บิลแล้ว — ลองพิจารณาตั้งกลุ่มราคาให้
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Toggle active */}
@@ -550,12 +567,20 @@ function CustomerDetailView({ customerId, priceGroups, onBack }: {
 // ── Customer List Card ────────────────────────────────────────────────────────
 function CustomerCard({ c, priceGroups, onClick }: { c: CustomerSummary; priceGroups: PriceGroup[]; onClick: () => void }) {
   const group = priceGroups.find((g) => g.id === c.priceGroupId);
+  // Frequent customer without a price group → suggest assigning one
+  const suggestGroup = !c.priceGroupId && c.billCount >= 3;
   return (
     <button onClick={onClick}
-      className="w-full bg-white rounded-2xl px-4 py-3.5 flex items-center gap-3.5 border border-gray-100 shadow-sm active:scale-[0.98] transition-all text-left">
-      <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
+      className="w-full bg-white rounded-2xl px-4 py-3.5 flex items-center gap-3.5 border shadow-sm active:scale-[0.98] transition-all text-left"
+      style={{ borderColor: suggestGroup ? "#fde68a" : "#f3f4f6" }}>
+      <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 relative"
         style={{ background: "linear-gradient(135deg, #d1fae5, #a7f3d0)" }}>
         <User className="w-6 h-6 text-emerald-600" />
+        {suggestGroup && (
+          <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-400 border-2 border-white flex items-center justify-center">
+            <span className="text-white text-[8px] font-black leading-none">!</span>
+          </div>
+        )}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
@@ -565,6 +590,11 @@ function CustomerCard({ c, priceGroups, onClick }: { c: CustomerSummary; priceGr
         </div>
         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
           <PriceGroupBadge group={group} small />
+          {suggestGroup && (
+            <span className="text-[10px] bg-amber-50 text-amber-600 rounded-md px-1.5 py-0.5 font-semibold border border-amber-200">
+              ควรตั้งกลุ่ม
+            </span>
+          )}
           {c.phone && <span className="text-xs text-gray-400 flex items-center gap-1"><Phone className="w-3 h-3" /> {c.phone}</span>}
           {c.lastVisit && <span className="text-xs text-gray-400 flex items-center gap-1"><Calendar className="w-3 h-3" /> {fmtDateShort(c.lastVisit)}</span>}
         </div>

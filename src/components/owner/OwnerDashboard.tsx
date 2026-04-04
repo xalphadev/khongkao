@@ -4,8 +4,12 @@ import { useState, useEffect } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
-import { Banknote, ChevronLeft, ChevronRight, ChevronDown, TrendingUp, ShoppingBag, Package, Users } from "lucide-react";
+import { Banknote, ChevronLeft, ChevronRight, ChevronDown, TrendingUp, ShoppingBag, Package, Users, Tag } from "lucide-react";
 
+interface PriceGroupStat {
+  id: string; name: string; color: string | null;
+  amount: number; count: number; customerCount: number;
+}
 interface DailyReport {
   date: string;
   totalAmount: number;
@@ -13,6 +17,7 @@ interface DailyReport {
   categoryBreakdown: { name: string; amount: number; quantity: number }[];
   productBreakdown: { name: string; unit: string; amount: number; quantity: number }[];
   staffBreakdown: { name: string; amount: number; count: number }[];
+  priceGroupBreakdown: PriceGroupStat[];
 }
 
 interface MonthlyReport {
@@ -334,6 +339,57 @@ export default function OwnerDashboard() {
                       <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                         <div className="h-full rounded-full transition-all"
                           style={{ width: `${pct}%`, background: "linear-gradient(90deg, #0ea5e9, #6366f1)" }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ── Price group breakdown (today) ── */}
+          {daily && daily.priceGroupBreakdown && daily.priceGroupBreakdown.length > 0 && (
+            <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-7 h-7 rounded-xl flex items-center justify-center"
+                  style={{ background: "linear-gradient(135deg, #f59e0b, #f97316)" }}>
+                  <Tag className="w-4 h-4 text-white" />
+                </div>
+                <p className="text-gray-800 font-semibold text-sm">ยอดตามกลุ่มราคา</p>
+              </div>
+              <div className="space-y-3">
+                {daily.priceGroupBreakdown.map((g, i) => {
+                  const topAmt = daily.priceGroupBreakdown[0]?.amount ?? 1;
+                  const barPct = topAmt > 0 ? (g.amount / topAmt) * 100 : 0;
+                  const totalPct = daily.totalAmount > 0 ? (g.amount / daily.totalAmount) * 100 : 0;
+                  const isNone = g.id === "__none__";
+                  const groupColor = isNone ? "#9ca3af" : (g.color ?? "#16a34a");
+                  return (
+                    <div key={i}>
+                      <div className="flex items-center gap-2.5 mb-1.5">
+                        <div className="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black shrink-0 text-white"
+                          style={{ background: groupColor }}>
+                          {isNone ? "—" : g.name}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-baseline justify-between gap-1">
+                            <p className="text-gray-700 text-sm font-semibold truncate">
+                              {isNone ? "ราคาปกติ" : `กลุ่ม ${g.name}`}
+                            </p>
+                            <div className="text-right shrink-0">
+                              <p className="text-gray-800 text-sm font-bold tabular-nums">฿{formatMoney(g.amount)}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-gray-400 text-xs">{g.count} บิล</span>
+                            {g.customerCount > 0 && <span className="text-gray-400 text-xs">· {g.customerCount} คน</span>}
+                            <span className="text-gray-400 text-xs ml-auto">{Math.round(totalPct)}%</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="h-2 bg-gray-100 rounded-full overflow-hidden ml-10">
+                        <div className="h-full rounded-full transition-all"
+                          style={{ width: `${barPct}%`, background: groupColor }} />
                       </div>
                     </div>
                   );

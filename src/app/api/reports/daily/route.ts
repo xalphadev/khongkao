@@ -15,7 +15,6 @@ export async function GET(req: NextRequest) {
   }
   const date = searchParams.get("date") || localDateString();
 
-  // Append time to parse as LOCAL midnight, not UTC midnight
   const start = new Date(date + "T00:00:00");
   const end   = new Date(date + "T23:59:59.999");
 
@@ -24,6 +23,13 @@ export async function GET(req: NextRequest) {
     include: {
       staff: { select: { id: true, name: true } },
       items: { include: { product: { include: { category: true } } } },
+      customer: {
+        select: {
+          id: true,
+          name: true,
+          priceGroup: { select: { id: true, name: true, color: true } },
+        },
+      },
     },
     orderBy: { createdAt: "desc" },
   });
@@ -31,7 +37,7 @@ export async function GET(req: NextRequest) {
   const totalAmount = transactions.reduce((sum, t) => sum + t.totalAmount, 0);
   const totalTransactions = transactions.length;
 
-  // Group by category
+  // Category breakdown
   const categoryBreakdown: Record<string, { name: string; amount: number; quantity: number }> = {};
   transactions.forEach((t) => {
     t.items.forEach((item) => {
@@ -44,25 +50,20 @@ export async function GET(req: NextRequest) {
     });
   });
 
-  // Group by product
+  // Product breakdown
   const productBreakdown: Record<string, { name: string; unit: string; amount: number; quantity: number }> = {};
   transactions.forEach((t) => {
     t.items.forEach((item) => {
       const key = item.productName;
       if (!productBreakdown[key]) {
-        productBreakdown[key] = {
-          name: item.productName,
-          unit: item.unit,
-          amount: 0,
-          quantity: 0,
-        };
+        productBreakdown[key] = { name: item.productName, unit: item.unit, amount: 0, quantity: 0 };
       }
       productBreakdown[key].amount += item.subtotal;
       productBreakdown[key].quantity += item.quantity;
     });
   });
 
-  // Group by staff
+  // Staff breakdown
   const staffBreakdown: Record<string, { name: string; amount: number; count: number }> = {};
   transactions.forEach((t) => {
     const staffName = t.staff.name;
@@ -73,6 +74,22 @@ export async function GET(req: NextRequest) {
     staffBreakdown[staffName].count += 1;
   });
 
+  // Price group breakdown
+  const pgMap: Record<string, { id: string; name: string; color: string | null; amount: number; count: number; customerIds: Set<string> }> = {};
+  transactions.forEach((t) => {
+    const pg = t.customer?.priceGroup ?? null;
+    const key = pg?.id ?? "__none__";
+    if (!pgMap[key]) {
+      pgMap[key] = { id: key, name: pg ? pg.name : "ราคาปกติ", color: pg?.color ?? null, amount: 0, count: 0, customerIds: new Set() };
+    }
+    pgMap[key].amount += t.totalAmount;
+    pgMap[key].count += 1;
+    if (t.customerId) pgMap[key].customerIds.add(t.customerId);
+  });
+  const priceGroupBreakdown = Object.values(pgMap)
+    .map((g) => ({ id: g.id, name: g.name, color: g.color, amount: g.amount, count: g.count, customerCount: g.customerIds.size }))
+    .sort((a, b) => b.amount - a.amount);
+
   return NextResponse.json({
     date,
     totalAmount,
@@ -81,5 +98,6 @@ export async function GET(req: NextRequest) {
     categoryBreakdown: Object.values(categoryBreakdown).sort((a, b) => b.amount - a.amount),
     productBreakdown: Object.values(productBreakdown).sort((a, b) => b.amount - a.amount),
     staffBreakdown: Object.values(staffBreakdown).sort((a, b) => b.amount - a.amount),
+    priceGroupBreakdown,
   });
 }

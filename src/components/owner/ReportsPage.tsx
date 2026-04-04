@@ -1,16 +1,24 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ClipboardList, Download, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Calendar, CalendarDays, BarChart2, X, User, Clock, SlidersHorizontal } from "lucide-react";
+import { ClipboardList, Download, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Calendar, CalendarDays, BarChart2, X, User, Clock, SlidersHorizontal, Users } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import DatePickerModal from "@/components/ui/DatePickerModal";
 
+interface PriceGroup {
+  id: string; name: string; color: string | null;
+}
 interface TransactionItem {
   id: string; productName: string; quantity: number; unit: string; subtotal: number;
 }
 interface Transaction {
   id: string; totalAmount: number; customerName?: string; createdAt: string;
   staff: { name: string }; items: TransactionItem[];
+  customer?: { id: string; name: string; nickname?: string | null; priceGroup?: { id: string; name: string; color: string } | null } | null;
+}
+interface PriceGroupStat {
+  id: string; name: string; color: string | null;
+  amount: number; count: number; customerCount: number;
 }
 interface PeriodReport {
   startDate: string; endDate: string;
@@ -19,6 +27,7 @@ interface PeriodReport {
   categoryBreakdown: { name: string; amount: number; quantity: number }[];
   productBreakdown: { name: string; unit: string; amount: number; quantity: number }[];
   staffBreakdown: { name: string; amount: number; count: number }[];
+  priceGroupBreakdown: PriceGroupStat[];
   transactions: Transaction[];
 }
 
@@ -51,7 +60,7 @@ function isToday(dateStr: string) {
 }
 function getWeekRange(anchor: string) {
   const d = new Date(anchor + "T00:00:00");
-  const day = d.getDay(); // 0=Sun
+  const day = d.getDay();
   const mon = new Date(d); mon.setDate(d.getDate() - ((day + 6) % 7));
   const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
   return {
@@ -74,7 +83,6 @@ function periodLabel(period: Period, anchor: string) {
     const { startDate, endDate } = getWeekRange(anchor);
     return `${formatDateShort(startDate)} – ${formatDateShort(endDate)}`;
   }
-  // month
   const d = new Date(anchor + "T00:00:00");
   return d.toLocaleDateString("th-TH", { month: "long", year: "numeric" });
 }
@@ -97,10 +105,19 @@ export default function ReportsPage() {
   const [customEnd, setCustomEnd] = useState(() => localDateString());
   const [customPickerFor, setCustomPickerFor] = useState<"start" | "end" | null>(null);
   const [customApplied, setCustomApplied] = useState(false);
+  // Price group filter
+  const [priceGroups, setPriceGroups] = useState<PriceGroup[]>([]);
+  const [filterGroupId, setFilterGroupId] = useState(""); // "" = all, "none" = ราคาปกติ, else groupId
+
+  // Fetch price groups once on mount
+  useEffect(() => {
+    fetch("/api/price-groups").then((r) => r.ok ? r.json() : []).then(setPriceGroups);
+  }, []);
 
   useEffect(() => {
     if (period !== "custom") { load(); setShowAllProducts(false); setShowAllTx(false); }
-  }, [period, anchor]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [period, anchor, filterGroupId]);
 
   const getRange = () => {
     if (period === "day") return { startDate: anchor, endDate: anchor };
@@ -114,7 +131,9 @@ export default function ReportsPage() {
     setExpandedId(null);
     setSelectedProduct(null);
     const { startDate, endDate } = getRange();
-    const r = await fetch(`/api/reports/period?startDate=${startDate}&endDate=${endDate}`);
+    const params = new URLSearchParams({ startDate, endDate });
+    if (filterGroupId) params.set("priceGroupId", filterGroupId);
+    const r = await fetch(`/api/reports/period?${params}`);
     setReport(await r.json());
     setLoading(false);
   };
@@ -148,11 +167,13 @@ export default function ReportsPage() {
 
   const handleExport = () => {
     if (!report) return;
-    let csv = "เลขที่,วันที่,เวลา,พนักงาน,ลูกค้า,สินค้า,จำนวน,หน่วย,ยอดเงิน\n";
+    let csv = "เลขที่,วันที่,เวลา,พนักงาน,ลูกค้า,กลุ่มราคา,สินค้า,จำนวน,หน่วย,ยอดเงิน\n";
     report.transactions.forEach((t) => {
       const d = new Date(t.createdAt).toLocaleDateString("th-TH");
+      const pgName = t.customer?.priceGroup?.name ? `กลุ่ม ${t.customer.priceGroup.name}` : "ราคาปกติ";
+      const customerDisplay = t.customer?.name ?? t.customerName ?? "";
       t.items.forEach((item) => {
-        csv += `${t.id.slice(-8)},${d},${formatTime(t.createdAt)},${t.staff.name},${t.customerName ?? ""},${item.productName},${item.quantity},${item.unit === "KG" ? "กก." : "ชิ้น"},${item.subtotal}\n`;
+        csv += `${t.id.slice(-8)},${d},${formatTime(t.createdAt)},${t.staff.name},${customerDisplay},${pgName},${item.productName},${item.quantity},${item.unit === "KG" ? "กก." : "ชิ้น"},${item.subtotal}\n`;
       });
     });
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
@@ -163,6 +184,13 @@ export default function ReportsPage() {
   };
 
   const atToday = period !== "custom" && isAtToday();
+
+  // Active filter label for display
+  const activeFilterLabel = filterGroupId === "none"
+    ? "ราคาปกติ"
+    : filterGroupId
+    ? `กลุ่ม ${priceGroups.find((g) => g.id === filterGroupId)?.name ?? ""}`
+    : null;
 
   return (
     <div className="space-y-4">
@@ -178,9 +206,7 @@ export default function ReportsPage() {
             key={key}
             onClick={() => { setPeriod(key); setCustomApplied(false); setReport(null); }}
             className={`flex-1 flex items-center justify-center gap-1 py-2.5 rounded-xl text-xs font-semibold transition-all ${
-              period === key
-                ? "text-white shadow-sm"
-                : "text-gray-400 active:bg-gray-50"
+              period === key ? "text-white shadow-sm" : "text-gray-400 active:bg-gray-50"
             }`}
             style={period === key ? { background: "linear-gradient(135deg, #10b981, #0ea5e9)" } : {}}
           >
@@ -190,11 +216,53 @@ export default function ReportsPage() {
         ))}
       </div>
 
+      {/* ── Price group filter chips ── */}
+      {priceGroups.length > 0 && (
+        <div className="flex gap-2 overflow-x-auto -mx-0 pb-0.5" style={{ scrollbarWidth: "none" }}>
+          <button
+            onClick={() => setFilterGroupId("")}
+            className={`flex-none px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
+              filterGroupId === "" ? "bg-gray-800 text-white border-gray-800" : "bg-white text-gray-500 border-gray-200 shadow-sm"
+            }`}
+          >
+            ทุกกลุ่ม
+          </button>
+          {priceGroups.map((g) => {
+            const active = filterGroupId === g.id;
+            return (
+              <button
+                key={g.id}
+                onClick={() => setFilterGroupId(active ? "" : g.id)}
+                className={`flex-none px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
+                  active ? "text-white border-transparent shadow-sm" : "bg-white border-gray-200 shadow-sm"
+                }`}
+                style={active ? { background: g.color ?? "#16a34a" } : { color: g.color ?? "#16a34a" }}
+              >
+                กลุ่ม {g.name}
+              </button>
+            );
+          })}
+          <button
+            onClick={() => setFilterGroupId(filterGroupId === "none" ? "" : "none")}
+            className={`flex-none px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
+              filterGroupId === "none" ? "bg-gray-500 text-white border-gray-500 shadow-sm" : "bg-white text-gray-400 border-gray-200 shadow-sm"
+            }`}
+          >
+            ราคาปกติ
+          </button>
+        </div>
+      )}
+
       {/* ── Date navigator (standard periods) ── */}
       {period !== "custom" && (
         <div className="bg-gradient-to-br from-blue-600 to-blue-500 rounded-2xl p-4 shadow-lg shadow-blue-600/20">
           <div className="flex items-center justify-between mb-3">
-            <p className="text-white/80 text-sm font-medium">ช่วงเวลา</p>
+            <div>
+              <p className="text-white/80 text-sm font-medium">ช่วงเวลา</p>
+              {activeFilterLabel && (
+                <p className="text-white/60 text-xs mt-0.5">กรอง: {activeFilterLabel}</p>
+              )}
+            </div>
             <button
               onClick={handleExport}
               disabled={!report || report.totalTransactions === 0}
@@ -230,7 +298,12 @@ export default function ReportsPage() {
       {period === "custom" && (
         <div className="bg-gradient-to-br from-violet-600 to-violet-500 rounded-2xl p-4 shadow-lg shadow-violet-600/20">
           <div className="flex items-center justify-between mb-3">
-            <p className="text-white/80 text-sm font-medium">กำหนดช่วงวันที่</p>
+            <div>
+              <p className="text-white/80 text-sm font-medium">กำหนดช่วงวันที่</p>
+              {activeFilterLabel && (
+                <p className="text-white/60 text-xs mt-0.5">กรอง: {activeFilterLabel}</p>
+              )}
+            </div>
             {customApplied && report && (
               <button
                 onClick={handleExport}
@@ -243,7 +316,6 @@ export default function ReportsPage() {
             )}
           </div>
           <div className="flex items-center gap-2 mb-3">
-            {/* Start date */}
             <button
               onClick={() => setCustomPickerFor("start")}
               className={`flex-1 bg-white/20 rounded-xl px-3 py-2.5 text-center active:bg-white/30 transition-colors border-2 ${
@@ -254,7 +326,6 @@ export default function ReportsPage() {
               <p className="text-white text-sm font-bold leading-tight">{formatDateShort(customStart)}</p>
             </button>
             <div className="text-white/60 text-sm font-bold shrink-0">→</div>
-            {/* End date */}
             <button
               onClick={() => setCustomPickerFor("end")}
               className={`flex-1 bg-white/20 rounded-xl px-3 py-2.5 text-center active:bg-white/30 transition-colors border-2 ${
@@ -380,6 +451,71 @@ export default function ReportsPage() {
                   </ResponsiveContainer>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* ── Price group breakdown ── */}
+          {report.priceGroupBreakdown && report.priceGroupBreakdown.length > 0 && (
+            <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-7 h-7 rounded-xl flex items-center justify-center shrink-0"
+                  style={{ background: "linear-gradient(135deg, #f59e0b, #f97316)" }}>
+                  <Users className="w-4 h-4 text-white" />
+                </div>
+                <p className="text-sm font-semibold text-gray-700 flex-1">ยอดตามกลุ่มราคา</p>
+                {filterGroupId && (
+                  <button
+                    onClick={() => setFilterGroupId("")}
+                    className="flex items-center gap-1 text-xs text-gray-400 bg-gray-100 rounded-lg px-2 py-1 active:bg-gray-200"
+                  >
+                    <X className="w-3 h-3" /> ล้างกรอง
+                  </button>
+                )}
+              </div>
+              <div className="space-y-3">
+                {report.priceGroupBreakdown.map((g, i) => {
+                  const topAmt = report.priceGroupBreakdown[0]?.amount ?? 1;
+                  const barPct = topAmt > 0 ? (g.amount / topAmt) * 100 : 0;
+                  const totalPct = report.totalAmount > 0 ? (g.amount / report.totalAmount) * 100 : 0;
+                  const isNone = g.id === "__none__";
+                  const groupColor = isNone ? "#6b7280" : (g.color ?? "#16a34a");
+                  return (
+                    <div key={i}>
+                      <div className="flex items-center gap-2.5 mb-1.5">
+                        <div
+                          className="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black shrink-0 text-white cursor-pointer active:scale-95 transition-transform"
+                          style={{ background: groupColor }}
+                          onClick={() => setFilterGroupId(filterGroupId === (isNone ? "none" : g.id) ? "" : (isNone ? "none" : g.id))}
+                        >
+                          {isNone ? "—" : g.name}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-baseline justify-between gap-1">
+                            <p className="text-gray-700 text-sm font-semibold truncate">
+                              {isNone ? "ราคาปกติ" : `กลุ่ม ${g.name}`}
+                            </p>
+                            <p className="text-gray-700 text-sm font-bold tabular-nums shrink-0">
+                              ฿{formatMoney(g.amount)}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-gray-400 text-xs">{g.count} บิล</span>
+                            {g.customerCount > 0 && (
+                              <span className="text-gray-400 text-xs">· {g.customerCount} คน</span>
+                            )}
+                            <span className="text-gray-400 text-xs ml-auto">{Math.round(totalPct)}%</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="h-2 bg-gray-100 rounded-full overflow-hidden ml-10">
+                        <div className="h-full rounded-full transition-all"
+                          style={{ width: `${barPct}%`, background: `${groupColor}` }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="text-[10px] text-gray-400 mt-3 text-center">กดที่ป้ายกลุ่มเพื่อกรองข้อมูล</p>
             </div>
           )}
 
@@ -542,53 +678,64 @@ export default function ReportsPage() {
               return (
                 <>
                   <div className="divide-y divide-gray-50">
-                    {shownTx.map((t, idx) => (
-                      <div key={t.id} className="overflow-hidden">
-                        <button
-                          onClick={() => setExpandedId(expandedId === t.id ? null : t.id)}
-                          className="w-full flex items-stretch active:bg-gray-50 transition-colors text-left"
-                        >
-                          <div className="w-1 shrink-0 bg-emerald-400" style={{ opacity: 0.6 + (idx % 3) * 0.15 }} />
-                          <div className="flex items-center gap-3 flex-1 min-w-0 px-3.5 py-3">
-                            <span className="font-mono text-[11px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-md shrink-0">
-                              #{t.id.slice(-5).toUpperCase()}
-                            </span>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="text-gray-500 text-xs">
-                                  {period !== "day" && `${new Date(t.createdAt).toLocaleDateString("th-TH", { day: "numeric", month: "short" })} `}
-                                  {formatTime(t.createdAt)}
-                                </span>
-                                <span className="text-sky-500 text-xs font-medium">· {t.staff.name}</span>
-                                {t.customerName && <span className="text-gray-400 text-xs">· {t.customerName}</span>}
-                              </div>
-                              <p className="text-sm text-gray-700 truncate mt-0.5">{t.items.map((i) => i.productName).join(", ")}</p>
-                            </div>
-                            <div className="flex items-center gap-1.5 shrink-0">
-                              <span className="text-emerald-600 font-bold text-sm tabular-nums">฿{formatMoney(t.totalAmount)}</span>
-                              <ChevronDown className={`w-3.5 h-3.5 text-gray-300 transition-transform ${expandedId === t.id ? "rotate-180" : ""}`} />
-                            </div>
-                          </div>
-                        </button>
-                        {expandedId === t.id && (
-                          <div className="bg-emerald-50/50 px-4 pb-3 pt-2 space-y-2 border-t border-emerald-100">
-                            {t.items.map((item) => (
-                              <div key={item.id} className="flex justify-between items-center text-sm">
-                                <span className="text-gray-600">{item.productName}</span>
-                                <div className="flex items-center gap-3 text-xs">
-                                  <span className="text-gray-400">{item.quantity} {item.unit === "KG" ? "กก." : "ชิ้น"}</span>
-                                  <span className="text-emerald-600 font-semibold tabular-nums">฿{formatMoney(item.subtotal)}</span>
+                    {shownTx.map((t, idx) => {
+                      const pg = t.customer?.priceGroup;
+                      return (
+                        <div key={t.id} className="overflow-hidden">
+                          <button
+                            onClick={() => setExpandedId(expandedId === t.id ? null : t.id)}
+                            className="w-full flex items-stretch active:bg-gray-50 transition-colors text-left"
+                          >
+                            <div className="w-1 shrink-0 bg-emerald-400" style={{ opacity: 0.6 + (idx % 3) * 0.15 }} />
+                            <div className="flex items-center gap-3 flex-1 min-w-0 px-3.5 py-3">
+                              <span className="font-mono text-[11px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-md shrink-0">
+                                #{t.id.slice(-5).toUpperCase()}
+                              </span>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className="text-gray-500 text-xs">
+                                    {period !== "day" && `${new Date(t.createdAt).toLocaleDateString("th-TH", { day: "numeric", month: "short" })} `}
+                                    {formatTime(t.createdAt)}
+                                  </span>
+                                  <span className="text-sky-500 text-xs font-medium">· {t.staff.name}</span>
+                                  {(t.customer?.name ?? t.customerName) && (
+                                    <span className="text-gray-400 text-xs">· {t.customer?.name ?? t.customerName}</span>
+                                  )}
+                                  {pg && (
+                                    <span className="text-[10px] text-white font-semibold rounded px-1.5 py-0.5 leading-none"
+                                      style={{ background: pg.color ?? "#6b7280" }}>
+                                      {pg.name}
+                                    </span>
+                                  )}
                                 </div>
+                                <p className="text-sm text-gray-700 truncate mt-0.5">{t.items.map((i) => i.productName).join(", ")}</p>
                               </div>
-                            ))}
-                            <div className="flex justify-between items-center pt-2 border-t border-emerald-100">
-                              <span className="text-gray-500 text-xs font-medium">รวม</span>
-                              <span className="text-emerald-700 font-bold tabular-nums">฿{formatMoney(t.totalAmount)}</span>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <span className="text-emerald-600 font-bold text-sm tabular-nums">฿{formatMoney(t.totalAmount)}</span>
+                                <ChevronDown className={`w-3.5 h-3.5 text-gray-300 transition-transform ${expandedId === t.id ? "rotate-180" : ""}`} />
+                              </div>
                             </div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                          </button>
+                          {expandedId === t.id && (
+                            <div className="bg-emerald-50/50 px-4 pb-3 pt-2 space-y-2 border-t border-emerald-100">
+                              {t.items.map((item) => (
+                                <div key={item.id} className="flex justify-between items-center text-sm">
+                                  <span className="text-gray-600">{item.productName}</span>
+                                  <div className="flex items-center gap-3 text-xs">
+                                    <span className="text-gray-400">{item.quantity} {item.unit === "KG" ? "กก." : "ชิ้น"}</span>
+                                    <span className="text-emerald-600 font-semibold tabular-nums">฿{formatMoney(item.subtotal)}</span>
+                                  </div>
+                                </div>
+                              ))}
+                              <div className="flex justify-between items-center pt-2 border-t border-emerald-100">
+                                <span className="text-gray-500 text-xs font-medium">รวม</span>
+                                <span className="text-emerald-700 font-bold tabular-nums">฿{formatMoney(t.totalAmount)}</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                   {allTx.length > TX_LIMIT && (
                     <button onClick={() => setShowAllTx(v => !v)}
@@ -620,60 +767,38 @@ export default function ReportsPage() {
         const unit = txns[0]?.items.find((i) => i.productName === selectedProduct)?.unit ?? "KG";
         return (
           <>
-            {/* Backdrop */}
-            <div
-              className="fixed inset-0 bg-black/40 z-40 backdrop-blur-[2px]"
-              onClick={() => setSelectedProduct(null)}
-            />
-            {/* Sheet */}
-            <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl flex flex-col"
-              style={{ maxHeight: "82vh" }}>
-              {/* Header */}
+            <div className="fixed inset-0 bg-black/40 z-40 backdrop-blur-[2px]" onClick={() => setSelectedProduct(null)} />
+            <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl flex flex-col" style={{ maxHeight: "82vh" }}>
               <div className="flex items-center gap-3 px-5 pt-5 pb-4 border-b border-gray-100 shrink-0">
                 <div className="flex-1 min-w-0">
                   <p className="text-xs text-gray-400 mb-0.5">รายการสินค้า</p>
                   <p className="font-bold text-gray-900 text-lg leading-tight truncate">{selectedProduct}</p>
                   <div className="flex items-center gap-3 mt-1.5">
-                    <span className="text-xs bg-emerald-100 text-emerald-700 font-semibold px-2 py-0.5 rounded-full">
-                      ฿{formatMoney(totalAmt)}
-                    </span>
-                    <span className="text-xs bg-blue-100 text-blue-700 font-semibold px-2 py-0.5 rounded-full">
-                      {totalQty} {unit === "KG" ? "กก." : "ชิ้น"}
-                    </span>
-                    <span className="text-xs bg-gray-100 text-gray-600 font-semibold px-2 py-0.5 rounded-full">
-                      {txns.length} บิล
-                    </span>
+                    <span className="text-xs bg-emerald-100 text-emerald-700 font-semibold px-2 py-0.5 rounded-full">฿{formatMoney(totalAmt)}</span>
+                    <span className="text-xs bg-blue-100 text-blue-700 font-semibold px-2 py-0.5 rounded-full">{totalQty} {unit === "KG" ? "กก." : "ชิ้น"}</span>
+                    <span className="text-xs bg-gray-100 text-gray-600 font-semibold px-2 py-0.5 rounded-full">{txns.length} บิล</span>
                   </div>
                 </div>
-                <button
-                  onClick={() => setSelectedProduct(null)}
-                  className="w-9 h-9 rounded-2xl bg-gray-100 flex items-center justify-center shrink-0 active:bg-gray-200"
-                >
+                <button onClick={() => setSelectedProduct(null)}
+                  className="w-9 h-9 rounded-2xl bg-gray-100 flex items-center justify-center shrink-0 active:bg-gray-200">
                   <X className="w-4 h-4 text-gray-500" />
                 </button>
               </div>
-
-              {/* Transaction list */}
               <div className="overflow-y-auto flex-1 divide-y divide-gray-50">
                 {txns.length === 0 ? (
-                  <div className="py-16 text-center text-gray-400">
-                    <p className="text-sm">ไม่พบรายการ</p>
-                  </div>
+                  <div className="py-16 text-center text-gray-400"><p className="text-sm">ไม่พบรายการ</p></div>
                 ) : txns.map((t) => {
                   const prodItem = t.items.find((i) => i.productName === selectedProduct);
                   const isOpen = drillExpandedId === t.id;
+                  const pg = t.customer?.priceGroup;
                   return (
                     <div key={t.id}>
                       <button
                         onClick={() => setDrillExpandedId(isOpen ? null : t.id)}
                         className="w-full px-5 py-4 flex items-center gap-3 text-left active:bg-gray-50 transition-colors"
                       >
-                        {/* Bill ID */}
-                        <span className="font-mono text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-lg shrink-0">
-                          #{t.id.slice(-5).toUpperCase()}
-                        </span>
+                        <span className="font-mono text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-lg shrink-0">#{t.id.slice(-5).toUpperCase()}</span>
                         <div className="flex-1 min-w-0">
-                          {/* Time + Staff */}
                           <div className="flex items-center gap-2 flex-wrap">
                             <div className="flex items-center gap-1 text-gray-500 text-xs">
                               <Clock className="w-3 h-3" />
@@ -681,36 +806,34 @@ export default function ReportsPage() {
                               {formatTime(t.createdAt)}
                             </div>
                             <div className="flex items-center gap-1 text-blue-500 text-xs font-medium">
-                              <User className="w-3 h-3" />
-                              {t.staff.name}
+                              <User className="w-3 h-3" /> {t.staff.name}
                             </div>
-                            {t.customerName && (
-                              <span className="text-gray-400 text-xs">· {t.customerName}</span>
+                            {(t.customer?.name ?? t.customerName) && (
+                              <span className="text-gray-400 text-xs">· {t.customer?.name ?? t.customerName}</span>
+                            )}
+                            {pg && (
+                              <span className="text-[10px] text-white font-semibold rounded px-1.5 py-0.5 leading-none"
+                                style={{ background: pg.color ?? "#6b7280" }}>
+                                {pg.name}
+                              </span>
                             )}
                           </div>
-                          {/* This product qty */}
                           <p className="text-emerald-700 font-semibold text-sm mt-0.5">
                             {prodItem?.quantity} {prodItem?.unit === "KG" ? "กก." : "ชิ้น"} = ฿{formatMoney(prodItem?.subtotal ?? 0)}
                           </p>
                         </div>
                         <div className="flex items-center gap-1.5 shrink-0">
                           <span className="text-gray-500 text-xs tabular-nums">฿{formatMoney(t.totalAmount)}</span>
-                          {isOpen
-                            ? <ChevronUp className="w-3.5 h-3.5 text-gray-400" />
-                            : <ChevronDown className="w-3.5 h-3.5 text-gray-400" />}
+                          {isOpen ? <ChevronUp className="w-3.5 h-3.5 text-gray-400" /> : <ChevronDown className="w-3.5 h-3.5 text-gray-400" />}
                         </div>
                       </button>
-
-                      {/* Expanded: full bill items */}
                       {isOpen && (
                         <div className="bg-blue-50 mx-4 mb-3 rounded-2xl px-4 py-3 space-y-2">
                           <p className="text-xs font-semibold text-blue-600 mb-2">รายการทั้งหมดในบิล</p>
                           {t.items.map((item) => (
                             <div key={item.id} className="flex justify-between items-center">
                               <div className="flex items-center gap-2">
-                                {item.productName === selectedProduct && (
-                                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                                )}
+                                {item.productName === selectedProduct && <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />}
                                 <span className={`text-sm ${item.productName === selectedProduct ? "font-semibold text-gray-900" : "text-gray-600"}`}>
                                   {item.productName}
                                 </span>
@@ -731,8 +854,6 @@ export default function ReportsPage() {
                   );
                 })}
               </div>
-
-              {/* Safe area bottom */}
               <div className="shrink-0" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)", minHeight: 12 }} />
             </div>
           </>

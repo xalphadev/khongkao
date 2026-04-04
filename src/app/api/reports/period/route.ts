@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-// ?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
+// ?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD&priceGroupId=<id|"none">
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "owner") {
@@ -14,15 +14,31 @@ export async function GET(req: NextRequest) {
   const today = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; })();
   const startDate = searchParams.get("startDate") ?? today;
   const endDate = searchParams.get("endDate") ?? startDate;
+  const priceGroupId = searchParams.get("priceGroupId") ?? null;
 
   const start = new Date(startDate + "T00:00:00");
   const end = new Date(endDate + "T23:59:59");
 
+  const baseWhere = { createdAt: { gte: start, lte: end } };
+  const where = priceGroupId === "none"
+    ? { ...baseWhere, OR: [{ customerId: null }, { customer: { priceGroupId: null } }] }
+    : priceGroupId
+    ? { ...baseWhere, customer: { priceGroupId } }
+    : baseWhere;
+
   const transactions = await prisma.transaction.findMany({
-    where: { createdAt: { gte: start, lte: end } },
+    where,
     include: {
       staff: { select: { id: true, name: true } },
       items: { include: { product: { include: { category: true } } } },
+      customer: {
+        select: {
+          id: true,
+          name: true,
+          nickname: true,
+          priceGroup: { select: { id: true, name: true, color: true } },
+        },
+      },
     },
     orderBy: { createdAt: "desc" },
   });
@@ -72,6 +88,22 @@ export async function GET(req: NextRequest) {
     staffMap[name].count += 1;
   });
 
+  // Price group breakdown
+  const pgMap: Record<string, { id: string; name: string; color: string | null; amount: number; count: number; customerIds: Set<string> }> = {};
+  transactions.forEach((t) => {
+    const pg = t.customer?.priceGroup ?? null;
+    const key = pg?.id ?? "__none__";
+    if (!pgMap[key]) {
+      pgMap[key] = { id: key, name: pg ? pg.name : "ราคาปกติ", color: pg?.color ?? null, amount: 0, count: 0, customerIds: new Set() };
+    }
+    pgMap[key].amount += t.totalAmount;
+    pgMap[key].count += 1;
+    if (t.customerId) pgMap[key].customerIds.add(t.customerId);
+  });
+  const priceGroupBreakdown = Object.values(pgMap)
+    .map((g) => ({ id: g.id, name: g.name, color: g.color, amount: g.amount, count: g.count, customerCount: g.customerIds.size }))
+    .sort((a, b) => b.amount - a.amount);
+
   return NextResponse.json({
     startDate,
     endDate,
@@ -81,6 +113,7 @@ export async function GET(req: NextRequest) {
     categoryBreakdown: Object.values(categoryMap).sort((a, b) => b.amount - a.amount),
     productBreakdown: Object.values(productMap).sort((a, b) => b.amount - a.amount),
     staffBreakdown: Object.values(staffMap).sort((a, b) => b.amount - a.amount),
+    priceGroupBreakdown,
     transactions,
   });
 }
