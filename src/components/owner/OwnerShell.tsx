@@ -6,18 +6,19 @@ import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import {
   Recycle, LayoutDashboard, BarChart2, Tag, FolderOpen,
-  Users, Settings, LogOut, X, Menu, ChevronRight,
+  Users, Settings, LogOut, X, Menu, ChevronRight, History,
 } from "lucide-react";
 
 const BRAND = "#16a34a";
 
 const navItems = [
-  { href: "/owner",            label: "หน้าหลัก",  icon: LayoutDashboard, exact: true  },
-  { href: "/owner/reports",    label: "รายงาน",   icon: BarChart2,        exact: false },
-  { href: "/owner/products",   label: "สินค้า",   icon: Tag,              exact: false },
-  { href: "/owner/categories", label: "หมวดหมู่", icon: FolderOpen,       exact: false },
-  { href: "/owner/staff",      label: "พนักงาน",  icon: Users,            exact: false },
-  { href: "/owner/settings",   label: "ตั้งค่า",  icon: Settings,         exact: false },
+  { href: "/owner",                label: "หน้าหลัก",       icon: LayoutDashboard, exact: true  },
+  { href: "/owner/reports",        label: "รายงาน",         icon: BarChart2,        exact: false },
+  { href: "/owner/products",       label: "สินค้า",         icon: Tag,              exact: false },
+  { href: "/owner/price-history",  label: "ประวัติราคา",    icon: History,          exact: false },
+  { href: "/owner/categories",     label: "หมวดหมู่",       icon: FolderOpen,       exact: false },
+  { href: "/owner/staff",          label: "พนักงาน",        icon: Users,            exact: false },
+  { href: "/owner/settings",       label: "ตั้งค่า",        icon: Settings,         exact: false },
 ];
 
 // Only 4 most-used items in the bottom tab bar; the rest go in the drawer
@@ -80,7 +81,7 @@ export default function OwnerShell({ children }: { children: React.ReactNode }) 
           </div>
           <div>
             <p className="font-semibold text-white text-sm">มือสองของเก่า</p>
-            <p className="text-green-200 text-xs mt-0.5">ระบบจัดการร้าน</p>
+            <p className="text-white/70 text-xs mt-0.5">ระบบจัดการร้าน</p>
           </div>
         </div>
 
@@ -120,7 +121,7 @@ export default function OwnerShell({ children }: { children: React.ReactNode }) 
             </div>
             <div>
               <p className="font-semibold text-white text-sm">มือสองของเก่า</p>
-              <p className="text-green-200 text-xs">เจ้าของร้าน</p>
+              <p className="text-white/70 text-xs">เจ้าของร้าน</p>
             </div>
           </div>
           <button
@@ -149,36 +150,28 @@ export default function OwnerShell({ children }: { children: React.ReactNode }) 
 
         {/* Mobile top bar */}
         <header
-          className="lg:hidden sticky top-0 z-20 bg-white px-4 flex items-center gap-3 border-b border-gray-100"
+          className="lg:hidden sticky top-0 z-20 bg-white px-4 flex items-center gap-2.5 border-b border-gray-100"
           style={{
-            paddingTop: "env(safe-area-inset-top, 12px)",
+            paddingTop: "max(env(safe-area-inset-top), 16px)",
             paddingBottom: "12px",
             minHeight: 60,
             boxShadow: "0 1px 8px rgba(0,0,0,0.06)",
           }}
         >
-          <button
-            onClick={() => setDrawerOpen(true)}
-            className="w-10 h-10 flex items-center justify-center rounded-2xl active:bg-gray-100 transition-colors shrink-0 bg-gray-50"
-          >
-            <Menu className="w-5 h-5 text-gray-600" />
-          </button>
-          <div className="flex items-center gap-2.5 flex-1">
-            {currentPage && (
-              <div
-                className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                style={{ background: "#f0fdf4" }}
-              >
-                <currentPage.icon className="w-5 h-5" style={{ color: BRAND }} strokeWidth={2.2} />
-              </div>
-            )}
-            <p className="font-bold text-gray-800 text-lg leading-tight">
-              {currentPage?.label ?? "มือสองของเก่า"}
-            </p>
-          </div>
+          {currentPage && (
+            <div
+              className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+              style={{ background: "#f0fdf4" }}
+            >
+              <currentPage.icon className="w-5 h-5" style={{ color: BRAND }} strokeWidth={2.2} />
+            </div>
+          )}
+          <p className="font-bold text-gray-800 text-lg leading-tight">
+            {currentPage?.label ?? "มือสองของเก่า"}
+          </p>
         </header>
 
-        <main className="flex-1 p-4 lg:p-6 max-w-6xl w-full mx-auto pb-28 lg:pb-6">
+        <main className="flex-1 px-4 pt-5 pb-28 lg:px-6 lg:pt-7 lg:pb-8 max-w-6xl w-full mx-auto">
           {children}
         </main>
       </div>

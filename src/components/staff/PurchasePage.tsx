@@ -186,9 +186,9 @@ function EditCartItemModal({
         </div>
 
         {/* ── ยอดใหม่ ── */}
-        <div className={`flex items-center justify-between rounded-xl px-4 py-3 mt-3 mb-4 ${isValid ? "bg-green-50" : "bg-gray-50"}`}>
+        <div className={`flex items-center justify-between rounded-xl px-4 py-3 mt-3 mb-4 ${isValid ? "bg-emerald-50" : "bg-gray-50"}`}>
           <p className="text-gray-400 text-sm">ยอดใหม่</p>
-          <p className={`font-semibold text-xl tabular-nums ${isValid ? "text-green-600" : "text-gray-300"}`}>
+          <p className={`font-semibold text-xl tabular-nums ${isValid ? "text-emerald-600" : "text-gray-300"}`}>
             {isValid ? `฿${formatMoney(newTotal)}` : "—"}
           </p>
         </div>
@@ -288,7 +288,7 @@ function PayConfirmModal({
                         รวม {group.totalQty} {group.unit === "KG" ? "กก." : "ชิ้น"}
                       </p>
                     </div>
-                    <span className="text-green-600 font-semibold tabular-nums text-sm shrink-0">฿{formatMoney(group.totalSubtotal)}</span>
+                    <span className="text-emerald-600 font-semibold tabular-nums text-sm shrink-0">฿{formatMoney(group.totalSubtotal)}</span>
                     <svg className={`w-4 h-4 text-gray-300 shrink-0 transition-transform duration-200 ${isExp ? "rotate-180" : ""}`}
                       fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
@@ -312,9 +312,9 @@ function PayConfirmModal({
 
         {/* ── Total + Buttons (fixed bottom) ── */}
         <div className="px-5 pt-3 pb-6 shrink-0">
-          <div className="flex justify-between items-center px-4 py-3 bg-green-50 rounded-2xl border border-green-100 mb-3">
-            <span className="text-green-800 font-semibold text-sm">ยอดรวมทั้งหมด</span>
-            <span className="text-green-700 font-bold text-2xl tabular-nums">฿{formatMoney(total)}</span>
+          <div className="flex justify-between items-center px-4 py-3 bg-emerald-50 rounded-2xl border border-emerald-100 mb-3">
+            <span className="text-emerald-800 font-semibold text-sm">ยอดรวมทั้งหมด</span>
+            <span className="text-emerald-700 font-bold text-2xl tabular-nums">฿{formatMoney(total)}</span>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <button onClick={onCancel} className="py-3.5 rounded-2xl border-2 border-gray-200 text-gray-600 font-medium text-sm active:scale-[0.97] transition-all">
@@ -377,7 +377,7 @@ function HeldBillsModal({
                     </p>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-green-600 font-medium text-sm tabular-nums">฿{formatMoney(total)}</p>
+                    <p className="text-emerald-600 font-medium text-sm tabular-nums">฿{formatMoney(total)}</p>
                     <p className="text-amber-500 text-xs flex items-center gap-0.5 justify-end">
                       รับช่วงต่อ <ChevronRight className="w-3 h-3" />
                     </p>
@@ -391,7 +391,7 @@ function HeldBillsModal({
                           {item.productName}
                           <span className="text-gray-400 ml-1">({item.quantity} {item.unit === "KG" ? "กก." : "ชิ้น"})</span>
                         </span>
-                        <span className="text-green-600 tabular-nums">฿{formatMoney(item.subtotal)}</span>
+                        <span className="text-emerald-600 tabular-nums">฿{formatMoney(item.subtotal)}</span>
                       </div>
                     ))}
                   </div>
@@ -617,7 +617,7 @@ export default function PurchasePage() {
 
   // ── Cart action block (reused in category preview + cart step) ──
   const CustomerNameInput = () => (
-    <div className="flex items-center gap-2 bg-gray-50 rounded-2xl px-3 py-2.5 border-2 border-transparent focus-within:border-green-400 transition-all">
+    <div className="flex items-center gap-2 bg-gray-50 rounded-2xl px-3 py-2.5 border-2 border-transparent focus-within:border-emerald-400 transition-all">
       <User className="w-4 h-4 text-gray-400 shrink-0" />
       <input
         type="text"
@@ -639,14 +639,22 @@ export default function PurchasePage() {
     <div className="min-h-screen bg-[#f4f6f9] flex flex-col">
 
       {/* ── HEADER ── */}
-      <div className="bg-gradient-to-r from-green-700 to-green-600 text-white px-4 pt-4 pb-5 sticky top-0 z-20">
-        <div className="flex items-center gap-3 mb-3">
+      <div
+        className="text-white px-4 pb-5 sticky top-0 z-20 overflow-hidden"
+        style={{
+          background: "linear-gradient(140deg, #059669 0%, #10b981 40%, #0ea5e9 100%)",
+          paddingTop: "max(env(safe-area-inset-top), 16px)",
+        }}
+      >
+        {/* Decorative circle */}
+        <div className="absolute -top-6 -right-6 w-32 h-32 rounded-full pointer-events-none" style={{ background: "rgba(255,255,255,0.08)" }} />
+        <div className="flex items-center gap-3 mb-3 relative">
           <button onClick={handleBack} className="w-9 h-9 flex items-center justify-center rounded-xl bg-white/15 hover:bg-white/25 active:bg-white/30 transition-all shrink-0">
             <ArrowLeft className="w-5 h-5 text-white" />
           </button>
           <div className="flex-1 min-w-0">
             <h1 className="text-base font-medium">บันทึกรับซื้อ</h1>
-            <p className="text-green-200 text-xs">{stepTitles[step]}</p>
+            <p className="text-white/70 text-xs">{stepTitles[step]}</p>
           </div>
 
           {heldBills.length > 0 && (
@@ -659,12 +667,12 @@ export default function PurchasePage() {
           {cart.length > 0 && (
             <button onClick={() => setStep("cart")} className="flex items-center gap-1.5 bg-white/15 hover:bg-white/25 px-3 py-1.5 rounded-xl text-sm transition-all">
               <ShoppingCart className="w-4 h-4" />
-              <span className="bg-white text-green-700 rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium">{cart.length}</span>
+              <span className="bg-white text-emerald-700 rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium">{cart.length}</span>
             </button>
           )}
         </div>
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 relative">
           {[1, 2, 3].map((n) => (
             <div key={n} className={`h-1.5 rounded-full transition-all ${stepNums[step] >= n ? "bg-white w-6" : "bg-white/30 w-4"}`} />
           ))}
@@ -679,7 +687,7 @@ export default function PurchasePage() {
           <div>
             <p className="text-gray-400 text-sm mb-4">เลือกประเภทของที่ลูกค้านำมาขาย</p>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               {categories.map((cat) => {
                 const grad = getCategoryGradient(cat.color ?? "#16a34a");
                 const CIcon = getIconComponent(cat.icon ?? "Package");
@@ -687,17 +695,27 @@ export default function PurchasePage() {
                   <button
                     key={cat.id}
                     onClick={() => handleCategorySelect(cat)}
-                    className="relative rounded-3xl flex flex-col items-start gap-4 shadow-xl active:scale-[0.95] transition-all overflow-hidden"
-                    style={{ padding: "20px 18px 22px", background: `linear-gradient(135deg, ${grad.from}, ${grad.to})`, boxShadow: `0 8px 24px ${grad.from}50` }}
+                    className="rounded-2xl flex flex-col items-start gap-3 active:scale-[0.96] transition-all text-left"
+                    style={{
+                      padding: "16px",
+                      background: `${grad.from}12`,
+                      border: `1.5px solid ${grad.from}28`,
+                      boxShadow: `0 2px 12px ${grad.from}18`,
+                    }}
                   >
-                    <div className="absolute -top-6 -right-6 w-28 h-28 bg-white/10 rounded-full" />
-                    <div className="absolute -bottom-4 -left-4 w-20 h-20 bg-black/[0.08] rounded-full" />
-                    <div className="w-14 h-14 bg-white/25 rounded-2xl flex items-center justify-center relative">
-                      <CIcon className="w-7 h-7 text-white" />
+                    {/* Icon */}
+                    <div
+                      className="w-12 h-12 rounded-xl flex items-center justify-center shadow-sm"
+                      style={{ background: `linear-gradient(135deg, ${grad.from}, ${grad.to})` }}
+                    >
+                      <CIcon className="w-6 h-6 text-white" />
                     </div>
-                    <div className="relative">
-                      <p className="text-white font-bold text-xl leading-tight">{cat.name}</p>
-                      <p className="text-white/70 text-sm mt-1">{cat.products.length} รายการ</p>
+                    {/* Text */}
+                    <div>
+                      <p className="text-gray-800 font-bold text-base leading-tight">{cat.name}</p>
+                      <p className="text-gray-400 text-xs mt-1">
+                        {cat.products.length} รายการ
+                      </p>
                     </div>
                   </button>
                 );
@@ -708,16 +726,16 @@ export default function PurchasePage() {
             {cart.length > 0 && (
               <button
                 onClick={() => setStep("cart")}
-                className="mt-5 w-full bg-white rounded-2xl shadow-sm border border-green-100 px-4 py-4 flex items-center gap-3 active:scale-[0.98] transition-all"
+                className="mt-5 w-full bg-white rounded-2xl shadow-sm border border-emerald-100 px-4 py-4 flex items-center gap-3 active:scale-[0.98] transition-all"
               >
-                <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center shrink-0">
-                  <ShoppingCart className="w-5 h-5 text-green-600" />
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
+                  <ShoppingCart className="w-5 h-5 text-emerald-600" />
                 </div>
                 <div className="flex-1 text-left">
-                  <p className="text-green-800 font-medium text-sm">ดูรายการในตะกร้า</p>
-                  <p className="text-green-600 text-xs">{cart.length} รายการ · ฿{formatMoney(totalAmount)}</p>
+                  <p className="text-emerald-800 font-medium text-sm">ดูรายการในตะกร้า</p>
+                  <p className="text-emerald-600 text-xs">{cart.length} รายการ · ฿{formatMoney(totalAmount)}</p>
                 </div>
-                <ChevronRight className="w-4 h-4 text-green-400" />
+                <ChevronRight className="w-4 h-4 text-emerald-400" />
               </button>
             )}
           </div>
@@ -730,7 +748,7 @@ export default function PurchasePage() {
             <div className="space-y-2.5">
               {selectedCategory.products.map((product) => (
                 <button key={product.id} onClick={() => handleProductSelect(product)}
-                  className="w-full bg-white rounded-2xl px-4 py-4 shadow-sm active:scale-[0.98] active:bg-green-50 transition-all flex items-center gap-4">
+                  className="w-full bg-white rounded-2xl px-4 py-4 shadow-sm active:scale-[0.98] active:bg-emerald-50 transition-all flex items-center gap-4">
                   {(() => {
                     const g = getCategoryGradient(selectedCategory.color ?? "#16a34a");
                     const I = getIconComponent(selectedCategory.icon ?? "Package");
@@ -746,7 +764,7 @@ export default function PurchasePage() {
                     <p className="text-gray-400 text-xs mt-0.5">{product.unit === "KG" ? "วัดเป็นกิโลกรัม" : "วัดเป็นชิ้น"}</p>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-green-600 font-medium text-lg tabular-nums">฿{product.pricePerUnit.toLocaleString()}</p>
+                    <p className="text-emerald-600 font-medium text-lg tabular-nums">฿{product.pricePerUnit.toLocaleString()}</p>
                     <p className="text-gray-400 text-xs">/{product.unit === "KG" ? "กก." : "ชิ้น"}</p>
                   </div>
                   <ChevronRight className="w-4 h-4 text-gray-300" />
@@ -774,7 +792,7 @@ export default function PurchasePage() {
                 <p className="font-medium text-gray-900">{selectedProduct.name}</p>
                 {selectedProduct.customPrice
                   ? <p className="text-purple-600 text-sm font-medium">กรอกราคาเอง</p>
-                  : <p className="text-green-600 text-sm">฿{selectedProduct.pricePerUnit.toLocaleString()} / {selectedProduct.unit === "KG" ? "กก." : "ชิ้น"}</p>
+                  : <p className="text-emerald-600 text-sm">฿{selectedProduct.pricePerUnit.toLocaleString()} / {selectedProduct.unit === "KG" ? "กก." : "ชิ้น"}</p>
                 }
               </div>
             </div>
@@ -813,7 +831,7 @@ export default function PurchasePage() {
                   value={quantity}
                   onChange={(e) => setQuantity(e.target.value)}
                   className="w-full bg-white rounded-2xl px-4 py-5 text-7xl font-medium text-center focus:outline-none transition-all tabular-nums"
-                  style={{ border: "3px solid #4ade80" }}
+                  style={{ border: "3px solid #22c55e" }}
                   placeholder="0"
                   min="0"
                   step={selectedProduct.unit === "KG" ? "0.1" : "1"}
@@ -825,7 +843,7 @@ export default function PurchasePage() {
               {quantity && parseFloat(quantity) > 0 && (!selectedProduct.customPrice || (customUnitPrice && parseFloat(customUnitPrice) > 0)) ? (
                 <div className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3">
                   <p className="text-gray-400 text-sm">ยอดที่ต้องจ่าย</p>
-                  <p className="text-green-600 font-medium text-xl tabular-nums">
+                  <p className="text-emerald-600 font-medium text-xl tabular-nums">
                     ฿{formatMoney(parseFloat(quantity) * (selectedProduct.customPrice ? parseFloat(customUnitPrice || "0") : selectedProduct.pricePerUnit))}
                   </p>
                 </div>
@@ -841,7 +859,7 @@ export default function PurchasePage() {
                   !quantity || parseFloat(quantity) <= 0 ||
                   (selectedProduct.customPrice && (!customUnitPrice || parseFloat(customUnitPrice) <= 0))
                 }
-                className="btn-staff bg-green-600 hover:bg-green-700 disabled:bg-gray-100 disabled:text-gray-300 text-white shadow-lg shadow-green-600/25 disabled:shadow-none"
+                className="btn-staff bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-100 disabled:text-gray-300 text-white shadow-lg shadow-emerald-600/25 disabled:shadow-none"
                 style={{ minHeight: 60 }}
               >
                 <Check className="w-5 h-5" /> เพิ่มรายการ
@@ -858,14 +876,14 @@ export default function PurchasePage() {
               <div className="flex flex-col items-center justify-center py-20 text-gray-400 gap-2">
                 <ShoppingCart className="w-12 h-12 text-gray-200 mb-2" />
                 <p className="font-medium text-gray-500">ยังไม่มีรายการ</p>
-                <button onClick={() => setStep("category")} className="mt-3 flex items-center gap-1.5 text-green-600 text-sm font-medium">
+                <button onClick={() => setStep("category")} className="mt-3 flex items-center gap-1.5 text-emerald-600 text-sm font-medium">
                   <Plus className="w-4 h-4" /> เพิ่มสินค้า
                 </button>
               </div>
             ) : (
               <>
                 {/* ── Customer name ── */}
-                <div className="bg-white rounded-2xl px-4 py-2.5 shadow-sm flex items-center gap-3 border-2 border-transparent focus-within:border-green-400 transition-all">
+                <div className="bg-white rounded-2xl px-4 py-2.5 shadow-sm flex items-center gap-3 border-2 border-transparent focus-within:border-emerald-400 transition-all">
                   <User className="w-4 h-4 text-gray-400 shrink-0" />
                   <input
                     type="text"
@@ -901,39 +919,31 @@ export default function PurchasePage() {
                     return (
                       <div key={group.productId} className={gi > 0 ? "border-t-2 border-gray-100" : ""}>
                         {/* ── Group row ── */}
-                        <div className="flex items-stretch gap-0 px-3 pt-3 pb-2.5">
+                        <div className="flex items-center gap-0 px-3 pt-3 pb-2.5">
                           {/* Left: number badge */}
                           <button onClick={toggleGroup}
-                            className="w-7 h-7 rounded-full bg-green-50 text-green-700 flex items-center justify-center text-[11px] font-bold shrink-0 mt-1 mr-2.5 active:bg-green-100">
+                            className="w-7 h-7 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center text-[11px] font-bold shrink-0 mr-2.5 active:bg-emerald-100 self-start mt-0.5">
                             {gi + 1}
                           </button>
-                          {/* Center: name + BIG numbers */}
+                          {/* Center: name + numbers */}
                           <button onClick={toggleGroup} className="flex-1 text-left min-w-0">
-                            {/* Product name — small */}
-                            <p className="text-gray-400 text-xs leading-tight truncate mb-0.5">{group.productName}</p>
-                            {/* BIG numbers row */}
-                            <div className="flex items-baseline justify-between gap-2">
-                              {/* Qty — very prominent */}
-                              <p className="text-gray-900 font-bold tabular-nums leading-none" style={{ fontSize: 28 }}>
+                            {/* Product name — BIG & prominent */}
+                            <p className="text-gray-800 font-bold text-base leading-tight truncate">{group.productName}</p>
+                            {/* Qty row */}
+                            <div className="flex items-baseline gap-2 mt-1">
+                              <p className="text-gray-900 font-bold tabular-nums text-2xl leading-none">
                                 {group.totalQty}
-                                <span className="text-base font-medium text-gray-500 ml-1">
-                                  {group.unit === "KG" ? "กก." : "ชิ้น"}
-                                </span>
+                                <span className="text-sm font-medium text-gray-500 ml-1">{group.unit === "KG" ? "กก." : "ชิ้น"}</span>
                               </p>
-                              {/* Amount — very prominent */}
-                              <p className="text-green-600 font-bold tabular-nums leading-none" style={{ fontSize: 28 }}>
-                                ฿{formatMoney(group.totalSubtotal)}
-                              </p>
+                              <span className="bg-blue-50 text-blue-500 rounded px-1.5 py-0.5 text-[10px] font-medium">{group.rounds.length} รอบ</span>
                             </div>
-                            {/* Round count */}
-                            <span className="inline-block mt-1 bg-blue-50 text-blue-500 rounded px-1.5 py-0.5 text-[10px] font-medium">
-                              {group.rounds.length} รอบ
-                            </span>
+                            {/* Price — secondary */}
+                            <p className="text-emerald-600 font-semibold tabular-nums text-sm mt-1">฿{formatMoney(group.totalSubtotal)}</p>
                           </button>
                           {/* Right: buttons */}
                           <div className="flex flex-col items-center justify-center gap-1.5 ml-2 shrink-0">
                             <button onClick={() => handleAddRound(group)}
-                              className="flex items-center gap-0.5 text-[11px] text-green-600 font-semibold bg-green-50 border border-green-200 px-2.5 py-1.5 rounded-xl active:bg-green-100 transition-colors">
+                              className="flex items-center gap-0.5 text-[11px] text-emerald-600 font-semibold bg-emerald-50 border border-emerald-200 px-2.5 py-1.5 rounded-xl active:bg-emerald-100 transition-colors">
                               <Plus className="w-3 h-3" /> รอบ
                             </button>
                             <button onClick={toggleGroup}
@@ -962,7 +972,7 @@ export default function PurchasePage() {
                                     {item.customPrice && <span className="ml-1 text-purple-400">(ราคาเอง)</span>}
                                   </p>
                                 </div>
-                                <p className="text-green-600 font-semibold text-base tabular-nums shrink-0">฿{formatMoney(item.subtotal)}</p>
+                                <p className="text-emerald-600 font-semibold text-base tabular-nums shrink-0">฿{formatMoney(item.subtotal)}</p>
                                 <button onClick={() => setEditingCartIdx(idx)} className="w-7 h-7 flex items-center justify-center rounded-xl bg-blue-50 text-blue-400 shrink-0">
                                   <Pencil className="w-3.5 h-3.5" />
                                 </button>
@@ -977,13 +987,13 @@ export default function PurchasePage() {
                     );
                   })}
                   {/* Total row — largest number on the page */}
-                  <div className="px-4 py-4 bg-green-50 border-t-2 border-green-200">
+                  <div className="px-4 py-4 bg-emerald-50 border-t-2 border-emerald-200">
                     <div className="flex items-end justify-between">
                       <div>
-                        <p className="text-green-600 text-xs font-medium mb-0.5">{cartGroups.length} สินค้า · {cart.length} รอบ</p>
-                        <p className="text-green-700 text-sm font-semibold">ยอดรวมทั้งหมด</p>
+                        <p className="text-emerald-600 text-xs font-medium mb-0.5">{cartGroups.length} สินค้า · {cart.length} รอบ</p>
+                        <p className="text-emerald-700 text-sm font-semibold">ยอดรวมทั้งหมด</p>
                       </div>
-                      <p className="text-green-700 font-bold tabular-nums leading-none" style={{ fontSize: 38 }}>
+                      <p className="text-emerald-700 font-bold tabular-nums leading-none" style={{ fontSize: 38 }}>
                         ฿{formatMoney(totalAmount)}
                       </p>
                     </div>
@@ -997,7 +1007,7 @@ export default function PurchasePage() {
                     {/* 1. เพิ่มสินค้า — ใช้บ่อยที่สุด, full width, อยู่บนสุด */}
                     <button
                       onClick={() => setStep("category")}
-                      className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-green-50 border-2 border-green-200 text-green-700 text-base font-semibold active:bg-green-100 transition-colors"
+                      className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-emerald-50 border-2 border-emerald-200 text-emerald-700 text-base font-semibold active:bg-emerald-100 transition-colors"
                     >
                       <Plus className="w-5 h-5" />
                       <span>+ เพิ่มสินค้า</span>

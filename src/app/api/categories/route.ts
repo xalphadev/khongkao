@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
   const categories = await prisma.category.findMany({
     where: includeInactive ? {} : { isActive: true },
     include: { products: { where: { isActive: true }, orderBy: { name: "asc" } } },
-    orderBy: { name: "asc" },
+    orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
   });
 
   return NextResponse.json(categories);
@@ -35,4 +35,20 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json(category, { status: 201 });
+}
+
+// PATCH /api/categories — bulk reorder: body = [{ id, sortOrder }]
+export async function PATCH(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== "owner") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const items: { id: string; sortOrder: number }[] = await req.json();
+  await Promise.all(
+    items.map((item) =>
+      prisma.category.update({ where: { id: item.id }, data: { sortOrder: item.sortOrder } })
+    )
+  );
+  return NextResponse.json({ ok: true });
 }

@@ -45,8 +45,7 @@ function isToday(dateStr: string) {
   return dateStr === localDateString();
 }
 
-const CAT_COLORS = ["#16a34a", "#2563eb", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4"];
-const CAT_BCOLORS = ["#dcfce7", "#dbeafe", "#fef3c7", "#fee2e2", "#ede9fe", "#cffafe"];
+const BAR_COLORS = ["#16a34a", "#22c55e", "#4ade80", "#86efac", "#bbf7d0", "#dcfce7"];
 
 export default function OwnerDashboard() {
   const [daily, setDaily] = useState<DailyReport | null>(null);
@@ -83,35 +82,27 @@ export default function OwnerDashboard() {
     <div className="space-y-4">
 
       {/* ── Date navigator ── */}
-      <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-        <div className="flex items-center">
-          <button
-            onClick={prevDay}
-            className="flex items-center justify-center w-14 h-14 text-gray-400 active:bg-gray-50 transition-colors shrink-0"
-          >
-            <ChevronLeft className="w-6 h-6" />
+      <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
+        <div className="flex items-center gap-2 px-2 py-2">
+          <button onClick={prevDay}
+            className="w-11 h-11 flex items-center justify-center rounded-xl text-gray-500 active:bg-gray-100 transition-colors shrink-0 bg-gray-50">
+            <ChevronLeft className="w-5 h-5" />
           </button>
-          <div className="flex-1 text-center py-3">
-            <p className="text-gray-800 font-semibold text-base leading-tight">{formatDateThai(date)}</p>
+          <div className="flex-1 text-center py-1">
+            <p className="text-gray-800 font-semibold text-sm leading-tight">{formatDateThai(date)}</p>
             {isToday(date) && (
-              <span className="inline-block mt-1 text-xs bg-green-100 text-green-700 font-medium px-2.5 py-0.5 rounded-full">วันนี้</span>
+              <span className="inline-block mt-1 text-[11px] bg-emerald-100 text-emerald-700 font-bold px-2.5 py-0.5 rounded-full">วันนี้</span>
             )}
           </div>
-          <button
-            onClick={nextDay}
-            disabled={isToday(date)}
-            className="flex items-center justify-center w-14 h-14 text-gray-400 active:bg-gray-50 disabled:opacity-30 transition-colors shrink-0"
-          >
-            <ChevronRight className="w-6 h-6" />
+          <button onClick={nextDay} disabled={isToday(date)}
+            className="w-11 h-11 flex items-center justify-center rounded-xl text-gray-500 active:bg-gray-100 disabled:opacity-30 transition-colors shrink-0 bg-gray-50">
+            <ChevronRight className="w-5 h-5" />
           </button>
         </div>
-        {/* Quick jump to today */}
         {!isToday(date) && (
-          <button
-            onClick={() => setDate(localDateString())}
-            className="w-full py-2.5 text-center text-green-600 text-sm font-medium border-t border-gray-50 active:bg-green-50 transition-colors"
-          >
-            กลับไปวันนี้
+          <button onClick={() => setDate(localDateString())}
+            className="w-full py-2.5 text-center text-emerald-600 text-xs font-semibold border-t border-gray-50 active:bg-emerald-50 transition-colors">
+            กลับไปวันนี้ →
           </button>
         )}
       </div>
@@ -128,14 +119,19 @@ export default function OwnerDashboard() {
           {/* ── Hero: Today's Total ── */}
           <div
             className="relative rounded-3xl overflow-hidden px-6 py-6"
-            style={{ background: "linear-gradient(135deg, #166534 0%, #16a34a 100%)" }}
+            style={{ background: "linear-gradient(135deg, #22c55e 0%, #10b981 50%, #0ea5e9 100%)", boxShadow: "0 10px 32px rgba(16,185,129,0.3), 0 2px 8px rgba(14,165,233,0.18)" }}
           >
-            <div className="absolute -top-6 -right-6 w-40 h-40 rounded-full bg-white/[0.07]" />
-            <div className="absolute bottom-0 -left-4 w-28 h-28 rounded-full bg-black/[0.08]" />
+            {/* Decorative circles */}
+            <div className="absolute -top-8 -right-8 w-44 h-44 rounded-full" style={{ background: "rgba(255,255,255,0.1)" }} />
+            <div className="absolute -bottom-6 -left-6 w-32 h-32 rounded-full" style={{ background: "rgba(14,165,233,0.2)" }} />
+            <div className="absolute top-1/2 right-16 w-16 h-16 rounded-full" style={{ background: "rgba(255,255,255,0.07)" }} />
+
             <div className="relative">
               <div className="flex items-center gap-2 mb-3">
-                <Banknote className="w-5 h-5 text-green-300" />
-                <p className="text-green-100 text-base font-medium">ยอดรับซื้อ</p>
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "rgba(255,255,255,0.22)" }}>
+                  <Banknote className="w-4 h-4 text-white" />
+                </div>
+                <p className="text-white/80 text-sm font-semibold">ยอดรับซื้อวันนี้</p>
               </div>
               {daily?.totalAmount !== undefined ? (
                 <p className="text-white font-bold tabular-nums leading-none" style={{ fontSize: "3.2rem" }}>
@@ -144,22 +140,22 @@ export default function OwnerDashboard() {
               ) : (
                 <p className="text-white/50 text-4xl font-bold">฿0</p>
               )}
-              <div className="flex items-center gap-4 mt-4">
-                <div className="flex items-center gap-2 bg-white/15 rounded-2xl px-4 py-2">
-                  <ShoppingBag className="w-4 h-4 text-green-200 shrink-0" />
+              <div className="flex items-center gap-3 mt-4">
+                <div className="flex items-center gap-2 rounded-2xl px-4 py-2.5" style={{ background: "rgba(255,255,255,0.18)", backdropFilter: "blur(4px)" }}>
+                  <ShoppingBag className="w-4 h-4 text-white/80 shrink-0" />
                   <div>
                     <p className="text-white text-xl font-bold leading-none">{daily?.totalTransactions ?? 0}</p>
-                    <p className="text-green-200 text-xs mt-0.5">รายการ</p>
+                    <p className="text-white/60 text-xs mt-0.5">รายการ</p>
                   </div>
                 </div>
                 {daily && daily.totalTransactions > 0 && (
-                  <div className="flex items-center gap-2 bg-white/15 rounded-2xl px-4 py-2">
-                    <TrendingUp className="w-4 h-4 text-green-200 shrink-0" />
+                  <div className="flex items-center gap-2 rounded-2xl px-4 py-2.5" style={{ background: "rgba(255,255,255,0.18)", backdropFilter: "blur(4px)" }}>
+                    <TrendingUp className="w-4 h-4 text-white/80 shrink-0" />
                     <div>
                       <p className="text-white text-xl font-bold leading-none tabular-nums">
                         ฿{formatMoney(daily.totalAmount / daily.totalTransactions)}
                       </p>
-                      <p className="text-green-200 text-xs mt-0.5">เฉลี่ย/บิล</p>
+                      <p className="text-white/60 text-xs mt-0.5">เฉลี่ย/บิล</p>
                     </div>
                   </div>
                 )}
@@ -170,39 +166,45 @@ export default function OwnerDashboard() {
           {/* ── Month summary + comparison ── */}
           <div className="grid grid-cols-2 gap-3">
             {/* Card 1: ยอดเดือนนี้ */}
-            <div className="relative rounded-2xl overflow-hidden p-4"
-              style={{ background: "linear-gradient(135deg, #d97706 0%, #f59e0b 100%)" }}>
-              <div className="absolute -top-4 -right-4 w-20 h-20 rounded-full bg-white/10" />
-              <p className="text-amber-100 text-xs font-medium mb-2 relative">ยอดเดือนนี้</p>
-              <p className="text-white font-bold text-2xl tabular-nums leading-tight relative break-all">
+            <div className="bg-white rounded-2xl shadow-sm p-4 border border-emerald-50">
+              <div className="flex items-center gap-1.5 mb-2">
+                <div className="w-5 h-5 rounded-md bg-emerald-100 flex items-center justify-center">
+                  <Banknote className="w-3 h-3 text-emerald-600" />
+                </div>
+                <p className="text-gray-400 text-xs font-medium">ยอดเดือนนี้</p>
+              </div>
+              <p className="text-emerald-700 font-bold text-xl tabular-nums leading-tight break-all">
                 ฿{formatMoney(monthly?.totalAmount ?? 0)}
               </p>
-              {prevMonthTotal !== null && prevMonthTotal > 0 && (monthly?.totalAmount ?? 0) > 0 && (
-                <div className="mt-2 relative">
-                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+              <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                {prevMonthTotal !== null && prevMonthTotal > 0 && (monthly?.totalAmount ?? 0) > 0 && (
+                  <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded-md ${
                     (monthly?.totalAmount ?? 0) >= prevMonthTotal
-                      ? "bg-white/25 text-white"
-                      : "bg-black/15 text-white/80"
+                      ? "bg-emerald-100 text-emerald-700"
+                      : "bg-red-100 text-red-600"
                   }`}>
-                    {(monthly?.totalAmount ?? 0) >= prevMonthTotal ? "+" : ""}
-                    {Math.round(((monthly?.totalAmount ?? 0) / prevMonthTotal - 1) * 100)}%
+                    {(monthly?.totalAmount ?? 0) >= prevMonthTotal ? "▲" : "▼"}
+                    {Math.abs(Math.round(((monthly?.totalAmount ?? 0) / prevMonthTotal - 1) * 100))}%
                   </span>
-                </div>
-              )}
-              <p className="text-amber-200 text-xs mt-1.5 relative">{monthly?.totalTransactions ?? 0} รายการ</p>
+                )}
+                <p className="text-gray-400 text-xs">{monthly?.totalTransactions ?? 0} รายการ</p>
+              </div>
             </div>
             {/* Card 2: เฉลี่ยต่อวัน */}
-            <div className="relative rounded-2xl overflow-hidden p-4"
-              style={{ background: "linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%)" }}>
-              <div className="absolute -top-4 -right-4 w-20 h-20 rounded-full bg-white/10" />
-              <p className="text-blue-100 text-xs font-medium mb-2 relative">เฉลี่ยต่อวัน</p>
-              <p className="text-white font-bold text-2xl tabular-nums leading-tight relative break-all">
+            <div className="bg-white rounded-2xl shadow-sm p-4 border border-sky-50">
+              <div className="flex items-center gap-1.5 mb-2">
+                <div className="w-5 h-5 rounded-md bg-sky-100 flex items-center justify-center">
+                  <TrendingUp className="w-3 h-3 text-sky-600" />
+                </div>
+                <p className="text-gray-400 text-xs font-medium">เฉลี่ยต่อวัน</p>
+              </div>
+              <p className="text-sky-700 font-bold text-xl tabular-nums leading-tight break-all">
                 ฿{monthly && monthly.totalTransactions > 0
                   ? formatMoney(monthly.totalAmount / (monthly.dailyData.filter((d) => d.amount > 0).length || 1))
                   : "0"}
               </p>
               {prevMonthTotal !== null && prevMonthTotal > 0 && (
-                <p className="text-blue-200 text-xs mt-1.5 relative">เดือนก่อน ฿{formatMoney(prevMonthTotal)}</p>
+                <p className="text-gray-400 text-xs mt-2">เดือนก่อน ฿{formatMoney(prevMonthTotal)}</p>
               )}
             </div>
           </div>
@@ -213,49 +215,56 @@ export default function OwnerDashboard() {
             const all = daily.productBreakdown;
             const shown = showAllProducts ? all : all.slice(0, LIMIT);
             const hidden = all.length - LIMIT;
+            const topAmount = all[0]?.amount ?? 1;
             return (
-              <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+              <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
                 <div className="px-4 py-3.5 border-b border-gray-50 flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-xl bg-green-100 flex items-center justify-center">
-                    <Package className="w-4 h-4 text-green-600" />
+                  <div className="w-7 h-7 rounded-xl flex items-center justify-center"
+                    style={{ background: "linear-gradient(135deg, #10b981, #0ea5e9)" }}>
+                    <Package className="w-4 h-4 text-white" />
                   </div>
                   <p className="text-gray-800 font-semibold text-sm flex-1">สินค้าที่รับซื้อ</p>
-                  <span className="bg-green-50 text-green-600 text-xs font-semibold px-2 py-0.5 rounded-full">{all.length} รายการ</span>
+                  <span className="bg-emerald-50 text-emerald-600 text-xs font-bold px-2 py-0.5 rounded-full border border-emerald-100">{all.length} รายการ</span>
                 </div>
                 <div className="divide-y divide-gray-50">
-                  {shown.map((p, i) => (
-                    <div key={i} className="flex items-center gap-3 px-4 py-3.5">
-                      <span
-                        className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 shadow-sm"
-                        style={{ background: CAT_BCOLORS[i % CAT_BCOLORS.length], color: CAT_COLORS[i % CAT_COLORS.length] }}
-                      >
-                        {i + 1}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-gray-800 font-semibold text-base truncate">{p.name}</p>
-                        <p className="text-gray-400 text-sm">{p.quantity} {p.unit === "KG" ? "กก." : "ชิ้น"}</p>
+                  {shown.map((p, i) => {
+                    const barPct = topAmount > 0 ? (p.amount / topAmount) * 100 : 0;
+                    return (
+                      <div key={i} className="flex items-center gap-3 px-4 py-3">
+                        <span className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 text-emerald-700"
+                          style={{ background: i === 0 ? "linear-gradient(135deg, #d1fae5, #a7f3d0)" : "#f9fafb" }}>
+                          {i + 1}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-baseline justify-between gap-2">
+                            <p className="text-gray-800 font-semibold text-sm truncate">{p.name}</p>
+                            <p className="font-bold text-sm tabular-nums shrink-0 text-emerald-700">
+                              ฿{formatMoney(p.amount)}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2 mt-1">
+                            <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                              <div className="h-full rounded-full transition-all"
+                                style={{ width: `${barPct}%`, background: "linear-gradient(90deg, #10b981, #0ea5e9)" }} />
+                            </div>
+                            <p className="text-gray-400 text-xs shrink-0">{p.quantity} {p.unit === "KG" ? "กก." : "ชิ้น"}</p>
+                          </div>
+                        </div>
                       </div>
-                      <p className="font-bold text-base tabular-nums shrink-0"
-                        style={{ color: CAT_COLORS[i % CAT_COLORS.length] }}>
-                        ฿{formatMoney(p.amount)}
-                      </p>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
-                {/* Show more / less toggle */}
                 {all.length > LIMIT && (
-                  <button
-                    onClick={() => setShowAllProducts(v => !v)}
-                    className="w-full py-3 border-t border-dashed border-gray-200 text-sm font-medium text-gray-500 active:bg-gray-50 transition-colors flex items-center justify-center gap-1.5"
-                  >
+                  <button onClick={() => setShowAllProducts(v => !v)}
+                    className="w-full py-3 border-t border-dashed border-gray-200 text-sm font-medium text-gray-500 active:bg-gray-50 transition-colors flex items-center justify-center gap-1.5">
                     <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${showAllProducts ? "rotate-180" : ""}`} />
                     {showAllProducts ? "แสดงน้อยลง" : `ดูเพิ่มเติม ${hidden} รายการ`}
                   </button>
                 )}
-                <div className="flex justify-between items-center px-4 py-3.5 border-t border-green-100"
-                  style={{ background: "linear-gradient(90deg, #f0fdf4, #dcfce7)" }}>
-                  <p className="text-green-700 font-semibold text-base">รวมทั้งหมด</p>
-                  <p className="text-green-700 font-bold text-xl tabular-nums">฿{formatMoneyFull(daily.totalAmount)}</p>
+                <div className="flex justify-between items-center px-4 py-3.5 border-t border-emerald-100 rounded-b-2xl"
+                  style={{ background: "linear-gradient(90deg, #f0fdf4, #ecfeff)" }}>
+                  <p className="text-emerald-700 font-semibold text-sm">รวมทั้งหมด</p>
+                  <p className="text-emerald-700 font-bold text-xl tabular-nums">฿{formatMoneyFull(daily.totalAmount)}</p>
                 </div>
               </div>
             );
@@ -263,34 +272,29 @@ export default function OwnerDashboard() {
 
           {/* ── Category breakdown (today) ── */}
           {daily && daily.categoryBreakdown.length > 0 && (
-            <div className="bg-white rounded-2xl p-4 shadow-sm">
+            <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-7 h-7 rounded-xl bg-violet-100 flex items-center justify-center">
-                  <Package className="w-4 h-4 text-violet-600" />
+                <div className="w-7 h-7 rounded-xl flex items-center justify-center"
+                  style={{ background: "linear-gradient(135deg, #22c55e, #10b981)" }}>
+                  <Package className="w-4 h-4 text-white" />
                 </div>
                 <p className="text-gray-800 font-semibold text-sm">ยอดตามหมวดหมู่</p>
               </div>
-              <div className="space-y-3.5">
+              <div className="space-y-3">
                 {daily.categoryBreakdown.map((c, i) => {
                   const pct = daily.totalAmount > 0 ? (c.amount / daily.totalAmount) * 100 : 0;
                   return (
                     <div key={i}>
                       <div className="flex justify-between items-center mb-1.5">
+                        <p className="text-gray-700 text-sm font-medium">{c.name}</p>
                         <div className="flex items-center gap-2">
-                          <div className="w-2.5 h-2.5 rounded-full shrink-0"
-                            style={{ background: CAT_COLORS[i % CAT_COLORS.length] }} />
-                          <p className="text-gray-700 text-sm font-medium">{c.name}</p>
+                          <span className="text-gray-400 text-xs">{Math.round(pct)}%</span>
+                          <p className="text-emerald-700 text-sm tabular-nums font-bold">฿{formatMoney(c.amount)}</p>
                         </div>
-                        <p className="text-sm tabular-nums font-bold"
-                          style={{ color: CAT_COLORS[i % CAT_COLORS.length] }}>
-                          ฿{formatMoney(c.amount)}
-                        </p>
                       </div>
-                      <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-                        <div
-                          className="h-full rounded-full transition-all"
-                          style={{ width: `${pct}%`, background: CAT_COLORS[i % CAT_COLORS.length] }}
-                        />
+                      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div className="h-full rounded-full transition-all"
+                          style={{ width: `${pct}%`, background: BAR_COLORS[i % BAR_COLORS.length] }} />
                       </div>
                     </div>
                   );
@@ -301,43 +305,35 @@ export default function OwnerDashboard() {
 
           {/* ── Staff breakdown (today) ── */}
           {daily && daily.staffBreakdown && daily.staffBreakdown.length > 0 && (
-            <div className="bg-white rounded-2xl p-4 shadow-sm">
+            <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-7 h-7 rounded-xl bg-cyan-100 flex items-center justify-center">
-                  <Users className="w-4 h-4 text-cyan-600" />
+                <div className="w-7 h-7 rounded-xl flex items-center justify-center"
+                  style={{ background: "linear-gradient(135deg, #0ea5e9, #6366f1)" }}>
+                  <Users className="w-4 h-4 text-white" />
                 </div>
                 <p className="text-gray-800 font-semibold text-sm">ยอดตามพนักงาน</p>
               </div>
-              <div className="space-y-3.5">
+              <div className="space-y-3">
                 {daily.staffBreakdown.map((s, i) => {
                   const pct = daily.totalAmount > 0 ? (s.amount / daily.totalAmount) * 100 : 0;
-                  const colors = ["#16a34a", "#3b82f6", "#f59e0b", "#8b5cf6", "#ef4444", "#06b6d4"];
-                  const bgColors = ["#dcfce7", "#dbeafe", "#fef3c7", "#ede9fe", "#fee2e2", "#cffafe"];
                   return (
                     <div key={i}>
                       <div className="flex justify-between items-center mb-1.5">
                         <div className="flex items-center gap-2.5">
-                          <div
-                            className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold shrink-0"
-                            style={{ background: bgColors[i % bgColors.length], color: colors[i % colors.length] }}
-                          >
+                          <div className="w-8 h-8 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 text-white"
+                            style={{ background: `linear-gradient(135deg, ${["#10b981","#0ea5e9","#6366f1","#f59e0b","#ec4899"][i % 5]}, ${["#0ea5e9","#6366f1","#f59e0b","#ec4899","#10b981"][i % 5]})` }}>
                             {s.name.charAt(0)}
                           </div>
                           <p className="text-gray-700 text-sm font-semibold">{s.name}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm font-bold tabular-nums"
-                            style={{ color: colors[i % colors.length] }}>
-                            ฿{formatMoney(s.amount)}
-                          </p>
+                          <p className="text-sky-700 text-sm font-bold tabular-nums">฿{formatMoney(s.amount)}</p>
                           <p className="text-gray-400 text-xs">{s.count} บิล</p>
                         </div>
                       </div>
-                      <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-                        <div
-                          className="h-full rounded-full transition-all"
-                          style={{ width: `${pct}%`, background: colors[i % colors.length] }}
-                        />
+                      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div className="h-full rounded-full transition-all"
+                          style={{ width: `${pct}%`, background: "linear-gradient(90deg, #0ea5e9, #6366f1)" }} />
                       </div>
                     </div>
                   );
@@ -348,8 +344,11 @@ export default function OwnerDashboard() {
 
           {/* ── Monthly trend bar chart ── */}
           {monthly && monthly.dailyData.some((d) => d.amount > 0) && (
-            <div className="bg-white rounded-2xl p-4 shadow-sm">
-              <p className="text-gray-700 font-semibold text-sm mb-3">ยอดรายวัน (เดือนนี้)</p>
+            <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-1.5 h-4 rounded-full" style={{ background: "linear-gradient(180deg, #10b981, #0ea5e9)" }} />
+                <p className="text-gray-700 font-semibold text-sm">ยอดรายวัน (เดือนนี้)</p>
+              </div>
               <div className="overflow-x-auto -mx-1">
                 <div style={{ minWidth: Math.max(monthly.dailyData.length * 22, 280) }} className="px-1">
                   <ResponsiveContainer width="100%" height={140}>
@@ -374,12 +373,7 @@ export default function OwnerDashboard() {
                         labelFormatter={(l) => new Date(String(l) + "T00:00:00").toLocaleDateString("th-TH", { day: "numeric", month: "short" })}
                         contentStyle={{ borderRadius: 12, border: "none", boxShadow: "0 4px 16px rgba(0,0,0,0.1)", fontSize: 13 }}
                       />
-                      <Bar
-                        dataKey="amount"
-                        radius={[5, 5, 0, 0]}
-                        maxBarSize={20}
-                        fill="#16a34a"
-                      />
+                      <Bar dataKey="amount" radius={[5, 5, 0, 0]} maxBarSize={20} fill="#10b981" />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>

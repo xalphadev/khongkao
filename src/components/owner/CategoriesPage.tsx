@@ -15,6 +15,7 @@ import {
   Leaf, FlaskConical, Scissors, Paintbrush,
   Music, Camera, Headphones,
   Archive, Layers, Grid3x3,
+  ChevronUp, ChevronDown,
 } from "lucide-react";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 
@@ -82,26 +83,26 @@ export const ICON_OPTIONS: { key: string; label: string; Icon: React.ComponentTy
 ];
 
 export const COLOR_OPTIONS = [
-  { key: "#16a34a", label: "เขียว",        from: "#15803d", to: "#22c55e" },
-  { key: "#2563eb", label: "น้ำเงิน",      from: "#1d4ed8", to: "#3b82f6" },
-  { key: "#dc2626", label: "แดง",          from: "#b91c1c", to: "#f87171" },
-  { key: "#d97706", label: "ส้มทอง",       from: "#b45309", to: "#fbbf24" },
-  { key: "#7c3aed", label: "ม่วง",         from: "#6d28d9", to: "#a78bfa" },
-  { key: "#0891b2", label: "ฟ้าคราม",     from: "#0e7490", to: "#22d3ee" },
-  { key: "#db2777", label: "ชมพู",         from: "#be185d", to: "#f472b6" },
-  { key: "#65a30d", label: "เขียวมะนาว",   from: "#4d7c0f", to: "#a3e635" },
-  { key: "#ea580c", label: "ส้ม",          from: "#c2410c", to: "#fb923c" },
-  { key: "#0f766e", label: "เขียวน้ำ",     from: "#0f766e", to: "#2dd4bf" },
-  { key: "#475569", label: "เทาเข้ม",      from: "#334155", to: "#94a3b8" },
-  { key: "#92400e", label: "น้ำตาล",       from: "#78350f", to: "#d97706" },
-  { key: "#1e40af", label: "น้ำเงินเข้ม",  from: "#1e3a8a", to: "#3b82f6" },
-  { key: "#9d174d", label: "แดงม่วง",      from: "#831843", to: "#ec4899" },
-  { key: "#064e3b", label: "เขียวเข้ม",    from: "#022c22", to: "#10b981" },
-  { key: "#1e3a5f", label: "กรมท่า",       from: "#0f172a", to: "#3b82f6" },
-  { key: "#7e22ce", label: "ม่วงเข้ม",     from: "#581c87", to: "#c084fc" },
-  { key: "#b45309", label: "เหลืองทอง",    from: "#92400e", to: "#fcd34d" },
-  { key: "#0e7490", label: "ฟ้าทะเล",      from: "#164e63", to: "#67e8f9" },
-  { key: "#be123c", label: "แดงเข้ม",      from: "#881337", to: "#fb7185" },
+  { key: "#16a34a", label: "เขียว",        from: "#22c55e", to: "#86efac" },
+  { key: "#2563eb", label: "น้ำเงิน",      from: "#2563eb", to: "#60a5fa" },
+  { key: "#dc2626", label: "แดง",          from: "#ef4444", to: "#fca5a5" },
+  { key: "#d97706", label: "ส้มทอง",       from: "#d97706", to: "#fcd34d" },
+  { key: "#7c3aed", label: "ม่วง",         from: "#7c3aed", to: "#c4b5fd" },
+  { key: "#0891b2", label: "ฟ้าคราม",     from: "#0891b2", to: "#67e8f9" },
+  { key: "#db2777", label: "ชมพู",         from: "#ec4899", to: "#fbcfe8" },
+  { key: "#65a30d", label: "เขียวมะนาว",   from: "#65a30d", to: "#bef264" },
+  { key: "#ea580c", label: "ส้ม",          from: "#ea580c", to: "#fdba74" },
+  { key: "#0f766e", label: "เขียวน้ำ",     from: "#0d9488", to: "#5eead4" },
+  { key: "#475569", label: "เทา",          from: "#64748b", to: "#cbd5e1" },
+  { key: "#92400e", label: "น้ำตาล",       from: "#b45309", to: "#fde68a" },
+  { key: "#1e40af", label: "น้ำเงินเข้ม",  from: "#3b82f6", to: "#93c5fd" },
+  { key: "#9d174d", label: "แดงม่วง",      from: "#db2777", to: "#f9a8d4" },
+  { key: "#064e3b", label: "เขียวเข้ม",    from: "#059669", to: "#6ee7b7" },
+  { key: "#1e3a5f", label: "กรมท่า",       from: "#1d4ed8", to: "#93c5fd" },
+  { key: "#7e22ce", label: "ม่วงเข้ม",     from: "#9333ea", to: "#d8b4fe" },
+  { key: "#b45309", label: "เหลืองทอง",    from: "#eab308", to: "#fef08a" },
+  { key: "#0e7490", label: "ฟ้าทะเล",      from: "#06b6d4", to: "#a5f3fc" },
+  { key: "#be123c", label: "แดงเข้ม",      from: "#e11d48", to: "#fda4af" },
 ];
 
 export function getIconComponent(key: string): React.ComponentType<{ className?: string }> {
@@ -114,6 +115,7 @@ export function getCategoryGradient(colorKey: string) {
 interface Category {
   id: string; name: string; description: string | null;
   icon: string | null; color: string | null;
+  sortOrder: number;
   isActive: boolean; products: { id: string }[];
 }
 
@@ -130,6 +132,8 @@ export default function CategoriesPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [toggleConfirm, setToggleConfirm] = useState<Category | null>(null);
+  const [reorderConfirm, setReorderConfirm] = useState(false);
+  const [reorderMode, setReorderMode] = useState(false);
 
   const load = async () => {
     setCategories(await fetch("/api/categories?includeInactive=true").then((r) => r.json()));
@@ -166,56 +170,131 @@ export default function CategoriesPage() {
     load();
   };
 
+  const moveCategory = async (index: number, direction: -1 | 1) => {
+    const newList = [...categories];
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= newList.length) return;
+    // Swap
+    [newList[index], newList[targetIndex]] = [newList[targetIndex], newList[index]];
+    // Reassign sortOrder
+    const updated = newList.map((cat, i) => ({ ...cat, sortOrder: i }));
+    setCategories(updated);
+    await fetch("/api/categories", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updated.map((cat) => ({ id: cat.id, sortOrder: cat.sortOrder }))),
+    });
+  };
+
   const selectedColor = getCategoryGradient(form.color);
   const SelectedIcon = getIconComponent(form.icon);
 
   return (
     <div className="space-y-4">
       {/* ── Toolbar ── */}
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-gray-500 text-sm">หมวดหมู่ทั้งหมด {categories.length} หมวด</p>
-        <button onClick={openCreate}
-          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white px-4 py-2.5 rounded-2xl text-sm font-semibold transition-all shadow-sm shadow-green-600/25">
-          <Plus className="w-4 h-4" /> เพิ่มหมวดหมู่
-        </button>
+      <div className="flex flex-col gap-2">
+        <p className="text-gray-400 text-xs font-medium">หมวดหมู่ทั้งหมด {categories.length} หมวด</p>
+        <div className="flex items-center gap-2">
+          {reorderMode ? (
+            <button onClick={() => setReorderMode(false)}
+              className="flex items-center gap-1.5 bg-emerald-500 text-white px-4 py-2.5 rounded-2xl text-sm font-semibold transition-all shadow-sm flex-1 justify-center">
+              <ChevronUp className="w-4 h-4" /> เสร็จแล้ว จัดลำดับ
+            </button>
+          ) : (
+            <>
+              <button onClick={() => setReorderConfirm(true)}
+                className="flex items-center gap-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 px-4 py-2.5 rounded-2xl text-sm font-semibold transition-all whitespace-nowrap">
+                <ChevronUp className="w-3.5 h-3.5" />
+                <ChevronDown className="w-3.5 h-3.5 -ml-1.5" />
+                จัดลำดับ
+              </button>
+              <button onClick={openCreate}
+                className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white px-4 py-2.5 rounded-2xl text-sm font-semibold transition-all shadow-sm shadow-emerald-500/30 flex-1 justify-center whitespace-nowrap">
+                <Plus className="w-4 h-4 shrink-0" /> เพิ่มหมวดหมู่
+              </button>
+            </>
+          )}
+        </div>
       </div>
+
+      {/* ── Reorder mode banner ── */}
+      {reorderMode && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 flex items-center gap-2">
+          <ChevronUp className="w-4 h-4 text-amber-500 shrink-0" />
+          <p className="text-amber-700 text-sm font-medium">โหมดจัดลำดับ — กด ↑↓ เพื่อเลื่อนหมวดหมู่ กด "เสร็จแล้ว" เมื่อจัดเสร็จ</p>
+        </div>
+      )}
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <div className="w-6 h-6 border-2 border-gray-200 border-t-green-500 rounded-full animate-spin" />
+          <div className="w-6 h-6 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {categories.map((c) => {
+        <div className="space-y-2">
+          {categories.map((c, index) => {
             const grad = getCategoryGradient(c.color ?? "#16a34a");
             const CIcon = getIconComponent(c.icon ?? "Package");
             return (
-              <div key={c.id} className={`bg-white rounded-2xl p-4 shadow-sm border border-gray-100 transition-all ${!c.isActive ? "opacity-50" : "hover:shadow-md"}`}>
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
-                    style={{ background: `linear-gradient(135deg, ${grad.from}, ${grad.to})` }}>
-                    <CIcon className="w-6 h-6 text-white" />
+              <div key={c.id} className={`bg-white rounded-2xl px-4 py-3.5 shadow-sm flex items-center gap-3 transition-all border ${reorderMode ? "border-amber-200 bg-amber-50/30" : "border-gray-100"} ${!c.isActive ? "opacity-50" : ""}`}>
+                {/* Left: reorder controls OR order number */}
+                {reorderMode ? (
+                  <div className="flex flex-col items-center gap-0.5 shrink-0">
+                    <button onClick={() => moveCategory(index, -1)} disabled={index === 0}
+                      className="w-8 h-8 flex items-center justify-center rounded-xl bg-white border border-gray-200 text-gray-500 hover:bg-amber-100 hover:border-amber-300 disabled:opacity-20 transition-all active:scale-95 shadow-sm">
+                      <ChevronUp className="w-4 h-4" />
+                    </button>
+                    <span className="text-xs font-bold text-amber-500 w-6 text-center py-0.5">{index + 1}</span>
+                    <button onClick={() => moveCategory(index, 1)} disabled={index === categories.length - 1}
+                      className="w-8 h-8 flex items-center justify-center rounded-xl bg-white border border-gray-200 text-gray-500 hover:bg-amber-100 hover:border-amber-300 disabled:opacity-20 transition-all active:scale-95 shadow-sm">
+                      <ChevronDown className="w-4 h-4" />
+                    </button>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <h3 className="font-semibold text-gray-900 truncate">{c.name}</h3>
-                    {c.description && <p className="text-gray-400 text-xs mt-0.5 line-clamp-1">{c.description}</p>}
-                    <p className="text-gray-400 text-xs mt-0.5">{c.products.length} สินค้า</p>
+                ) : (
+                  <span className="text-xs font-bold text-gray-300 w-5 text-center shrink-0">{index + 1}</span>
+                )}
+
+                {/* Icon */}
+                <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+                  style={{ background: `linear-gradient(135deg, ${grad.from}, ${grad.to})` }}>
+                  <CIcon className="w-5 h-5 text-white" />
+                </div>
+
+                {/* Info */}
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-semibold text-gray-900 text-sm truncate">{c.name}</h3>
+                  {c.description && <p className="text-gray-400 text-xs mt-0.5 truncate">{c.description}</p>}
+                  <p className="text-gray-400 text-xs">{c.products.length} สินค้า</p>
+                </div>
+
+                {/* Actions — hidden in reorder mode */}
+                {!reorderMode && (
+                  <div className="flex flex-col gap-1.5 shrink-0">
+                    <button onClick={() => openEdit(c)}
+                      className="px-3 py-1 rounded-lg text-xs font-semibold bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors">
+                      แก้ไข
+                    </button>
+                    <button onClick={() => setToggleConfirm(c)}
+                      className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors ${c.isActive ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" : "bg-gray-100 text-gray-400 hover:bg-gray-200"}`}>
+                      {c.isActive ? "เปิด" : "ปิด"}
+                    </button>
                   </div>
-                </div>
-                <div className="flex gap-2 pt-2.5 border-t border-gray-50">
-                  <button onClick={() => setToggleConfirm(c)}
-                    className={`flex-1 py-1.5 rounded-xl text-xs font-semibold transition-colors ${c.isActive ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}>
-                    {c.isActive ? "เปิดใช้งาน" : "ปิดใช้งาน"}
-                  </button>
-                  <button onClick={() => openEdit(c)}
-                    className="flex-1 py-1.5 rounded-xl text-xs font-semibold bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors">
-                    แก้ไข
-                  </button>
-                </div>
+                )}
               </div>
             );
           })}
         </div>
+      )}
+
+      {/* ── Confirm reorder mode ── */}
+      {reorderConfirm && (
+        <ConfirmModal
+          title="เข้าโหมดจัดลำดับ?"
+          description="คุณกำลังจะเปลี่ยนลำดับหมวดหมู่ที่แสดงในหน้ารับซื้อ กดยืนยันเพื่อเริ่มจัดลำดับ"
+          variant="warning"
+          confirmLabel="เข้าโหมดจัดลำดับ"
+          onConfirm={() => { setReorderMode(true); setReorderConfirm(false); }}
+          onCancel={() => setReorderConfirm(false)}
+        />
       )}
 
       {/* ── Confirm toggle ── */}
@@ -266,7 +345,7 @@ export default function CategoriesPage() {
               <div>
                 <FieldLabel>ชื่อหมวดหมู่ *</FieldLabel>
                 <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-gray-50 focus:bg-white focus:border-green-500 focus:outline-none"
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-gray-50 focus:bg-white focus:border-emerald-400 focus:outline-none"
                   placeholder="เช่น โลหะ, กระดาษ, อิเล็กทรอนิกส์" />
               </div>
 
@@ -274,7 +353,7 @@ export default function CategoriesPage() {
               <div>
                 <FieldLabel>คำอธิบาย (ถ้ามี)</FieldLabel>
                 <input type="text" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-gray-50 focus:bg-white focus:border-green-500 focus:outline-none"
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-gray-50 focus:bg-white focus:border-emerald-400 focus:outline-none"
                   placeholder="เช่น เหล็ก, ทองแดง, อลูมิเนียม" />
               </div>
 

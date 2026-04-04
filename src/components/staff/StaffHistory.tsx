@@ -258,9 +258,9 @@ function EditTransactionModal({
                           {group.totalQty} {group.unit === "KG" ? "กก." : "ชิ้น"}
                         </p>
                       </button>
-                      <p className="text-green-600 font-semibold text-sm tabular-nums shrink-0">฿{formatMoney(group.totalSubtotal)}</p>
+                      <p className="text-emerald-600 font-semibold text-sm tabular-nums shrink-0">฿{formatMoney(group.totalSubtotal)}</p>
                       <button onClick={() => handleAddRound(group)}
-                        className="flex items-center gap-0.5 text-[11px] text-green-600 font-medium bg-green-50 border border-green-100 px-2 py-1 rounded-lg shrink-0">
+                        className="flex items-center gap-0.5 text-[11px] text-emerald-600 font-medium bg-emerald-50 border border-emerald-100 px-2 py-1 rounded-lg shrink-0">
                         <Plus className="w-3 h-3" /> รอบ
                       </button>
                       <span className={`text-gray-300 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}>
@@ -282,7 +282,7 @@ function EditTransactionModal({
                             <input type="number" value={item.unitPrice || ""} onChange={(e) => updatePrice(idx, e.target.value)}
                               className="w-14 border border-gray-200 rounded-lg px-1 py-1 text-xs text-center focus:border-blue-400 focus:outline-none bg-white tabular-nums"
                               min="0" step="0.01" inputMode="decimal" />
-                            <p className="text-green-600 text-xs font-medium tabular-nums flex-1 text-right">฿{formatMoney(item.quantity * item.unitPrice)}</p>
+                            <p className="text-emerald-600 text-xs font-medium tabular-nums flex-1 text-right">฿{formatMoney(item.quantity * item.unitPrice)}</p>
                             <button onClick={() => setRemoveConfirmIdx(idx)}
                               className="w-6 h-6 flex items-center justify-center rounded-lg bg-red-50 text-red-400 ml-1 shrink-0">
                               <X className="w-3 h-3" />
@@ -297,15 +297,15 @@ function EditTransactionModal({
               {/* Add product button */}
               <div className="border-t border-dashed border-gray-200">
                 <button onClick={() => setAddStep("category")}
-                  className="w-full flex items-center justify-center gap-2 py-3 text-green-600 text-sm font-medium active:bg-green-50 transition-colors">
+                  className="w-full flex items-center justify-center gap-2 py-3 text-emerald-600 text-sm font-medium active:bg-emerald-50 transition-colors">
                   <Plus className="w-4 h-4" /> เพิ่มสินค้า
                 </button>
               </div>
             </div>
 
-            <div className="bg-green-50 rounded-2xl px-4 py-3 flex items-center justify-between">
-              <p className="text-green-700 text-sm font-medium">ยอดรวมทั้งหมด</p>
-              <p className="text-green-700 font-bold text-lg tabular-nums">฿{formatMoney(total)}</p>
+            <div className="bg-emerald-50 rounded-2xl px-4 py-3 flex items-center justify-between">
+              <p className="text-emerald-700 text-sm font-medium">ยอดรวมทั้งหมด</p>
+              <p className="text-emerald-700 font-bold text-lg tabular-nums">฿{formatMoney(total)}</p>
             </div>
             {error && <p className="text-red-500 text-sm text-center">{error}</p>}
           </div>
@@ -348,7 +348,7 @@ function EditTransactionModal({
                 <div className="text-right shrink-0">
                   {product.customPrice
                     ? <p className="text-purple-600 font-medium text-sm">กรอกราคาเอง</p>
-                    : <><p className="text-green-600 font-medium text-lg tabular-nums">฿{product.pricePerUnit.toLocaleString()}</p>
+                    : <><p className="text-emerald-600 font-medium text-lg tabular-nums">฿{product.pricePerUnit.toLocaleString()}</p>
                        <p className="text-gray-400 text-xs">/{product.unit === "KG" ? "กก." : "ชิ้น"}</p></>
                   }
                 </div>
@@ -384,14 +384,14 @@ function EditTransactionModal({
                 </div>
                 <input ref={addQtyRef} type="number" value={addQty} onChange={(e) => setAddQty(e.target.value)}
                   className="w-full bg-white rounded-2xl px-4 py-5 text-6xl font-medium text-center focus:outline-none tabular-nums"
-                  style={{ border: "3px solid #4ade80" }}
+                  style={{ border: "3px solid #22c55e" }}
                   placeholder="0" min="0" step={addProduct.unit === "KG" ? "0.1" : "1"} inputMode="decimal" />
               </div>
               {/* Preview total */}
               {addQty && parseFloat(addQty) > 0 && addPrice && parseFloat(addPrice) > 0 && (
                 <div className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3">
                   <p className="text-gray-400 text-sm">ยอดที่ต้องจ่าย</p>
-                  <p className="text-green-600 font-medium text-xl tabular-nums">
+                  <p className="text-emerald-600 font-medium text-xl tabular-nums">
                     ฿{formatMoney(parseFloat(addQty) * parseFloat(addPrice))}
                   </p>
                 </div>
@@ -415,7 +415,7 @@ function EditTransactionModal({
           {addStep === "quantity" && (
             <button onClick={handleConfirmAdd}
               disabled={!addQty || parseFloat(addQty) <= 0 || !addPrice || parseFloat(addPrice) <= 0}
-              className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl bg-green-600 text-white font-semibold text-base active:bg-green-700 disabled:opacity-50 disabled:bg-gray-200 disabled:text-gray-400 transition-all shadow-lg shadow-green-600/25">
+              className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl bg-emerald-500 text-white font-semibold text-base active:bg-emerald-600 disabled:opacity-50 disabled:bg-gray-200 disabled:text-gray-400 transition-all shadow-lg shadow-emerald-500/30">
               <Plus className="w-5 h-5" /> เพิ่มรายการนี้
             </button>
           )}
@@ -472,73 +472,71 @@ export default function StaffHistory() {
 
   const total = filtered.reduce((s, t) => s + t.totalAmount, 0);
 
-  return (
-    <div className="min-h-screen bg-[#f4f6f9] flex flex-col">
-      {/* ── HEADER ── */}
-      <div className="relative bg-gradient-to-br from-indigo-700 via-blue-600 to-blue-500 pt-12 pb-6 px-4 overflow-hidden">
-        <div className="absolute -top-8 -right-8 w-48 h-48 rounded-full bg-white/[0.06]" />
 
-        <div className="relative mb-4">
-          <h1 className="text-white font-semibold text-xl">ประวัติรายการ</h1>
+  return (
+    <div className="min-h-screen flex flex-col" style={{ background: "#f0f2f5" }}>
+
+      {/* ── HEADER ── */}
+      <div className="relative overflow-hidden"
+        style={{ background: "linear-gradient(150deg, #1e40af 0%, #2563eb 50%, #3b82f6 100%)" }}>
+        <div className="absolute -top-10 -right-10 w-48 h-48 rounded-full opacity-[0.08]"
+          style={{ background: "#fff" }} />
+
+        {/* Title */}
+        <div className="relative flex items-center gap-2 px-5 pb-3"
+          style={{ paddingTop: "max(env(safe-area-inset-top), 56px)" }}>
+          <h1 className="text-white font-bold text-xl">ประวัติรายการ</h1>
         </div>
 
         {/* Date nav */}
-        <div className="flex items-center gap-2 mb-4">
-          <button
-            onClick={() => setDate(addDays(date, -1))}
-            className="w-11 h-11 flex items-center justify-center rounded-xl bg-white/20 text-white active:bg-white/30 transition-colors shrink-0"
-          >
+        <div className="relative flex items-center gap-2 px-5 pb-4">
+          <button onClick={() => setDate(addDays(date, -1))}
+            className="w-11 h-11 flex items-center justify-center rounded-xl text-white active:bg-white/30 transition-colors shrink-0"
+            style={{ background: "rgba(255,255,255,0.2)" }}>
             <ChevronLeft className="w-5 h-5" />
           </button>
-
-          <button
-            className="flex-1 bg-white/20 rounded-xl px-3 py-2.5 flex items-center justify-center gap-2 active:bg-white/30 transition-colors"
-            onClick={() => setShowDatePicker(true)}
-          >
-            <Calendar className="w-4 h-4 text-white/80 shrink-0" />
-            <p className="text-white text-sm font-semibold leading-tight">
+          <button onClick={() => setShowDatePicker(true)}
+            className="flex-1 flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 active:bg-white/30 transition-colors"
+            style={{ background: "rgba(255,255,255,0.2)" }}>
+            <Calendar className="w-4 h-4 text-blue-100 shrink-0" />
+            <p className="text-white font-semibold text-sm">
               {isToday(date) ? "วันนี้" : formatThaiDate(date)}
             </p>
           </button>
-
           <button
-            onClick={() => setDate(addDays(date, 1))}
-            className="w-11 h-11 flex items-center justify-center rounded-xl bg-white/20 text-white active:bg-white/30 transition-colors shrink-0"
-          >
+            onClick={() => { if (!isToday(date)) setDate(addDays(date, 1)); }}
+            disabled={isToday(date)}
+            className="w-11 h-11 flex items-center justify-center rounded-xl text-white transition-colors shrink-0 disabled:opacity-30"
+            style={{ background: "rgba(255,255,255,0.2)" }}>
             <ChevronRight className="w-5 h-5" />
           </button>
         </div>
 
         {/* Stats */}
-        <div className="relative grid grid-cols-2 gap-3 mb-10">
-          <div className="bg-white/15 rounded-2xl px-4 py-3.5">
+        <div className="relative grid grid-cols-2 gap-3 px-5 pb-2 mb-8">
+          <div className="rounded-2xl px-4 py-3.5" style={{ background: "rgba(255,255,255,0.15)" }}>
             <p className="text-blue-200 text-xs mb-0.5">ยอดรวม</p>
-            <p className="text-white font-medium text-xl tabular-nums">฿{formatMoney(total)}</p>
+            <p className="text-white font-bold text-xl tabular-nums">฿{formatMoney(total)}</p>
           </div>
-          <div className="bg-white/15 rounded-2xl px-4 py-3.5">
+          <div className="rounded-2xl px-4 py-3.5" style={{ background: "rgba(255,255,255,0.15)" }}>
             <p className="text-blue-200 text-xs mb-0.5">จำนวนรายการ</p>
-            <p className="text-white font-medium text-xl">{filtered.length} รายการ</p>
+            <p className="text-white font-bold text-xl">{filtered.length} รายการ</p>
           </div>
         </div>
 
-        <div className="absolute bottom-0 left-0 right-0">
-          <svg viewBox="0 0 390 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full" preserveAspectRatio="none">
-            <path d="M0 40 C97.5 0 292.5 0 390 40 L390 40 L0 40 Z" fill="#f4f6f9" />
-          </svg>
-        </div>
+        {/* Wave */}
+        <svg viewBox="0 0 400 32" className="w-full block" style={{ marginBottom: -1 }}>
+          <path d="M0,32 C100,0 300,0 400,32 L400,32 L0,32 Z" fill="#f0f2f5" />
+        </svg>
       </div>
 
       {/* ── Search bar ── */}
-      <div className="px-4 pt-4 pb-2">
-        <div className="bg-white rounded-2xl px-4 py-3 flex items-center gap-3 shadow-sm">
+      <div className="px-4 pt-3 pb-2">
+        <div className="bg-white rounded-2xl px-4 py-3 flex items-center gap-3 shadow-sm border border-gray-100">
           <Search className="w-4 h-4 text-gray-400 shrink-0" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
             placeholder="ค้นหาชื่อลูกค้า หรือชื่อสินค้า..."
-            className="flex-1 bg-transparent text-sm text-gray-700 placeholder-gray-400 focus:outline-none"
-          />
+            className="flex-1 bg-transparent text-sm text-gray-700 placeholder-gray-400 focus:outline-none" />
           {search && (
             <button onClick={() => setSearch("")} className="text-gray-300 shrink-0">
               <X className="w-4 h-4" />
@@ -548,10 +546,10 @@ export default function StaffHistory() {
       </div>
 
       {/* ── LIST ── */}
-      <div className="flex-1 px-4 pt-2 pb-28">
+      <div className="flex-1 px-4 pt-1 pb-28">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3 text-gray-400">
-            <div className="w-7 h-7 border-2 border-gray-200 border-t-blue-500 rounded-full animate-spin" />
+            <div className="w-7 h-7 border-2 border-gray-200 border-t-indigo-500 rounded-full animate-spin" />
             <p className="text-sm">กำลังโหลด...</p>
           </div>
         ) : filtered.length === 0 ? (
@@ -569,39 +567,54 @@ export default function StaffHistory() {
         ) : (
           <div className="space-y-2.5">
             {filtered.map((t, idx) => (
-              <div key={t.id} className="bg-white rounded-2xl shadow-sm overflow-hidden">
+              <div key={t.id} className="bg-white rounded-2xl overflow-hidden"
+                style={{ boxShadow: "0 1px 6px rgba(0,0,0,0.07)", border: "1px solid #f0fdf4" }}>
                 <button
                   onClick={() => setExpandedId(expandedId === t.id ? null : t.id)}
-                  className="w-full px-4 py-3.5 flex items-center gap-3 active:bg-gray-50 transition-colors"
+                  className="w-full flex items-stretch active:bg-gray-50 transition-colors text-left"
                 >
-                  <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-sm font-medium shrink-0">
-                    {idx + 1}
-                  </div>
-                  <div className="flex-1 text-left min-w-0">
-                    {t.customerName && (
-                      <div className="flex items-center gap-1 mb-0.5">
-                        <User className="w-3 h-3 text-gray-400 shrink-0" />
-                        <p className="text-gray-900 text-sm font-medium truncate">{t.customerName}</p>
+                  {/* Green left bar */}
+                  <div className="w-1 shrink-0 rounded-l-2xl bg-emerald-500" />
+
+                  <div className="flex items-center gap-3 flex-1 min-w-0 px-4 py-3.5">
+                    {/* Number badge */}
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 bg-emerald-50 text-emerald-600">
+                      {idx + 1}
+                    </div>
+
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      {t.customerName ? (
+                        <div className="flex items-center gap-1 mb-0.5">
+                          <User className="w-3 h-3 text-gray-400 shrink-0" />
+                          <p className="text-gray-900 text-sm font-semibold truncate">{t.customerName}</p>
+                        </div>
+                      ) : null}
+                      <p className={`truncate ${t.customerName ? "text-gray-400 text-xs" : "text-gray-800 text-sm font-semibold"}`}>
+                        {t.items.map(i => i.productName).join(", ")}
+                      </p>
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <span className="text-gray-400 text-xs">{formatTime(t.createdAt)}</span>
+                        <span className="text-gray-200 text-xs">·</span>
+                        <span className="text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md">
+                          {t.items.length} รายการ
+                        </span>
                       </div>
-                    )}
-                    <p className={`truncate ${t.customerName ? "text-gray-400 text-xs" : "text-gray-800 text-sm font-medium"}`}>
-                      {t.items.map((i) => i.productName).join(", ")}
-                    </p>
-                    <p className="text-gray-400 text-xs mt-0.5">
-                      {formatTime(t.createdAt)} · {t.items.length} รายการ
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <p className="text-green-600 font-medium text-sm tabular-nums">
-                      ฿{formatMoney(t.totalAmount)}
-                    </p>
-                    <ChevronDown className={`w-4 h-4 text-gray-300 transition-transform ${expandedId === t.id ? "rotate-180" : ""}`} />
+                    </div>
+
+                    {/* Amount + chevron */}
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      <p className="font-bold text-sm tabular-nums text-emerald-600">
+                        ฿{formatMoney(t.totalAmount)}
+                      </p>
+                      <ChevronDown className={`w-3.5 h-3.5 text-gray-300 transition-transform ${expandedId === t.id ? "rotate-180" : ""}`} />
+                    </div>
                   </div>
                 </button>
 
                 {expandedId === t.id && (
-                  <div className="border-t border-gray-50 bg-gray-50 px-4 py-3">
-                    <p className="text-gray-300 text-xs font-mono mb-2.5">#{t.id.slice(-8).toUpperCase()}</p>
+                  <div className="border-t border-emerald-50 bg-emerald-50/40 px-4 py-3">
+                    <p className="text-emerald-400 text-xs font-mono mb-2.5">#{t.id.slice(-8).toUpperCase()}</p>
                     <div className="space-y-2">
                       {t.items.map((item) => (
                         <div key={item.id} className="flex justify-between items-center">
@@ -611,20 +624,18 @@ export default function StaffHistory() {
                               {item.quantity} {item.unit === "KG" ? "กก." : "ชิ้น"} × ฿{item.unitPrice.toLocaleString()}
                             </p>
                           </div>
-                          <p className="text-green-600 text-sm font-medium tabular-nums">
+                          <p className="text-emerald-600 text-sm font-semibold tabular-nums">
                             ฿{formatMoney(item.subtotal)}
                           </p>
                         </div>
                       ))}
                     </div>
-                    <div className="mt-3 pt-2.5 border-t border-gray-200 flex justify-between items-center">
+                    <div className="mt-3 pt-2.5 border-t border-emerald-100 flex justify-between items-center">
                       <p className="text-gray-500 text-sm font-medium">รวม</p>
-                      <p className="text-green-600 font-medium tabular-nums">฿{formatMoney(t.totalAmount)}</p>
+                      <p className="text-emerald-600 font-bold text-base tabular-nums">฿{formatMoney(t.totalAmount)}</p>
                     </div>
-                    <button
-                      onClick={() => setEditingTx(t)}
-                      className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white border border-blue-200 text-blue-600 text-sm font-medium active:bg-blue-50 transition-colors"
-                    >
+                    <button onClick={() => setEditingTx(t)}
+                      className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold active:bg-emerald-700 transition-all shadow-sm shadow-emerald-600/20">
                       <Pencil className="w-3.5 h-3.5" />
                       แก้ไขบิลนี้
                     </button>

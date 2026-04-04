@@ -85,7 +85,7 @@ export default function StaffManagePage() {
           แก้ไข
         </button>
         <button onClick={() => setConfirm(u)}
-          className={`flex-1 py-1.5 rounded-xl text-xs font-semibold transition-colors ${u.isActive ? "bg-red-50 text-red-500 hover:bg-red-100" : "bg-green-50 text-green-600 hover:bg-green-100"}`}>
+          className={`flex-1 py-1.5 rounded-xl text-xs font-semibold transition-colors ${u.isActive ? "bg-red-50 text-red-500 hover:bg-red-100" : "bg-emerald-50 text-emerald-600 hover:bg-emerald-100"}`}>
           {u.isActive ? "ปิดใช้งาน" : "เปิดใช้งาน"}
         </button>
       </div>
@@ -98,7 +98,7 @@ export default function StaffManagePage() {
       <div className="flex items-center justify-between gap-3">
         <p className="text-gray-500 text-sm">พนักงานทั้งหมด {staff.length} คน</p>
         <button onClick={openCreate}
-          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white px-4 py-2.5 rounded-2xl text-sm font-semibold transition-all shadow-sm shadow-green-600/25">
+          className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white px-4 py-2.5 rounded-2xl text-sm font-semibold transition-all shadow-sm shadow-emerald-500/30">
           <Plus className="w-4 h-4" /> เพิ่มพนักงาน
         </button>
       </div>
@@ -145,22 +145,22 @@ export default function StaffManagePage() {
               <div>
                 <FieldLabel>ชื่อ-นามสกุล</FieldLabel>
                 <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-gray-50 focus:bg-white focus:border-green-500 focus:outline-none" placeholder="เช่น ป้าแดง" />
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-gray-50 focus:bg-white focus:border-emerald-400 focus:outline-none" placeholder="เช่น ป้าแดง" />
               </div>
               <div>
                 <FieldLabel>ชื่อผู้ใช้ (Username)</FieldLabel>
                 <input type="text" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} disabled={!!editing}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-gray-50 focus:bg-white focus:border-green-500 focus:outline-none disabled:opacity-50" placeholder="pa_daeng" />
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-gray-50 focus:bg-white focus:border-emerald-400 focus:outline-none disabled:opacity-50" placeholder="pa_daeng" />
               </div>
               <div>
                 <FieldLabel>รหัสผ่าน {editing && <span className="text-gray-400 normal-case">(เว้นว่างถ้าไม่เปลี่ยน)</span>}</FieldLabel>
                 <input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-gray-50 focus:bg-white focus:border-green-500 focus:outline-none" placeholder="รหัสผ่าน" />
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-gray-50 focus:bg-white focus:border-emerald-400 focus:outline-none" placeholder="รหัสผ่าน" />
               </div>
               <div>
                 <FieldLabel>บทบาท</FieldLabel>
                 <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-gray-50 focus:bg-white focus:border-green-500 focus:outline-none">
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-gray-50 focus:bg-white focus:border-emerald-400 focus:outline-none">
                   <option value="staff">พนักงาน (Staff)</option>
                   <option value="owner">เจ้าของร้าน (Owner)</option>
                 </select>
@@ -168,13 +168,13 @@ export default function StaffManagePage() {
               <div>
                 <FieldLabel>เบอร์โทรศัพท์</FieldLabel>
                 <input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-gray-50 focus:bg-white focus:border-green-500 focus:outline-none" placeholder="0xx-xxx-xxxx" />
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-gray-50 focus:bg-white focus:border-emerald-400 focus:outline-none" placeholder="0xx-xxx-xxxx" />
               </div>
               {error && <div className="bg-red-50 text-red-600 rounded-xl px-4 py-2 text-sm">{error}</div>}
             </div>
             <div className="px-6 pb-5 flex gap-2.5">
               <button onClick={() => setShowModal(false)} className="flex-1 border border-gray-200 text-gray-600 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50">ยกเลิก</button>
-              <button onClick={handleSave} disabled={saving} className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white py-2.5 rounded-xl text-sm font-medium">
+              <button onClick={handleSave} disabled={saving} className="flex-1 bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-300 text-white py-2.5 rounded-xl text-sm font-medium">
                 {saving ? "กำลังบันทึก..." : "บันทึก"}
               </button>
             </div>

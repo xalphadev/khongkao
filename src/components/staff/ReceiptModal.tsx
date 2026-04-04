@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { CheckCircle2, Printer, X, User, Share2 } from "lucide-react";
+import { CheckCircle2, Printer, X, User, Share2, ImageIcon } from "lucide-react";
 
 interface CartItem {
   productId: string;
@@ -38,10 +38,12 @@ function formatDateTime(s: string) {
 
 export default function ReceiptModal({ transaction, onClose }: ReceiptModalProps) {
   const receiptRef = useRef<HTMLDivElement>(null);
+  const receiptImageRef = useRef<HTMLDivElement>(null);
   const [shopName, setShopName] = useState("มือสองของเก่า");
   const [shopAddress, setShopAddress] = useState("");
   const [shopPhone, setShopPhone] = useState("");
   const [receiptNote, setReceiptNote] = useState("ขอบคุณที่ใช้บริการ");
+  const [sharing, setSharing] = useState(false);
 
   useEffect(() => {
     fetch("/api/settings")
@@ -54,39 +56,38 @@ export default function ReceiptModal({ transaction, onClose }: ReceiptModalProps
       });
   }, []);
 
-  const buildReceiptText = () => {
-    const lines: string[] = [
-      shopName,
-      shopPhone ? `โทร: ${shopPhone}` : "",
-      "─────────────────",
-      "ใบรับซื้อของเก่า",
-      transaction.customerName ? `ลูกค้า: ${transaction.customerName}` : "",
-      `วันที่: ${formatDateTime(transaction.createdAt)}`,
-      `เลขที่: ${transaction.id.slice(-8).toUpperCase()}`,
-      "─────────────────",
-      ...transaction.items.map((i) =>
-        `${i.productName}  ${i.quantity}${i.unit === "KG" ? "กก." : "ชิ้น"}  ฿${formatMoney(i.subtotal)}`
-      ),
-      "─────────────────",
-      `รวม: ฿${formatMoney(transaction.totalAmount)}`,
-      receiptNote,
-    ].filter(Boolean);
-    return lines.join("\n");
-  };
-
   const handleShare = async () => {
-    const text = buildReceiptText();
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: "ใบรับซื้อของเก่า", text });
-        return;
-      } catch {
-        // fallback
+    if (!receiptImageRef.current) return;
+    setSharing(true);
+    try {
+      const html2canvas = (await import("html2canvas")).default;
+      const canvas = await html2canvas(receiptImageRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        logging: false,
+      });
+      const blob = await new Promise<Blob>((resolve) =>
+        canvas.toBlob((b) => resolve(b!), "image/png")
+      );
+      const file = new File([blob], `ใบเสร็จ_${transaction.id.slice(-8).toUpperCase()}.png`, { type: "image/png" });
+
+      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: "ใบรับซื้อของเก่า" });
+      } else {
+        // fallback: download image
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = file.name;
+        a.click();
+        URL.revokeObjectURL(url);
       }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSharing(false);
     }
-    // LINE share URL fallback
-    const lineUrl = `https://line.me/R/msg/text/?${encodeURIComponent(text)}`;
-    window.open(lineUrl, "_blank");
   };
 
   const handlePrint = () => {
@@ -145,15 +146,74 @@ export default function ReceiptModal({ transaction, onClose }: ReceiptModalProps
   };
 
   return (
+    <>
+    {/* Hidden receipt for image capture */}
+    <div style={{ position: "fixed", left: "-9999px", top: 0, zIndex: -1 }}>
+      <div ref={receiptImageRef} style={{
+        width: 360, background: "#fff", padding: "32px 28px",
+        fontFamily: "'Kanit', 'Sarabun', sans-serif", color: "#111",
+      }}>
+        {/* Header */}
+        <div style={{ textAlign: "center", marginBottom: 12 }}>
+          <div style={{ fontSize: 20, fontWeight: 600 }}>{shopName}</div>
+          {shopAddress && <div style={{ fontSize: 12, color: "#666", marginTop: 2 }}>{shopAddress}</div>}
+          {shopPhone && <div style={{ fontSize: 12, color: "#666" }}>โทร: {shopPhone}</div>}
+        </div>
+        <div style={{ borderTop: "1px dashed #bbb", margin: "10px 0" }} />
+        <div style={{ textAlign: "center", fontSize: 14, fontWeight: 500, marginBottom: 8 }}>ใบรับซื้อของเก่า</div>
+        {transaction.customerName && (
+          <div style={{ fontSize: 13, marginBottom: 2 }}>ลูกค้า: <strong>{transaction.customerName}</strong></div>
+        )}
+        <div style={{ fontSize: 12, color: "#555" }}>วันที่: {formatDateTime(transaction.createdAt)}</div>
+        <div style={{ fontSize: 12, color: "#555", marginBottom: 10 }}>เลขที่: {transaction.id.slice(-8).toUpperCase()}</div>
+        <div style={{ borderTop: "1px dashed #bbb", margin: "10px 0" }} />
+        {/* Table */}
+        <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse" }}>
+          <thead>
+            <tr style={{ borderBottom: "1px solid #222" }}>
+              <th style={{ textAlign: "left", padding: "4px 0", fontWeight: 500 }}>รายการ</th>
+              <th style={{ textAlign: "center", padding: "4px 0", fontWeight: 500 }}>จำนวน</th>
+              <th style={{ textAlign: "right", padding: "4px 0", fontWeight: 500 }}>บาท</th>
+            </tr>
+          </thead>
+          <tbody>
+            {transaction.items.map((item, i) => (
+              <tr key={i} style={{ borderBottom: "1px solid #f0f0f0" }}>
+                <td style={{ padding: "5px 0", color: "#222" }}>{item.productName}</td>
+                <td style={{ textAlign: "center", padding: "5px 0", color: "#555" }}>
+                  {item.quantity}{item.unit === "KG" ? "กก." : "ชิ้น"}
+                </td>
+                <td style={{ textAlign: "right", padding: "5px 0", fontWeight: 500 }}>
+                  {formatMoney(item.subtotal)}
+                </td>
+              </tr>
+            ))}
+            <tr>
+              <td colSpan={2} style={{ paddingTop: 10, fontWeight: 600, fontSize: 15 }}>รวมทั้งหมด</td>
+              <td style={{ paddingTop: 10, fontWeight: 700, fontSize: 16, color: "#16a34a", textAlign: "right" }}>
+                ฿{formatMoney(transaction.totalAmount)}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div style={{ borderTop: "1px dashed #bbb", margin: "12px 0" }} />
+        <div style={{ textAlign: "center", fontSize: 12, color: "#888" }}>{receiptNote}</div>
+        {/* Footer watermark */}
+        <div style={{ textAlign: "center", fontSize: 10, color: "#ccc", marginTop: 16 }}>
+          มือสองของเก่า · ระบบรับซื้อของเก่า
+        </div>
+      </div>
+    </div>
+
     <div className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-3">
       <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl flex flex-col" style={{ maxHeight: "92vh" }}>
         {/* Success header (fixed) */}
-        <div className="bg-gradient-to-br from-green-500 to-emerald-500 rounded-t-3xl p-6 text-center text-white shrink-0">
+        <div className="rounded-t-3xl p-6 text-center text-white shrink-0" style={{ background: "linear-gradient(135deg, #22c55e 0%, #10b981 50%, #0ea5e9 100%)" }}>
           <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3">
             <CheckCircle2 className="w-9 h-9 text-white" />
           </div>
           <h2 className="text-xl font-medium">บันทึกสำเร็จ!</h2>
-          <p className="text-green-100 mt-1 text-3xl font-medium tabular-nums">
+          <p className="text-white/80 mt-1 text-3xl font-medium tabular-nums">
             ฿{formatMoney(transaction.totalAmount)}
           </p>
         </div>
@@ -182,7 +242,7 @@ export default function ReceiptModal({ transaction, onClose }: ReceiptModalProps
 
           <div className="flex items-center justify-between mb-2">
             <p className="text-gray-500 text-xs font-medium uppercase tracking-wide">รายการสินค้า</p>
-            <span className="bg-green-100 text-green-700 text-xs font-semibold px-2 py-0.5 rounded-full">
+            <span className="bg-emerald-100 text-emerald-700 text-xs font-semibold px-2 py-0.5 rounded-full">
               {transaction.items.length} รายการ
             </span>
           </div>
@@ -208,7 +268,7 @@ export default function ReceiptModal({ transaction, onClose }: ReceiptModalProps
               ))}
               <tr>
                 <td colSpan={2} className="pt-3 font-medium text-gray-700">รวมทั้งหมด</td>
-                <td className="pt-3 font-medium text-green-600 text-right text-base">
+                <td className="pt-3 font-medium text-emerald-600 text-right text-base">
                   ฿{formatMoney(transaction.totalAmount)}
                 </td>
               </tr>
@@ -232,11 +292,16 @@ export default function ReceiptModal({ transaction, onClose }: ReceiptModalProps
           </button>
           <button
             onClick={handleShare}
-            className="btn-staff bg-green-600 hover:bg-green-700 text-white shadow-md shadow-green-100"
+            disabled={sharing}
+            className="btn-staff bg-emerald-500 hover:bg-emerald-600 disabled:opacity-60 text-white shadow-md shadow-emerald-100"
             style={{ minHeight: 52 }}
           >
-            <Share2 className="w-5 h-5" />
-            ส่งให้ลูกค้า (LINE)
+            {sharing ? (
+              <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+            ) : (
+              <ImageIcon className="w-5 h-5" />
+            )}
+            {sharing ? "กำลังสร้างรูปภาพ..." : "ส่งรูปใบเสร็จ (LINE)"}
           </button>
           <button
             onClick={onClose}
@@ -249,5 +314,6 @@ export default function ReceiptModal({ transaction, onClose }: ReceiptModalProps
         </div>
       </div>
     </div>
+    </>
   );
 }

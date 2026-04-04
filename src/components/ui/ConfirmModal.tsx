@@ -24,8 +24,8 @@ const VARIANT_STYLES: Record<Variant, { icon: React.ReactNode; confirmCls: strin
     confirmCls: "bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white",
   },
   success: {
-    icon: <CheckCircle className="w-7 h-7 text-green-600" />,
-    confirmCls: "bg-green-600 hover:bg-green-700 active:bg-green-800 text-white",
+    icon: <CheckCircle className="w-7 h-7 text-emerald-500" />,
+    confirmCls: "bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white",
   },
 };
 

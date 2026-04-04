@@ -4,7 +4,8 @@ import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { useState, useEffect } from "react";
 import {
-  LogOut, ShoppingBag, Clock, ArrowRight, Recycle, AlertCircle,
+  LogOut, ShoppingBag, Clock, ArrowRight, AlertCircle,
+  TrendingUp, Banknote, BarChart2,
 } from "lucide-react";
 import StaffTabBar from "./StaffTabBar";
 
@@ -22,25 +23,47 @@ interface HeldBill {
 function formatMoney(n: number) {
   return n.toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
-function formatThaiDate() {
-  return new Date().toLocaleDateString("th-TH", {
-    weekday: "long", year: "numeric", month: "long", day: "numeric",
-  });
+function formatMoneyShort(n: number) {
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
+  return n.toLocaleString("th-TH", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
+function localDate() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+
+// Derive top products from transactions
+function getTopProducts(txns: Transaction[]) {
+  const map: Record<string, { name: string; total: number }> = {};
+  txns.forEach(t => t.items.forEach(i => {
+    if (!map[i.productName]) map[i.productName] = { name: i.productName, total: 0 };
+    map[i.productName].total += i.subtotal;
+  }));
+  return Object.values(map).sort((a, b) => b.total - a.total).slice(0, 6);
+}
+
+const CHIP_COLORS = [
+  { bg: "#dcfce7", text: "#15803d" },
+  { bg: "#dbeafe", text: "#1d4ed8" },
+  { bg: "#fef3c7", text: "#b45309" },
+  { bg: "#ede9fe", text: "#6d28d9" },
+  { bg: "#fce7f3", text: "#be185d" },
+  { bg: "#cffafe", text: "#0e7490" },
+];
 
 export default function StaffHome({ userName }: StaffHomeProps) {
   const router = useRouter();
   const [todayTransactions, setTodayTransactions] = useState<Transaction[]>([]);
   const [todayTotal, setTodayTotal] = useState(0);
+  const [monthTotal, setMonthTotal] = useState(0);
+  const [monthCount, setMonthCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [heldBills, setHeldBills] = useState<HeldBill[]>([]);
   const [draftItems, setDraftItems] = useState(0);
   const [draftTotal, setDraftTotal] = useState(0);
 
   useEffect(() => {
-    loadToday();
-    loadHeld();
-    // Check for unfinished draft in localStorage
+    loadAll();
     try {
       const raw = localStorage.getItem("purchase_cart_draft");
       if (raw) {
@@ -53,110 +76,127 @@ export default function StaffHome({ userName }: StaffHomeProps) {
     } catch {}
   }, []);
 
-  const loadToday = async () => {
-    try {
-      const d = new Date();
-      const date = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
-      const res = await fetch(`/api/transactions?date=${date}`);
-      if (res.ok) {
-        const data = await res.json();
-        setTodayTransactions(data);
-        setTodayTotal(data.reduce((s: number, t: Transaction) => s + t.totalAmount, 0));
-      }
-    } finally { setLoading(false); }
-  };
-
-  const loadHeld = async () => {
-    const res = await fetch("/api/held-bills");
-    if (res.ok) setHeldBills(await res.json());
+  const loadAll = async () => {
+    const d = new Date();
+    const date = localDate();
+    const year = d.getFullYear();
+    const month = d.getMonth() + 1;
+    const [txRes, heldRes, monthRes] = await Promise.all([
+      fetch(`/api/transactions?date=${date}`),
+      fetch("/api/held-bills"),
+      fetch(`/api/reports/monthly?year=${year}&month=${month}`),
+    ]);
+    if (txRes.ok) {
+      const data: Transaction[] = await txRes.json();
+      setTodayTransactions(data);
+      setTodayTotal(data.reduce((s, t) => s + t.totalAmount, 0));
+    }
+    if (heldRes.ok) setHeldBills(await heldRes.json());
+    if (monthRes.ok) {
+      const m = await monthRes.json();
+      setMonthTotal(m.totalAmount ?? 0);
+      setMonthCount(m.totalTransactions ?? 0);
+    }
+    setLoading(false);
   };
 
   const firstName = userName.split(" ")[0];
   const initial = firstName.charAt(0).toUpperCase();
+  const avgPerBill = todayTransactions.length > 0 ? todayTotal / todayTransactions.length : 0;
+  const topProducts = getTopProducts(todayTransactions);
 
-  const hasActivity = heldBills.length > 0 || draftItems > 0 || todayTransactions.length > 0;
+  const thaiDate = new Date().toLocaleDateString("th-TH", {
+    weekday: "short", day: "numeric", month: "short", year: "numeric",
+  });
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#f4f5f7]">
+    <div className="min-h-screen flex flex-col" style={{ background: "#f0f2f5" }}>
 
       {/* ── HEADER ── */}
       <div className="relative overflow-hidden"
-        style={{ background: "linear-gradient(155deg, #14532d 0%, #15803d 45%, #16a34a 100%)" }}>
-        <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full" style={{ background: "rgba(255,255,255,0.05)" }} />
-        <div className="absolute top-8 right-4 w-40 h-40 rounded-full" style={{ background: "rgba(255,255,255,0.04)" }} />
+        style={{ background: "linear-gradient(140deg, #059669 0%, #10b981 40%, #0ea5e9 100%)" }}>
+
+        {/* Decorative blobs */}
+        <div className="absolute -top-14 -right-14 w-60 h-60 rounded-full"
+          style={{ background: "radial-gradient(circle, rgba(255,255,255,0.15), transparent)" }} />
+        <div className="absolute bottom-10 -left-8 w-44 h-44 rounded-full"
+          style={{ background: "radial-gradient(circle, rgba(14,165,233,0.25), transparent)" }} />
+        <div className="absolute top-24 right-8 w-20 h-20 rounded-full"
+          style={{ background: "rgba(255,255,255,0.07)" }} />
 
         {/* Top bar */}
-        <div className="relative flex items-center justify-between px-5 pt-14 pb-0">
+        <div className="relative flex items-center justify-between px-5 pb-4"
+          style={{ paddingTop: "max(env(safe-area-inset-top), 56px)" }}>
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 text-green-700 font-bold text-xl shadow-lg"
-              style={{ background: "rgba(255,255,255,0.95)" }}>
+            <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 font-bold text-lg shadow-lg"
+              style={{ background: "rgba(255,255,255,0.25)", color: "#fff", backdropFilter: "blur(4px)" }}>
               {initial}
             </div>
             <div>
-              <div className="flex items-center gap-1.5 mb-0.5">
-                <Recycle className="w-3 h-3 text-green-300" />
-                <span className="text-green-300 text-xs font-medium">มือสองของเก่า</span>
-              </div>
-              <p className="text-white font-bold text-xl leading-tight">สวัสดี, {firstName}</p>
+              <p className="text-emerald-100 text-xs font-medium opacity-80">มือสองของเก่า</p>
+              <p className="text-white font-bold text-lg leading-tight">สวัสดี, {firstName}</p>
             </div>
           </div>
-          <button onClick={() => signOut({ callbackUrl: "/login" })}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs text-white/70 active:scale-95 transition-all"
-            style={{ background: "rgba(0,0,0,0.2)" }}>
-            <LogOut className="w-3.5 h-3.5" /> ออก
-          </button>
-        </div>
-
-        {/* Today stat */}
-        <div className="relative px-5 pt-5 pb-8">
-          <p className="text-green-300 text-xs mb-3">{formatThaiDate()}</p>
-          <div className="flex items-end justify-between">
-            <div>
-              <p className="text-green-200 text-sm font-medium mb-1">ยอดรับซื้อวันนี้</p>
-              {loading ? (
-                <div className="w-7 h-7 border-2 border-white/30 border-t-white rounded-full animate-spin my-1" />
-              ) : (
-                <p className="text-white font-bold tabular-nums" style={{ fontSize: "clamp(2.2rem, 9vw, 3rem)", lineHeight: 1 }}>
-                  ฿{formatMoney(todayTotal)}
-                </p>
-              )}
-              <div className="flex items-center gap-2 mt-3">
-                <div className="flex items-center gap-1.5 rounded-full px-3 py-1" style={{ background: "rgba(255,255,255,0.14)" }}>
-                  <div className="w-1.5 h-1.5 rounded-full bg-green-300" />
-                  <span className="text-white text-sm font-medium">{todayTransactions.length} บิล</span>
-                </div>
-                {heldBills.length > 0 && (
-                  <div className="flex items-center gap-1.5 rounded-full px-3 py-1" style={{ background: "rgba(251,191,36,0.25)" }}>
-                    <Clock className="w-3.5 h-3.5 text-amber-300" />
-                    <span className="text-amber-200 text-sm font-medium">พัก {heldBills.length} บิล</span>
-                  </div>
-                )}
-              </div>
-            </div>
+          <div className="flex items-center gap-2">
+            <span className="text-white/60 text-xs hidden sm:block">{thaiDate}</span>
+            <button onClick={() => signOut({ callbackUrl: "/login" })}
+              className="w-9 h-9 flex items-center justify-center rounded-xl active:scale-95 transition-all"
+              style={{ background: "rgba(0,0,0,0.15)" }}>
+              <LogOut className="w-4 h-4 text-white/80" />
+            </button>
           </div>
         </div>
 
-        <svg viewBox="0 0 400 28" className="w-full block" style={{ marginBottom: -1 }}>
-          <path d="M0,28 C80,0 320,0 400,28 L400,28 L0,28 Z" fill="#f4f5f7" />
+        {/* Total card floating */}
+        <div className="relative mx-5 mb-3 rounded-2xl px-5 py-4"
+          style={{ background: "rgba(255,255,255,0.18)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.3)" }}>
+          <p className="text-white/70 text-xs font-medium mb-1">ยอดรับซื้อวันนี้</p>
+          {loading ? (
+            <div className="w-7 h-7 border-2 border-white/30 border-t-white rounded-full animate-spin my-1" />
+          ) : (
+            <p className="text-white font-bold tabular-nums leading-none"
+              style={{ fontSize: "clamp(2rem, 9vw, 2.6rem)" }}>
+              ฿{formatMoney(todayTotal)}
+            </p>
+          )}
+          <div className="flex items-center gap-2 mt-2.5">
+            <span className="flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold text-white"
+              style={{ background: "rgba(255,255,255,0.2)" }}>
+              <span className="w-1.5 h-1.5 rounded-full bg-white inline-block" />
+              {todayTransactions.length} บิลวันนี้
+            </span>
+            {heldBills.length > 0 && (
+              <span className="flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold text-amber-200"
+                style={{ background: "rgba(251,191,36,0.22)" }}>
+                <Clock className="w-3 h-3" />
+                พัก {heldBills.length} บิล
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Wave */}
+        <svg viewBox="0 0 400 32" className="w-full block" style={{ marginBottom: -1 }}>
+          <path d="M0,32 C100,0 300,0 400,32 L400,32 L0,32 Z" fill="#f0f2f5" />
         </svg>
       </div>
 
       {/* ── CONTENT ── */}
       <div className="flex-1 px-4 pt-3 pb-28 space-y-3">
 
-        {/* ── DRAFT RECOVERY (if unfinished bill exists) ── */}
+        {/* Draft recovery */}
         {draftItems > 0 && (
           <button onClick={() => router.push("/staff/purchase")}
-            className="w-full flex items-center gap-3 rounded-2xl text-left overflow-hidden active:scale-[0.98] transition-all"
-            style={{ background: "linear-gradient(135deg, #fff7ed, #ffedd5)", border: "1.5px solid #fed7aa", boxShadow: "0 2px 12px rgba(234,88,12,0.12)" }}>
-            <div className="w-1.5 self-stretch bg-orange-400 shrink-0 rounded-l-2xl" />
-            <div className="flex items-center gap-3 flex-1 py-3.5 pr-4">
-              <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center shrink-0">
+            className="w-full flex items-center gap-0 rounded-2xl text-left overflow-hidden active:scale-[0.98] transition-all"
+            style={{ background: "linear-gradient(135deg, #fff7ed, #ffedd5)", border: "1.5px solid #fed7aa" }}>
+            <div className="w-1.5 self-stretch bg-orange-400 shrink-0" />
+            <div className="flex items-center gap-3 flex-1 py-3.5 px-4">
+              <div className="w-9 h-9 rounded-xl bg-orange-100 flex items-center justify-center shrink-0">
                 <AlertCircle className="w-5 h-5 text-orange-500" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-orange-800 font-semibold text-sm">มีบิลที่ยังบันทึกค้างไว้</p>
-                <p className="text-orange-500 text-xs mt-0.5">{draftItems} รอบ · ยอด ฿{formatMoney(draftTotal)}</p>
+                <p className="text-orange-500 text-xs mt-0.5">{draftItems} รอบ · ฿{formatMoney(draftTotal)}</p>
               </div>
               <div className="flex items-center gap-1 text-orange-500 shrink-0">
                 <span className="text-xs font-semibold">ทำต่อ</span>
@@ -166,111 +206,131 @@ export default function StaffHome({ userName }: StaffHomeProps) {
           </button>
         )}
 
-        {/* ── HELD BILLS ── */}
+        {/* Held bills */}
         {heldBills.length > 0 && (
-          <div>
-            <div className="flex items-center gap-2 px-1 mb-2.5">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 px-1">
               <Clock className="w-4 h-4 text-amber-500" />
-              <p className="text-gray-700 font-semibold text-sm">บิลที่พักไว้</p>
+              <p className="text-gray-600 font-semibold text-sm">บิลที่พักไว้</p>
               <span className="bg-amber-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">{heldBills.length}</span>
             </div>
-            <div className="space-y-2">
-              {heldBills.map((bill) => {
-                const total = bill.items.reduce((s, i) => s + i.subtotal, 0);
-                return (
-                  <button key={bill.id} onClick={() => router.push(`/staff/purchase?held=${bill.id}`)}
-                    className="w-full flex items-center gap-0 rounded-2xl bg-white active:scale-[0.98] transition-all text-left overflow-hidden"
-                    style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.07)", border: "1.5px solid #fef3c7" }}>
-                    <div className="w-1.5 self-stretch bg-amber-400 shrink-0" />
-                    <div className="flex items-center gap-3 flex-1 min-w-0 py-3.5 px-3.5">
-                      <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-amber-50">
-                        <Clock className="w-5 h-5 text-amber-500" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-gray-800 text-sm font-semibold truncate">{bill.label || "บิลไม่มีชื่อ"}</p>
-                        <p className="text-gray-400 text-xs truncate mt-0.5">{bill.items.map(i => i.productName).join(", ")}</p>
-                        {bill.heldBy && <p className="text-gray-400 text-xs mt-0.5">พักโดย {bill.heldBy}</p>}
-                      </div>
-                      <div className="text-right shrink-0">
-                        <p className="text-amber-600 font-bold text-base tabular-nums">฿{formatMoney(total)}</p>
-                        <div className="flex items-center justify-end gap-1 mt-0.5">
-                          <p className="text-amber-400 text-xs">ทำต่อ</p>
-                          <ArrowRight className="w-3 h-3 text-amber-400" />
-                        </div>
-                      </div>
+            {heldBills.map((bill) => {
+              const total = bill.items.reduce((s, i) => s + i.subtotal, 0);
+              return (
+                <button key={bill.id} onClick={() => router.push(`/staff/purchase?held=${bill.id}`)}
+                  className="w-full flex items-center gap-0 rounded-2xl bg-white active:scale-[0.98] transition-all text-left overflow-hidden"
+                  style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)", border: "1.5px solid #fef3c7" }}>
+                  <div className="w-1.5 self-stretch bg-amber-400 shrink-0" />
+                  <div className="flex items-center gap-3 flex-1 min-w-0 py-3.5 px-3.5">
+                    <div className="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
+                      <Clock className="w-4.5 h-4.5 text-amber-500" />
                     </div>
-                  </button>
-                );
-              })}
-            </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-gray-800 text-sm font-semibold truncate">{bill.label || "บิลไม่มีชื่อ"}</p>
+                      <p className="text-gray-400 text-xs truncate mt-0.5">{bill.items.map(i => i.productName).join(", ")}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-amber-600 font-bold text-sm tabular-nums">฿{formatMoney(total)}</p>
+                      <p className="text-amber-400 text-xs mt-0.5">ทำต่อ →</p>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
           </div>
         )}
 
-        {/* ── MAIN CTA ── */}
+        {/* ── BIG CTA ── */}
         <button onClick={() => router.push("/staff/purchase")}
-          className="w-full relative overflow-hidden rounded-3xl active:scale-[0.97] transition-all text-left"
+          className="w-full relative overflow-hidden rounded-3xl active:scale-[0.97] transition-all"
           style={{
-            background: "linear-gradient(135deg, #4d7c0f 0%, #65a30d 45%, #84cc16 100%)",
-            boxShadow: "0 8px 28px rgba(101,163,13,0.45), 0 2px 8px rgba(101,163,13,0.20)",
-            padding: "20px 22px",
+            background: "linear-gradient(135deg, #22c55e 0%, #10b981 45%, #0ea5e9 100%)",
+            boxShadow: "0 10px 32px rgba(16,185,129,0.35), 0 2px 8px rgba(14,165,233,0.2)",
+            padding: "22px 24px",
           }}>
-          <div className="absolute -top-8 -right-8 w-36 h-36 rounded-full" style={{ background: "rgba(255,255,255,0.08)" }} />
+          {/* decorative circles */}
+          <div className="absolute -top-8 -right-8 w-36 h-36 rounded-full" style={{ background: "rgba(255,255,255,0.1)" }} />
+          <div className="absolute -bottom-6 -left-6 w-24 h-24 rounded-full" style={{ background: "rgba(255,255,255,0.07)" }} />
           <div className="relative flex items-center gap-4">
             <div className="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0"
-              style={{ background: "rgba(255,255,255,0.18)" }}>
+              style={{ background: "rgba(255,255,255,0.22)" }}>
               <ShoppingBag className="w-8 h-8 text-white" strokeWidth={1.8} />
             </div>
             <div className="flex-1">
-              <p className="text-lime-100 text-sm font-medium">
-                {draftItems > 0 ? "เปิดบิลใหม่" : "เริ่มบันทึก"}
+              <p className="text-white/70 text-sm font-medium mb-0.5">
+                {draftItems > 0 ? "เปิดบิลใหม่" : "เริ่มบันทึกรายการ"}
               </p>
               <p className="text-white font-bold text-2xl leading-tight">รับซื้อของเก่า</p>
             </div>
-            <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0"
-              style={{ background: "rgba(255,255,255,0.2)" }}>
+            <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0"
+              style={{ background: "rgba(255,255,255,0.22)" }}>
               <ArrowRight className="w-5 h-5 text-white" />
             </div>
           </div>
         </button>
 
-        {/* ── EMPTY / TODAY SUMMARY ── */}
-        {!loading && !hasActivity && (
-          <div className="bg-white rounded-3xl px-6 py-8 text-center shadow-sm border border-gray-100">
-            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
-              style={{ background: "linear-gradient(135deg, #f0fdf4, #dcfce7)" }}>
-              <ShoppingBag className="w-8 h-8 text-green-400" strokeWidth={1.5} />
+        {/* ── QUICK STATS ── */}
+        <div className="grid grid-cols-3 gap-2">
+          <div className="rounded-2xl px-3 py-3.5 flex flex-col gap-1 bg-white shadow-sm"
+            style={{ border: "1px solid #d1fae5" }}>
+            <Banknote className="w-4 h-4 text-emerald-500" />
+            <p className="text-xs font-medium mt-0.5 text-gray-500">เดือนนี้</p>
+            <p className="font-bold tabular-nums text-base leading-tight text-emerald-600">
+              ฿{formatMoneyShort(monthTotal)}
+            </p>
+            <p className="text-xs text-gray-400">{monthCount} บิล</p>
+          </div>
+          <div className="rounded-2xl px-3 py-3.5 flex flex-col gap-1 bg-white shadow-sm"
+            style={{ border: "1px solid #bfdbfe" }}>
+            <BarChart2 className="w-4 h-4 text-blue-500" />
+            <p className="text-xs font-medium mt-0.5 text-gray-500">บิลวันนี้</p>
+            <p className="font-bold tabular-nums text-base leading-tight text-blue-600">
+              {todayTransactions.length}
+            </p>
+            <p className="text-xs text-gray-400">รายการ</p>
+          </div>
+          <div className="rounded-2xl px-3 py-3.5 flex flex-col gap-1 bg-white shadow-sm"
+            style={{ border: "1px solid #fed7aa" }}>
+            <TrendingUp className="w-4 h-4 text-orange-400" />
+            <p className="text-xs font-medium mt-0.5 text-gray-500">เฉลี่ย/บิล</p>
+            <p className="font-bold tabular-nums text-base leading-tight text-orange-500">
+              ฿{formatMoneyShort(avgPerBill)}
+            </p>
+            <p className="text-xs text-gray-400">วันนี้</p>
+          </div>
+        </div>
+
+        {/* ── TODAY'S TOP PRODUCTS ── */}
+        {topProducts.length > 0 && (
+          <div className="bg-white rounded-2xl px-4 py-4 shadow-sm border border-gray-100">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-1.5 h-4 rounded-full bg-gradient-to-b from-emerald-400 to-sky-400" />
+              <p className="text-gray-600 text-xs font-bold uppercase tracking-wide">สินค้าที่รับซื้อวันนี้</p>
             </div>
-            <p className="text-gray-700 font-semibold text-base">พร้อมรับซื้อวันนี้</p>
-            <p className="text-gray-400 text-sm mt-1.5">กดปุ่มเขียว "รับซื้อของเก่า" ด้านบน<br/>เพื่อเริ่มบันทึกรายการ</p>
+            <div className="flex flex-wrap gap-2">
+              {topProducts.map((p, i) => (
+                <div key={p.name}
+                  className="flex items-center gap-1.5 rounded-full px-3 py-1.5"
+                  style={{ background: CHIP_COLORS[i % CHIP_COLORS.length].bg }}>
+                  <span className="text-xs font-semibold"
+                    style={{ color: CHIP_COLORS[i % CHIP_COLORS.length].text }}>
+                    {p.name}
+                  </span>
+                  <span className="text-xs font-bold tabular-nums"
+                    style={{ color: CHIP_COLORS[i % CHIP_COLORS.length].text }}>
+                    ฿{formatMoneyShort(p.total)}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
-        {/* Today's bills summary */}
-        {!loading && todayTransactions.length > 0 && (
-          <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-50">
-              <p className="text-gray-700 font-semibold text-sm">บิลวันนี้</p>
-              <span className="text-gray-400 text-xs">{todayTransactions.length} รายการ</span>
-            </div>
-            {todayTransactions.slice(0, 5).map((t, i) => (
-              <div key={t.id} className={`flex items-center gap-3 px-4 py-3 ${i > 0 ? "border-t border-gray-50" : ""}`}>
-                <div className="w-8 h-8 rounded-xl bg-green-50 flex items-center justify-center shrink-0">
-                  <span className="text-green-600 text-xs font-bold">{i + 1}</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-gray-800 text-sm font-medium truncate">
-                    {t.customerName || t.items.map(it => it.productName).join(", ")}
-                  </p>
-                  <p className="text-gray-400 text-xs">{t.items.length} รายการ</p>
-                </div>
-                <p className="text-green-600 font-semibold text-sm tabular-nums shrink-0">฿{formatMoney(t.totalAmount)}</p>
-              </div>
-            ))}
-            {todayTransactions.length > 5 && (
-              <div className="px-4 py-2.5 border-t border-gray-50 text-center">
-                <p className="text-gray-400 text-xs">และอีก {todayTransactions.length - 5} รายการ · ดูทั้งหมดในประวัติ</p>
-              </div>
-            )}
+        {/* Empty state */}
+        {!loading && todayTransactions.length === 0 && heldBills.length === 0 && draftItems === 0 && (
+          <div className="bg-white rounded-2xl px-6 py-7 text-center shadow-sm border border-gray-100">
+            <p className="text-gray-600 font-semibold text-base">พร้อมรับซื้อแล้ว!</p>
+            <p className="text-gray-400 text-sm mt-1">กดปุ่มเขียวด้านบนเพื่อเริ่มบันทึก</p>
           </div>
         )}
 

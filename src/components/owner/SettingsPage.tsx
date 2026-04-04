@@ -12,7 +12,7 @@ const FieldLabel = ({ children }: { children: React.ReactNode }) => (
   <label className="block text-xs font-medium text-gray-500 mb-1.5 uppercase tracking-wide">{children}</label>
 );
 const FieldInput = (props: React.InputHTMLAttributes<HTMLInputElement>) => (
-  <input {...props} className={`w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-gray-50 focus:bg-white focus:border-green-500 focus:outline-none transition-all ${props.className ?? ""}`} />
+  <input {...props} className={`w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-gray-50 focus:bg-white focus:border-emerald-400 focus:outline-none transition-all ${props.className ?? ""}`} />
 );
 
 export default function SettingsPage() {
@@ -55,7 +55,7 @@ export default function SettingsPage() {
           <div>
             <FieldLabel>ที่อยู่</FieldLabel>
             <textarea value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })}
-              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-gray-50 focus:bg-white focus:border-green-500 focus:outline-none resize-none transition-all"
+              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-gray-50 focus:bg-white focus:border-emerald-400 focus:outline-none resize-none transition-all"
               rows={2} placeholder="เลขที่ ถนน ตำบล อำเภอ จังหวัด" />
           </div>
           <div>
@@ -72,7 +72,7 @@ export default function SettingsPage() {
           </div>
 
           {saved && (
-            <div className="flex items-center gap-2 bg-green-50 border border-green-100 text-green-700 rounded-xl px-4 py-2.5 text-sm">
+            <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-100 text-emerald-700 rounded-xl px-4 py-2.5 text-sm">
               <CheckCircle2 className="w-4 h-4 shrink-0" /><span>บันทึกเรียบร้อยแล้ว</span>
             </div>
           )}
@@ -83,7 +83,7 @@ export default function SettingsPage() {
           )}
 
           <button onClick={handleSave} disabled={saving}
-            className="w-full bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white py-3 rounded-xl font-medium text-sm transition-colors shadow-sm flex items-center justify-center gap-2">
+            className="w-full bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-300 text-white py-3 rounded-xl font-medium text-sm transition-colors shadow-sm flex items-center justify-center gap-2">
             <Save className="w-4 h-4" />
             {saving ? "กำลังบันทึก..." : "บันทึกการตั้งค่า"}
           </button>
