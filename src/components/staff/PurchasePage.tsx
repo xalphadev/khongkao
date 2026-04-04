@@ -636,7 +636,7 @@ export default function PurchasePage() {
   );
 
   return (
-    <div className="min-h-screen bg-[#f4f6f9] flex flex-col">
+    <div className="min-h-screen flex flex-col" style={{ background: "#eef2f7" }}>
 
       {/* ── HEADER ── */}
       <div
@@ -695,25 +695,24 @@ export default function PurchasePage() {
                   <button
                     key={cat.id}
                     onClick={() => handleCategorySelect(cat)}
-                    className="rounded-2xl flex flex-col items-start gap-3 active:scale-[0.96] transition-all text-left"
+                    className="rounded-2xl flex flex-col items-start gap-3 active:scale-[0.94] transition-all text-left overflow-hidden"
                     style={{
                       padding: "16px",
-                      background: `${grad.from}12`,
-                      border: `1.5px solid ${grad.from}28`,
-                      boxShadow: `0 2px 12px ${grad.from}18`,
+                      background: `linear-gradient(135deg, ${grad.from}, ${grad.to})`,
+                      boxShadow: `0 6px 20px ${grad.from}55`,
                     }}
                   >
-                    {/* Icon */}
+                    {/* Icon — frosted glass */}
                     <div
-                      className="w-12 h-12 rounded-xl flex items-center justify-center shadow-sm"
-                      style={{ background: `linear-gradient(135deg, ${grad.from}, ${grad.to})` }}
+                      className="w-12 h-12 rounded-xl flex items-center justify-center"
+                      style={{ background: "rgba(255,255,255,0.28)" }}
                     >
                       <CIcon className="w-6 h-6 text-white" />
                     </div>
                     {/* Text */}
                     <div>
-                      <p className="text-gray-800 font-bold text-base leading-tight">{cat.name}</p>
-                      <p className="text-gray-400 text-xs mt-1">
+                      <p className="text-white font-bold text-base leading-tight drop-shadow-sm">{cat.name}</p>
+                      <p className="text-white/70 text-xs mt-1">
                         {cat.products.length} รายการ
                       </p>
                     </div>
@@ -726,16 +725,18 @@ export default function PurchasePage() {
             {cart.length > 0 && (
               <button
                 onClick={() => setStep("cart")}
-                className="mt-5 w-full bg-white rounded-2xl shadow-sm border border-emerald-100 px-4 py-4 flex items-center gap-3 active:scale-[0.98] transition-all"
+                className="mt-4 w-full rounded-2xl px-4 py-4 flex items-center gap-3 active:scale-[0.98] transition-all"
+                style={{ background: "linear-gradient(135deg, #059669, #0ea5e9)", boxShadow: "0 6px 20px rgba(16,185,129,0.35)" }}
               >
-                <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
-                  <ShoppingCart className="w-5 h-5 text-emerald-600" />
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                  style={{ background: "rgba(255,255,255,0.25)" }}>
+                  <ShoppingCart className="w-5 h-5 text-white" />
                 </div>
                 <div className="flex-1 text-left">
-                  <p className="text-emerald-800 font-medium text-sm">ดูรายการในตะกร้า</p>
-                  <p className="text-emerald-600 text-xs">{cart.length} รายการ · ฿{formatMoney(totalAmount)}</p>
+                  <p className="text-white font-semibold text-sm">ดูรายการในตะกร้า</p>
+                  <p className="text-white/75 text-xs">{cart.length} รายการ · ฿{formatMoney(totalAmount)}</p>
                 </div>
-                <ChevronRight className="w-4 h-4 text-emerald-400" />
+                <ChevronRight className="w-4 h-4 text-white/80" />
               </button>
             )}
           </div>

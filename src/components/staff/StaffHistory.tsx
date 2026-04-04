@@ -320,13 +320,17 @@ function EditTransactionModal({
                 const CIcon = getIconComponent(cat.icon ?? "Package");
                 return (
                   <button key={cat.id} onClick={() => { setAddCategory(cat); setAddStep("product"); }}
-                    className="bg-white rounded-2xl p-4 shadow-sm active:scale-[0.97] transition-all flex flex-col items-center gap-2">
+                    className="rounded-2xl p-4 active:scale-[0.94] transition-all flex flex-col items-center gap-2 overflow-hidden"
+                    style={{
+                      background: `linear-gradient(135deg, ${grad.from}, ${grad.to})`,
+                      boxShadow: `0 6px 20px ${grad.from}55`,
+                    }}>
                     <div className="w-12 h-12 rounded-xl flex items-center justify-center"
-                      style={{ background: `linear-gradient(135deg, ${grad.from}, ${grad.to})` }}>
+                      style={{ background: "rgba(255,255,255,0.28)" }}>
                       <CIcon className="w-6 h-6 text-white" />
                     </div>
-                    <p className="text-gray-800 font-medium text-sm text-center leading-tight">{cat.name}</p>
-                    <p className="text-gray-400 text-xs">{cat.products.length} สินค้า</p>
+                    <p className="text-white font-semibold text-sm text-center leading-tight drop-shadow-sm">{cat.name}</p>
+                    <p className="text-white/70 text-xs">{cat.products.length} สินค้า</p>
                   </button>
                 );
               })}

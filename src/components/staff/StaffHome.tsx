@@ -43,12 +43,12 @@ function getTopProducts(txns: Transaction[]) {
 }
 
 const CHIP_COLORS = [
-  { bg: "#dcfce7", text: "#15803d" },
-  { bg: "#dbeafe", text: "#1d4ed8" },
-  { bg: "#fef3c7", text: "#b45309" },
-  { bg: "#ede9fe", text: "#6d28d9" },
-  { bg: "#fce7f3", text: "#be185d" },
-  { bg: "#cffafe", text: "#0e7490" },
+  { bg: "#22c55e", text: "#fff" },
+  { bg: "#3b82f6", text: "#fff" },
+  { bg: "#f59e0b", text: "#fff" },
+  { bg: "#8b5cf6", text: "#fff" },
+  { bg: "#ec4899", text: "#fff" },
+  { bg: "#06b6d4", text: "#fff" },
 ];
 
 export default function StaffHome({ userName }: StaffHomeProps) {
@@ -110,7 +110,7 @@ export default function StaffHome({ userName }: StaffHomeProps) {
   });
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "#f0f2f5" }}>
+    <div className="min-h-screen flex flex-col" style={{ background: "#eef2f7" }}>
 
       {/* ── HEADER ── */}
       <div className="relative overflow-hidden"
@@ -177,7 +177,7 @@ export default function StaffHome({ userName }: StaffHomeProps) {
 
         {/* Wave */}
         <svg viewBox="0 0 400 32" className="w-full block" style={{ marginBottom: -1 }}>
-          <path d="M0,32 C100,0 300,0 400,32 L400,32 L0,32 Z" fill="#f0f2f5" />
+          <path d="M0,32 C100,0 300,0 400,32 L400,32 L0,32 Z" fill="#eef2f7" />
         </svg>
       </div>
 
@@ -242,61 +242,67 @@ export default function StaffHome({ userName }: StaffHomeProps) {
 
         {/* ── BIG CTA ── */}
         <button onClick={() => router.push("/staff/purchase")}
-          className="w-full relative overflow-hidden rounded-3xl active:scale-[0.97] transition-all"
+          className="w-full relative overflow-hidden rounded-3xl active:scale-[0.96] transition-all"
           style={{
-            background: "linear-gradient(135deg, #22c55e 0%, #10b981 45%, #0ea5e9 100%)",
-            boxShadow: "0 10px 32px rgba(16,185,129,0.35), 0 2px 8px rgba(14,165,233,0.2)",
-            padding: "22px 24px",
+            background: "linear-gradient(135deg, #84cc16 0%, #22c55e 55%, #16a34a 100%)",
+            boxShadow: "0 16px 48px rgba(132,204,22,0.45), 0 4px 16px rgba(34,197,94,0.4)",
+            padding: "26px 24px",
           }}>
-          {/* decorative circles */}
-          <div className="absolute -top-8 -right-8 w-36 h-36 rounded-full" style={{ background: "rgba(255,255,255,0.1)" }} />
-          <div className="absolute -bottom-6 -left-6 w-24 h-24 rounded-full" style={{ background: "rgba(255,255,255,0.07)" }} />
+          {/* Decorative glow blobs */}
+          <div className="absolute -top-10 -right-10 w-44 h-44 rounded-full" style={{ background: "rgba(255,255,255,0.12)" }} />
+          <div className="absolute -bottom-8 -left-8 w-32 h-32 rounded-full" style={{ background: "rgba(255,255,255,0.08)" }} />
+          <div className="absolute top-3 right-24 w-16 h-16 rounded-full" style={{ background: "rgba(255,255,255,0.07)" }} />
           <div className="relative flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0"
-              style={{ background: "rgba(255,255,255,0.22)" }}>
-              <ShoppingBag className="w-8 h-8 text-white" strokeWidth={1.8} />
+            {/* Icon with pulsing ring */}
+            <div className="relative shrink-0">
+              <div className="absolute inset-0 rounded-2xl animate-ping opacity-30"
+                style={{ background: "rgba(255,255,255,0.5)", animationDuration: "2s" }} />
+              <div className="w-18 h-18 rounded-2xl flex items-center justify-center relative"
+                style={{ width: 72, height: 72, background: "rgba(255,255,255,0.28)", boxShadow: "0 4px 16px rgba(0,0,0,0.12)" }}>
+                <ShoppingBag className="w-9 h-9 text-white" strokeWidth={2} />
+              </div>
             </div>
             <div className="flex-1">
-              <p className="text-white/70 text-sm font-medium mb-0.5">
-                {draftItems > 0 ? "เปิดบิลใหม่" : "เริ่มบันทึกรายการ"}
+              <p className="text-white/75 text-sm font-medium mb-0.5">
+                {draftItems > 0 ? "เปิดบิลใหม่" : "กดเพื่อเริ่มบันทึก"}
               </p>
-              <p className="text-white font-bold text-2xl leading-tight">รับซื้อของเก่า</p>
+              <p className="text-white font-black leading-tight" style={{ fontSize: "1.75rem" }}>รับซื้อของเก่า</p>
             </div>
-            <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0"
-              style={{ background: "rgba(255,255,255,0.22)" }}>
-              <ArrowRight className="w-5 h-5 text-white" />
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
+              style={{ background: "rgba(255,255,255,0.3)", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
+              <ArrowRight className="w-6 h-6 text-white" strokeWidth={2.5} />
             </div>
           </div>
         </button>
 
         {/* ── QUICK STATS ── */}
         <div className="grid grid-cols-3 gap-2">
-          <div className="rounded-2xl px-3 py-3.5 flex flex-col gap-1 bg-white shadow-sm"
-            style={{ border: "1px solid #d1fae5" }}>
-            <Banknote className="w-4 h-4 text-emerald-500" />
-            <p className="text-xs font-medium mt-0.5 text-gray-500">เดือนนี้</p>
-            <p className="font-bold tabular-nums text-base leading-tight text-emerald-600">
+          <div className="rounded-2xl px-3 py-3.5 flex flex-col gap-1 shadow-sm"
+            style={{ background: "linear-gradient(135deg, #d1fae5, #6ee7b7)", boxShadow: "0 4px 12px rgba(16,185,129,0.2)" }}>
+            <Banknote className="w-4 h-4 text-emerald-700" />
+            <p className="text-xs font-medium mt-0.5 text-emerald-700">เดือนนี้</p>
+            <p className="font-bold tabular-nums text-base leading-tight text-emerald-800">
               ฿{formatMoneyShort(monthTotal)}
             </p>
-            <p className="text-xs text-gray-400">{monthCount} บิล</p>
+            <p className="text-xs text-emerald-600">{monthCount} บิล</p>
           </div>
-          <div className="rounded-2xl px-3 py-3.5 flex flex-col gap-1 bg-white shadow-sm"
-            style={{ border: "1px solid #bfdbfe" }}>
-            <BarChart2 className="w-4 h-4 text-blue-500" />
-            <p className="text-xs font-medium mt-0.5 text-gray-500">บิลวันนี้</p>
-            <p className="font-bold tabular-nums text-base leading-tight text-blue-600">
+          <div className="rounded-2xl px-3 py-3.5 flex flex-col gap-1 shadow-sm"
+            style={{ background: "linear-gradient(135deg, #dbeafe, #93c5fd)", boxShadow: "0 4px 12px rgba(59,130,246,0.2)" }}>
+            <BarChart2 className="w-4 h-4 text-blue-700" />
+            <p className="text-xs font-medium mt-0.5 text-blue-700">บิลวันนี้</p>
+            <p className="font-bold tabular-nums text-base leading-tight text-blue-800">
               {todayTransactions.length}
             </p>
-            <p className="text-xs text-gray-400">รายการ</p>
+            <p className="text-xs text-blue-600">รายการ</p>
           </div>
-          <div className="rounded-2xl px-3 py-3.5 flex flex-col gap-1 bg-white shadow-sm"
-            style={{ border: "1px solid #fed7aa" }}>
-            <TrendingUp className="w-4 h-4 text-orange-400" />
-            <p className="text-xs font-medium mt-0.5 text-gray-500">เฉลี่ย/บิล</p>
-            <p className="font-bold tabular-nums text-base leading-tight text-orange-500">
+          <div className="rounded-2xl px-3 py-3.5 flex flex-col gap-1 shadow-sm"
+            style={{ background: "linear-gradient(135deg, #fed7aa, #fdba74)", boxShadow: "0 4px 12px rgba(251,146,60,0.2)" }}>
+            <TrendingUp className="w-4 h-4 text-orange-700" />
+            <p className="text-xs font-medium mt-0.5 text-orange-700">เฉลี่ย/บิล</p>
+            <p className="font-bold tabular-nums text-base leading-tight text-orange-800">
               ฿{formatMoneyShort(avgPerBill)}
             </p>
-            <p className="text-xs text-gray-400">วันนี้</p>
+            <p className="text-xs text-orange-600">วันนี้</p>
           </div>
         </div>
 
