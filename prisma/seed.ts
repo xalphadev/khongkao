@@ -150,13 +150,13 @@ async function main() {
   if (pgCount === 0) {
     console.log("  Creating sample price groups...");
     pgA = await prisma.priceGroup.create({
-      data: { name: "ก", description: "ลูกค้าประจำ ราคาพิเศษสูง", color: "#dc2626", sortOrder: 1 },
+      data: { name: "A", description: "ลูกค้าประจำ ราคาพิเศษสูง", color: "#dc2626", sortOrder: 1 },
     });
     pgB = await prisma.priceGroup.create({
-      data: { name: "ข", description: "ลูกค้าทั่วไป ราคากลาง", color: "#2563eb", sortOrder: 2 },
+      data: { name: "B", description: "ลูกค้าทั่วไป ราคากลาง", color: "#2563eb", sortOrder: 2 },
     });
     pgC = await prisma.priceGroup.create({
-      data: { name: "ค", description: "ลูกค้าปริมาณมาก ราคาพิเศษ", color: "#16a34a", sortOrder: 3 },
+      data: { name: "C", description: "ลูกค้าปริมาณมาก ราคาพิเศษ", color: "#16a34a", sortOrder: 3 },
     });
 
     // Price overrides per group (some products only)
@@ -188,9 +188,9 @@ async function main() {
     console.log("  ✓ Created 3 price groups (ก, ข, ค)");
   } else {
     console.log(`  ⚠ Skipped price groups (${pgCount} already exist)`);
-    pgA = await prisma.priceGroup.findFirst({ where: { name: "ก" } });
-    pgB = await prisma.priceGroup.findFirst({ where: { name: "ข" } });
-    pgC = await prisma.priceGroup.findFirst({ where: { name: "ค" } });
+    pgA = await prisma.priceGroup.findFirst({ where: { name: "A" } });
+    pgB = await prisma.priceGroup.findFirst({ where: { name: "B" } });
+    pgC = await prisma.priceGroup.findFirst({ where: { name: "C" } });
   }
 
   // ── Customers (skip if already have data) ─────────────────────
@@ -405,8 +405,8 @@ async function main() {
   console.log("");
   console.log("  หมวดหมู่  : 6 หมวด");
   console.log("  สินค้า    : 22 รายการ (รวม 2 รายการแบบกำหนดราคาเอง)");
-  console.log("  กลุ่มราคา : 3 กลุ่ม (ก, ข, ค)");
-  console.log("  ลูกค้า    : 8 คน (ก=2, ข=2, ค=2, ไม่มีกลุ่ม=2)");
+  console.log("  กลุ่มราคา : 3 กลุ่ม (A, B, C)");
+  console.log("  ลูกค้า    : 8 คน (A=2, B=2, C=2, ไม่มีกลุ่ม=2)");
 }
 
 main()
