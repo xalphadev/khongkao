@@ -53,14 +53,8 @@ function getTopProducts(txns: Transaction[]) {
   return Object.values(map).sort((a, b) => b.total - a.total).slice(0, 6);
 }
 
-const CHIP_COLORS = [
-  { bg: "#22c55e", text: "#fff" },
-  { bg: "#3b82f6", text: "#fff" },
-  { bg: "#f59e0b", text: "#fff" },
-  { bg: "#8b5cf6", text: "#fff" },
-  { bg: "#ec4899", text: "#fff" },
-  { bg: "#06b6d4", text: "#fff" },
-];
+/** Muted accent stripes for read-only product rows (not button-like). */
+const CHIP_ACCENTS = ["#22c55e", "#3b82f6", "#f59e0b", "#8b5cf6", "#ec4899", "#06b6d4"];
 
 export default function StaffHome({ userName }: StaffHomeProps) {
   const router = useRouter();
@@ -253,10 +247,11 @@ export default function StaffHome({ userName }: StaffHomeProps) {
           </div>
         )}
 
-        {/* ── MAIN ACTIONS: รับซื้อ + ประวัติ ── */}
+        {/* ── MAIN ACTIONS: ชัดว่าเป็นปุ่ม — รับซื้อโดด + ประวัติแบบรอง (outline) ── */}
         <div className="grid grid-cols-5 gap-2.5">
-          {/* Primary CTA — รับซื้อของเก่า */}
           <button
+            type="button"
+            aria-label="เริ่มบันทึกรับซื้อของเก่า"
             onClick={() => router.push("/staff/purchase")}
             className="col-span-3 relative overflow-hidden rounded-3xl active:scale-[0.96] transition-all text-left"
             style={{
@@ -276,7 +271,7 @@ export default function StaffHome({ userName }: StaffHomeProps) {
                   <ShoppingBag className="w-7 h-7 text-white" strokeWidth={2} />
                 </div>
               </div>
-              <p className="text-white/75 text-xs font-medium leading-none mb-1">
+              <p className="text-white/90 text-xs font-semibold leading-none mb-1">
                 {draftItems > 0 ? "เปิดบิลใหม่" : "กดเพื่อเริ่ม"}
               </p>
               <p className="text-white font-black text-xl leading-tight">รับซื้อ<br />ของเก่า</p>
@@ -287,83 +282,85 @@ export default function StaffHome({ userName }: StaffHomeProps) {
             </div>
           </button>
 
-          {/* Secondary — ประวัติ */}
           <button
+            type="button"
+            aria-label="ดูประวัติการรับซื้อ"
             onClick={() => router.push("/staff/history")}
-            className="col-span-2 relative overflow-hidden rounded-3xl active:scale-[0.96] transition-all flex flex-col justify-between text-left"
-            style={{
-              background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
-              boxShadow: "0 12px 36px rgba(79,70,229,0.35), 0 4px 12px rgba(124,58,237,0.3)",
-              padding: "22px 18px",
-            }}
+            className="col-span-2 rounded-3xl border-2 border-slate-300 bg-white flex flex-col justify-between text-left active:scale-[0.96] active:bg-slate-50 transition-all shadow-sm"
+            style={{ padding: "20px 16px", boxShadow: "0 2px 8px rgba(15,23,42,0.06)" }}
           >
-            <div className="absolute -top-6 -right-6 w-28 h-28 rounded-full" style={{ background: "rgba(255,255,255,0.1)" }} />
-            <div className="relative">
-              <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3"
-                style={{ background: "rgba(255,255,255,0.2)" }}>
-                <ClipboardList className="w-6 h-6 text-white" strokeWidth={1.8} />
+            <div>
+              <div className="w-11 h-11 rounded-2xl bg-slate-100 flex items-center justify-center mb-2.5 border border-slate-200">
+                <ClipboardList className="w-5 h-5 text-slate-600" strokeWidth={2} />
               </div>
-              <p className="text-white/70 text-xs font-medium leading-none mb-1">ดู</p>
-              <p className="text-white font-black text-xl leading-tight">ประวัติ</p>
+              <p className="text-slate-500 text-xs font-medium leading-none mb-0.5">แตะเพื่อเปิด</p>
+              <p className="text-slate-800 font-bold text-lg leading-tight">ประวัติ</p>
             </div>
-            <div className="flex items-center gap-1 mt-3">
-              <span className="text-white/60 text-xs font-medium">
-                {todayTransactions.length > 0 ? `${todayTransactions.length} บิลวันนี้` : "ไม่มีบิล"}
+            <div className="flex items-center justify-between gap-1 mt-2 pt-2 border-t border-slate-100">
+              <span className="text-slate-500 text-xs">
+                {todayTransactions.length > 0 ? `${todayTransactions.length} บิลวันนี้` : "ยังไม่มีบิล"}
               </span>
-              <ChevronRight className="w-3 h-3 text-white/40" />
+              <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
             </div>
           </button>
         </div>
 
-        {/* ── QUICK STATS ── */}
-        <div className="grid grid-cols-3 gap-2">
-          <div className="rounded-2xl px-3 py-3.5 flex flex-col gap-1 shadow-sm"
-            style={{ background: "linear-gradient(135deg, #d1fae5, #6ee7b7)", boxShadow: "0 4px 12px rgba(16,185,129,0.2)" }}>
-            <Banknote className="w-4 h-4 text-emerald-700" />
-            <p className="text-xs font-medium mt-0.5 text-emerald-700">เดือนนี้</p>
-            <p className="font-bold tabular-nums text-base leading-tight text-emerald-800">
-              ฿{formatMoneyShort(monthTotal)}
-            </p>
-            <p className="text-xs text-emerald-600">{monthCount} บิล</p>
-          </div>
-          <div className="rounded-2xl px-3 py-3.5 flex flex-col gap-1 shadow-sm"
-            style={{ background: "linear-gradient(135deg, #dbeafe, #93c5fd)", boxShadow: "0 4px 12px rgba(59,130,246,0.2)" }}>
-            <BarChart2 className="w-4 h-4 text-blue-700" />
-            <p className="text-xs font-medium mt-0.5 text-blue-700">บิลวันนี้</p>
-            <p className="font-bold tabular-nums text-base leading-tight text-blue-800">
-              {todayTransactions.length}
-            </p>
-            <p className="text-xs text-blue-600">รายการ</p>
-          </div>
-          <div className="rounded-2xl px-3 py-3.5 flex flex-col gap-1 shadow-sm"
-            style={{ background: "linear-gradient(135deg, #fed7aa, #fdba74)", boxShadow: "0 4px 12px rgba(251,146,60,0.2)" }}>
-            <TrendingUp className="w-4 h-4 text-orange-700" />
-            <p className="text-xs font-medium mt-0.5 text-orange-700">เฉลี่ย/บิล</p>
-            <p className="font-bold tabular-nums text-base leading-tight text-orange-800">
-              ฿{formatMoneyShort(avgPerBill)}
-            </p>
-            <p className="text-xs text-orange-600">วันนี้</p>
+        {/* ── QUICK STATS: ดูอย่างเดียว — ไม่ใช้ gradient ให้หน้าตาเหมือนปุ่ม ── */}
+        <div className="rounded-2xl border border-gray-200 bg-gray-50/90 px-1 py-1">
+          <p className="px-3 pt-2 pb-1 text-[11px] font-medium text-gray-500 uppercase tracking-wide">
+            สรุปตัวเลข · ดูอย่างเดียว
+          </p>
+          <div className="grid grid-cols-3 divide-x divide-gray-200/80">
+            <div className="px-2.5 py-3 flex flex-col gap-0.5">
+              <Banknote className="w-3.5 h-3.5 text-gray-400" />
+              <p className="text-[11px] font-medium text-gray-500 mt-1">เดือนนี้</p>
+              <p className="font-bold tabular-nums text-sm leading-tight text-gray-800">
+                ฿{formatMoneyShort(monthTotal)}
+              </p>
+              <p className="text-[11px] text-gray-500">{monthCount} บิล</p>
+            </div>
+            <div className="px-2.5 py-3 flex flex-col gap-0.5">
+              <BarChart2 className="w-3.5 h-3.5 text-gray-400" />
+              <p className="text-[11px] font-medium text-gray-500 mt-1">บิลวันนี้</p>
+              <p className="font-bold tabular-nums text-sm leading-tight text-gray-800">
+                {todayTransactions.length}
+              </p>
+              <p className="text-[11px] text-gray-500">รายการ</p>
+            </div>
+            <div className="px-2.5 py-3 flex flex-col gap-0.5">
+              <TrendingUp className="w-3.5 h-3.5 text-gray-400" />
+              <p className="text-[11px] font-medium text-gray-500 mt-1">เฉลี่ย/บิล</p>
+              <p className="font-bold tabular-nums text-sm leading-tight text-gray-800">
+                ฿{formatMoneyShort(avgPerBill)}
+              </p>
+              <p className="text-[11px] text-gray-500">วันนี้</p>
+            </div>
           </div>
         </div>
 
         {/* ── TODAY'S TOP PRODUCTS ── */}
         {topProducts.length > 0 && (
           <div className="bg-white rounded-2xl px-4 py-4 shadow-sm border border-gray-100">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-1.5 h-4 rounded-full bg-gradient-to-b from-emerald-400 to-sky-400" />
-              <p className="text-gray-600 text-xs font-bold uppercase tracking-wide">สินค้าที่รับซื้อวันนี้</p>
+            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-1 h-4 rounded-full bg-gray-300" />
+                <p className="text-gray-700 text-xs font-bold uppercase tracking-wide">สินค้าที่รับซื้อวันนี้</p>
+              </div>
+              <span className="text-[11px] text-gray-400 font-medium">แสดงยอดเท่านั้น</span>
             </div>
             <div className="flex flex-wrap gap-2">
               {topProducts.map((p, i) => (
-                <div key={p.name}
-                  className="flex items-center gap-1.5 rounded-full px-3 py-1.5"
-                  style={{ background: CHIP_COLORS[i % CHIP_COLORS.length].bg }}>
-                  <span className="text-xs font-semibold" style={{ color: CHIP_COLORS[i % CHIP_COLORS.length].text }}>
-                    {p.name}
-                  </span>
-                  <span className="text-xs font-bold tabular-nums" style={{ color: CHIP_COLORS[i % CHIP_COLORS.length].text }}>
-                    ฿{formatMoneyShort(p.total)}
-                  </span>
+                <div
+                  key={p.name}
+                  className="flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 pl-2 pr-2.5 py-1.5"
+                  role="presentation"
+                >
+                  <span
+                    className="w-1 self-stretch min-h-[1.25rem] rounded-full shrink-0"
+                    style={{ background: CHIP_ACCENTS[i % CHIP_ACCENTS.length] }}
+                  />
+                  <span className="text-xs font-semibold text-gray-700">{p.name}</span>
+                  <span className="text-xs font-bold tabular-nums text-gray-600">฿{formatMoneyShort(p.total)}</span>
                 </div>
               ))}
             </div>
@@ -373,20 +370,29 @@ export default function StaffHome({ userName }: StaffHomeProps) {
         {/* ── Customer group breakdown today ── */}
         {!loading && groupBreakdown.length > 1 && (
           <div className="bg-white rounded-2xl px-4 py-3.5 shadow-sm border border-gray-100">
-            <div className="flex items-center gap-2 mb-2.5">
-              <div className="w-1.5 h-4 rounded-full" style={{ background: "linear-gradient(180deg, #f59e0b, #f97316)" }} />
-              <p className="text-gray-600 text-xs font-bold uppercase tracking-wide">ลูกค้าวันนี้ตามกลุ่ม</p>
+            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 mb-2.5">
+              <div className="flex items-center gap-2">
+                <div className="w-1 h-4 rounded-full bg-gray-300" />
+                <p className="text-gray-700 text-xs font-bold uppercase tracking-wide">ลูกค้าวันนี้ตามกลุ่ม</p>
+              </div>
+              <span className="text-[11px] text-gray-400 font-medium">สรุปเท่านั้น</span>
             </div>
             <div className="flex flex-wrap gap-2">
               {groupBreakdown.map((g, i) => (
-                <div key={i}
-                  className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold"
-                  style={{ background: g.color ?? "#6b7280", color: "#fff" }}>
+                <div
+                  key={i}
+                  className="flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 pl-2 pr-2.5 py-1.5 text-xs font-semibold text-gray-700"
+                  role="presentation"
+                >
+                  <span
+                    className="w-2 h-2 rounded-full shrink-0"
+                    style={{ background: g.color ?? "#9ca3af" }}
+                  />
                   <span>{g.name}</span>
-                  <span className="opacity-80">·</span>
+                  <span className="text-gray-400 font-normal">·</span>
                   <span>{g.count} บิล</span>
-                  <span className="opacity-60">·</span>
-                  <span>฿{formatMoneyShort(g.amount)}</span>
+                  <span className="text-gray-400 font-normal">·</span>
+                  <span className="tabular-nums text-gray-600">฿{formatMoneyShort(g.amount)}</span>
                 </div>
               ))}
             </div>
