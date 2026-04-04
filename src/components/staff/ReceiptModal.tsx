@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { CheckCircle2, Printer, X, User, Share2, ImageIcon } from "lucide-react";
+import { CheckCircle2, Download, X, User, Share2, ImageIcon } from "lucide-react";
 
 interface CartItem {
   productId: string;
@@ -44,6 +44,7 @@ export default function ReceiptModal({ transaction, onClose }: ReceiptModalProps
   const [shopPhone, setShopPhone] = useState("");
   const [receiptNote, setReceiptNote] = useState("ขอบคุณที่ใช้บริการ");
   const [sharing, setSharing] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     fetch("/api/settings")
@@ -90,7 +91,43 @@ export default function ReceiptModal({ transaction, onClose }: ReceiptModalProps
     }
   };
 
-  const handlePrint = () => {
+  const handleSaveImage = async () => {
+    if (!receiptImageRef.current) return;
+    setSaving(true);
+    try {
+      const html2canvas = (await import("html2canvas")).default;
+      const canvas = await html2canvas(receiptImageRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        logging: false,
+      });
+      const blob = await new Promise<Blob>((resolve) =>
+        canvas.toBlob((b) => resolve(b!), "image/png")
+      );
+      const fileName = `ใบเสร็จ_${transaction.id.slice(-8).toUpperCase()}.png`;
+      const file = new File([blob], fileName, { type: "image/png" });
+      // Try native share first (mobile) — user can save to gallery or share anywhere
+      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: "ใบรับซื้อของเก่า" });
+      } else {
+        // Fallback: direct download (saves to Downloads/Gallery)
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = fileName;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Keep print as hidden fallback — used only via browser menu
+  const _handlePrint_legacy = () => {
     const w = window.open("", "_blank");
     if (!w) return;
     w.document.write(`<!DOCTYPE html><html lang="th"><head>
@@ -282,31 +319,45 @@ export default function ReceiptModal({ transaction, onClose }: ReceiptModalProps
 
         {/* Actions (fixed at bottom) */}
         <div className="px-5 pb-6 pt-3 space-y-2.5 shrink-0 border-t border-gray-100">
-          <button
-            onClick={handlePrint}
-            className="btn-staff bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-100"
-            style={{ minHeight: 56 }}
-          >
-            <Printer className="w-5 h-5" />
-            พิมพ์ใบเสร็จ
-          </button>
+
+          {/* Primary: ส่ง LINE — สำคัญที่สุด */}
           <button
             onClick={handleShare}
             disabled={sharing}
-            className="btn-staff bg-emerald-500 hover:bg-emerald-600 disabled:opacity-60 text-white shadow-md shadow-emerald-100"
-            style={{ minHeight: 52 }}
+            className="btn-staff disabled:opacity-60 text-white shadow-lg"
+            style={{
+              minHeight: 60,
+              background: "linear-gradient(135deg, #06c755, #06b048)",
+              boxShadow: "0 8px 24px rgba(6,199,85,0.4)",
+            }}
           >
             {sharing ? (
               <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
             ) : (
               <ImageIcon className="w-5 h-5" />
             )}
-            {sharing ? "กำลังสร้างรูปภาพ..." : "ส่งรูปใบเสร็จ (LINE)"}
+            {sharing ? "กำลังสร้างรูปภาพ..." : "ส่งใบเสร็จทาง LINE"}
           </button>
+
+          {/* Secondary: บันทึกรูปลงเครื่อง — ไม่เปิด tab ใหม่ */}
+          <button
+            onClick={handleSaveImage}
+            disabled={saving}
+            className="btn-staff bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white shadow-md shadow-blue-100"
+            style={{ minHeight: 52 }}
+          >
+            {saving ? (
+              <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+            ) : (
+              <Download className="w-5 h-5" />
+            )}
+            {saving ? "กำลังบันทึก..." : "บันทึกรูปลงเครื่อง"}
+          </button>
+
           <button
             onClick={onClose}
             className="btn-staff bg-gray-100 hover:bg-gray-200 text-gray-600"
-            style={{ minHeight: 52 }}
+            style={{ minHeight: 48 }}
           >
             <X className="w-4 h-4" />
             ปิด
