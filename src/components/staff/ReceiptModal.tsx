@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { CheckCircle2, Download, X, User, Share2, ImageIcon } from "lucide-react";
+import { CheckCircle2, Download, X, User, Share2, ImageIcon, Printer } from "lucide-react";
 
 interface CartItem {
   productId: string;
@@ -45,6 +45,7 @@ export default function ReceiptModal({ transaction, onClose }: ReceiptModalProps
   const [receiptNote, setReceiptNote] = useState("ขอบคุณที่ใช้บริการ");
   const [sharing, setSharing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [savedImageUrl, setSavedImageUrl] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/settings")
@@ -57,82 +58,69 @@ export default function ReceiptModal({ transaction, onClose }: ReceiptModalProps
       });
   }, []);
 
+  // Shared: generate canvas from hidden receipt div
+  const generateCanvas = async () => {
+    if (!receiptImageRef.current) return null;
+    const html2canvas = (await import("html2canvas")).default;
+    return html2canvas(receiptImageRef.current, {
+      scale: 2, useCORS: true, backgroundColor: "#ffffff", logging: false,
+    });
+  };
+
+  // ── ส่ง LINE: native share sheet ──────────────────────────────
   const handleShare = async () => {
-    if (!receiptImageRef.current) return;
     setSharing(true);
     try {
-      const html2canvas = (await import("html2canvas")).default;
-      const canvas = await html2canvas(receiptImageRef.current, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: "#ffffff",
-        logging: false,
-      });
-      const blob = await new Promise<Blob>((resolve) =>
-        canvas.toBlob((b) => resolve(b!), "image/png")
-      );
+      const canvas = await generateCanvas();
+      if (!canvas) return;
+      const blob = await new Promise<Blob>((res) => canvas.toBlob((b) => res(b!), "image/png"));
       const file = new File([blob], `ใบเสร็จ_${transaction.id.slice(-8).toUpperCase()}.png`, { type: "image/png" });
-
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
         await navigator.share({ files: [file], title: "ใบรับซื้อของเก่า" });
       } else {
-        // fallback: download image
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = file.name;
-        a.click();
-        URL.revokeObjectURL(url);
+        // fallback: show inline image to long-press save
+        setSavedImageUrl(canvas.toDataURL("image/png"));
       }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setSharing(false);
-    }
+    } catch (e) { console.error(e); }
+    finally { setSharing(false); }
   };
 
+  // ── บันทึกรูปลงเครื่อง: show inline → long-press to save ─────
   const handleSaveImage = async () => {
-    if (!receiptImageRef.current) return;
     setSaving(true);
     try {
-      const html2canvas = (await import("html2canvas")).default;
-      const canvas = await html2canvas(receiptImageRef.current, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: "#ffffff",
-        logging: false,
-      });
-      const blob = await new Promise<Blob>((resolve) =>
-        canvas.toBlob((b) => resolve(b!), "image/png")
-      );
-      const fileName = `ใบเสร็จ_${transaction.id.slice(-8).toUpperCase()}.png`;
-      const file = new File([blob], fileName, { type: "image/png" });
-      // Try native share first (mobile) — user can save to gallery or share anywhere
-      if (navigator.share && navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], title: "ใบรับซื้อของเก่า" });
-      } else {
-        // Fallback: direct download (saves to Downloads/Gallery)
-        const url = URL.createObjectURL(blob);
+      const canvas = await generateCanvas();
+      if (!canvas) return;
+      const dataUrl = canvas.toDataURL("image/png");
+      // Try 1: native share (iOS/Android modern — most reliable way to save to gallery)
+      try {
+        const blob = await (await fetch(dataUrl)).blob();
+        const file = new File([blob], `ใบเสร็จ_${transaction.id.slice(-8).toUpperCase()}.png`, { type: "image/png" });
+        if (navigator.share && navigator.canShare?.({ files: [file] })) {
+          await navigator.share({ files: [file], title: "ใบรับซื้อของเก่า" });
+          return;
+        }
+      } catch {}
+      // Try 2: download link (Android Chrome / desktop)
+      try {
         const a = document.createElement("a");
-        a.href = url;
-        a.download = fileName;
+        a.href = dataUrl;
+        a.download = `ใบเสร็จ_${transaction.id.slice(-8).toUpperCase()}.png`;
+        document.body.appendChild(a);
         a.click();
-        URL.revokeObjectURL(url);
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setSaving(false);
-    }
+        document.body.removeChild(a);
+        return;
+      } catch {}
+      // Fallback: show inline image — กดค้างเพื่อบันทึก (works universally on mobile)
+      setSavedImageUrl(dataUrl);
+    } catch (e) { console.error(e); }
+    finally { setSaving(false); }
   };
 
-  // Keep print as hidden fallback — used only via browser menu
-  const _handlePrint_legacy = () => {
-    const w = window.open("", "_blank");
-    if (!w) return;
-    w.document.write(`<!DOCTYPE html><html lang="th"><head>
-      <meta charset="UTF-8">
-      <title>ใบรับซื้อ</title>
+  // ── พิมพ์ใบเสร็จ: hidden iframe — ไม่เปิด tab ใหม่ ──────────
+  const handlePrint = () => {
+    const printHTML = `<!DOCTYPE html><html lang="th"><head>
+      <meta charset="UTF-8"><title>ใบรับซื้อ</title>
       <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500&display=swap" rel="stylesheet">
       <style>
         *{box-sizing:border-box;margin:0;padding:0}
@@ -145,41 +133,41 @@ export default function ReceiptModal({ transaction, onClose }: ReceiptModalProps
         .meta{font-size:12px;color:#555;margin-bottom:2px}
         table{width:100%;font-size:13px;border-collapse:collapse}
         th{text-align:left;border-bottom:1px solid #000;padding:4px 0;font-weight:500}
-        td{padding:3px 0;vertical-align:top}
-        td:last-child{text-align:right}
+        td{padding:3px 0;vertical-align:top}td:last-child{text-align:right}
         .total td{font-weight:500;font-size:15px;border-top:1px solid #000;padding-top:8px}
         .note{text-align:center;font-size:12px;color:#666;margin-top:10px}
-      </style>
-    </head><body><div class="wrap">
+      </style></head><body><div class="wrap">
       <div class="shop">${shopName}</div>
       ${shopAddress ? `<div class="info">${shopAddress}</div>` : ""}
       ${shopPhone ? `<div class="info">โทร: ${shopPhone}</div>` : ""}
-      <div class="dash"></div>
-      <div class="title">ใบรับซื้อของเก่า</div>
+      <div class="dash"></div><div class="title">ใบรับซื้อของเก่า</div>
       ${transaction.customerName ? `<div class="meta" style="font-size:14px;color:#000;font-weight:500">ลูกค้า: ${transaction.customerName}</div>` : ""}
       <div class="meta">วันที่: ${formatDateTime(transaction.createdAt)}</div>
       <div class="meta">เลขที่: ${transaction.id.slice(-8).toUpperCase()}</div>
       <div class="dash"></div>
-      <table>
-        <thead><tr><th>รายการ</th><th style="text-align:center">จำนวน</th><th style="text-align:right">บาท</th></tr></thead>
-        <tbody>
-          ${transaction.items.map(i => `<tr>
-            <td>${i.productName}</td>
-            <td style="text-align:center">${i.quantity}${i.unit === "KG" ? "กก." : "ชิ้น"}</td>
-            <td style="text-align:right">${formatMoney(i.subtotal)}</td>
-          </tr>`).join("")}
-          <tr class="total">
-            <td colspan="2">รวมทั้งหมด</td>
-            <td>${formatMoney(transaction.totalAmount)}</td>
-          </tr>
-        </tbody>
-      </table>
-      <div class="dash"></div>
-      <div class="note">${receiptNote}</div>
-    </div></body></html>`);
-    w.document.close();
-    w.focus();
-    setTimeout(() => { w.print(); w.close(); }, 400);
+      <table><thead><tr><th>รายการ</th><th style="text-align:center">จำนวน</th><th style="text-align:right">บาท</th></tr></thead>
+      <tbody>${transaction.items.map(i => `<tr>
+        <td>${i.productName}</td>
+        <td style="text-align:center">${i.quantity}${i.unit === "KG" ? "กก." : "ชิ้น"}</td>
+        <td style="text-align:right">${formatMoney(i.subtotal)}</td>
+      </tr>`).join("")}
+      <tr class="total"><td colspan="2">รวมทั้งหมด</td><td>${formatMoney(transaction.totalAmount)}</td></tr>
+      </tbody></table>
+      <div class="dash"></div><div class="note">${receiptNote}</div>
+    </div></body></html>`;
+
+    // inject into hidden iframe — print dialog appears over current page, no new tab
+    const iframe = document.createElement("iframe");
+    iframe.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:0;height:0;border:none";
+    document.body.appendChild(iframe);
+    const doc = iframe.contentDocument ?? iframe.contentWindow?.document;
+    if (!doc) { iframe.remove(); return; }
+    doc.open(); doc.write(printHTML); doc.close();
+    setTimeout(() => {
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
+      setTimeout(() => iframe.remove(), 3000);
+    }, 500);
   };
 
   return (
@@ -320,49 +308,56 @@ export default function ReceiptModal({ transaction, onClose }: ReceiptModalProps
         {/* Actions (fixed at bottom) */}
         <div className="px-5 pb-6 pt-3 space-y-2.5 shrink-0 border-t border-gray-100">
 
-          {/* Primary: ส่ง LINE — สำคัญที่สุด */}
-          <button
-            onClick={handleShare}
-            disabled={sharing}
+          {/* 1. ส่ง LINE */}
+          <button onClick={handleShare} disabled={sharing}
             className="btn-staff disabled:opacity-60 text-white shadow-lg"
-            style={{
-              minHeight: 60,
-              background: "linear-gradient(135deg, #06c755, #06b048)",
-              boxShadow: "0 8px 24px rgba(6,199,85,0.4)",
-            }}
-          >
-            {sharing ? (
-              <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-            ) : (
-              <ImageIcon className="w-5 h-5" />
-            )}
+            style={{ minHeight: 60, background: "linear-gradient(135deg, #06c755, #06b048)", boxShadow: "0 8px 24px rgba(6,199,85,0.4)" }}>
+            {sharing
+              ? <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+              : <ImageIcon className="w-5 h-5" />}
             {sharing ? "กำลังสร้างรูปภาพ..." : "ส่งใบเสร็จทาง LINE"}
           </button>
 
-          {/* Secondary: บันทึกรูปลงเครื่อง — ไม่เปิด tab ใหม่ */}
-          <button
-            onClick={handleSaveImage}
-            disabled={saving}
-            className="btn-staff bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white shadow-md shadow-blue-100"
-            style={{ minHeight: 52 }}
-          >
-            {saving ? (
-              <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-            ) : (
-              <Download className="w-5 h-5" />
-            )}
-            {saving ? "กำลังบันทึก..." : "บันทึกรูปลงเครื่อง"}
+          {/* 2. บันทึกรูปลงเครื่อง */}
+          <button onClick={handleSaveImage} disabled={saving}
+            className="btn-staff bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white shadow-md"
+            style={{ minHeight: 52 }}>
+            {saving
+              ? <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+              : <Download className="w-5 h-5" />}
+            {saving ? "กำลังสร้างรูปภาพ..." : "บันทึกรูปลงเครื่อง"}
           </button>
 
-          <button
-            onClick={onClose}
+          {/* 3. พิมพ์ใบเสร็จ — ใช้ iframe ไม่เปิด tab ใหม่ */}
+          <button onClick={handlePrint}
+            className="btn-staff bg-gray-600 hover:bg-gray-700 text-white shadow-md"
+            style={{ minHeight: 52 }}>
+            <Printer className="w-5 h-5" />
+            พิมพ์ใบเสร็จ
+          </button>
+
+          <button onClick={onClose}
             className="btn-staff bg-gray-100 hover:bg-gray-200 text-gray-600"
-            style={{ minHeight: 48 }}
-          >
-            <X className="w-4 h-4" />
-            ปิด
+            style={{ minHeight: 48 }}>
+            <X className="w-4 h-4" /> ปิด
           </button>
         </div>
+
+        {/* Inline image overlay — fallback when share/download not available */}
+        {savedImageUrl && (
+          <div className="fixed inset-0 z-[60] bg-black/70 flex flex-col items-center justify-center p-4 backdrop-blur-sm"
+            onClick={() => setSavedImageUrl(null)}>
+            <div className="bg-white rounded-2xl p-4 w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
+              <p className="text-center font-bold text-gray-800 text-base mb-1">กดค้างที่รูปเพื่อบันทึก</p>
+              <p className="text-center text-gray-400 text-xs mb-3">กดค้างที่รูปภาพ แล้วเลือก "บันทึกรูปภาพ"</p>
+              <img src={savedImageUrl} alt="ใบเสร็จ" className="w-full rounded-xl border border-gray-100" />
+              <button onClick={() => setSavedImageUrl(null)}
+                className="mt-3 w-full py-2.5 rounded-xl bg-gray-100 text-gray-600 text-sm font-medium">
+                ปิด
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
     </>
