@@ -104,6 +104,28 @@ export async function GET(req: NextRequest) {
     .map((g) => ({ id: g.id, name: g.name, color: g.color, amount: g.amount, count: g.count, customerCount: g.customerIds.size }))
     .sort((a, b) => b.amount - a.amount);
 
+  // Customer breakdown (top customers by spend)
+  const customerMap: Record<string, {
+    id: string; name: string; nickname: string | null;
+    priceGroupName: string | null; priceGroupColor: string | null;
+    amount: number; count: number;
+  }> = {};
+  transactions.forEach((t) => {
+    if (!t.customer) return;
+    const key = t.customer.id;
+    if (!customerMap[key]) {
+      customerMap[key] = {
+        id: t.customer.id, name: t.customer.name, nickname: t.customer.nickname ?? null,
+        priceGroupName: t.customer.priceGroup?.name ?? null,
+        priceGroupColor: t.customer.priceGroup?.color ?? null,
+        amount: 0, count: 0,
+      };
+    }
+    customerMap[key].amount += t.totalAmount;
+    customerMap[key].count += 1;
+  });
+  const customerBreakdown = Object.values(customerMap).sort((a, b) => b.amount - a.amount);
+
   return NextResponse.json({
     startDate,
     endDate,
@@ -114,6 +136,7 @@ export async function GET(req: NextRequest) {
     productBreakdown: Object.values(productMap).sort((a, b) => b.amount - a.amount),
     staffBreakdown: Object.values(staffMap).sort((a, b) => b.amount - a.amount),
     priceGroupBreakdown,
+    customerBreakdown,
     transactions,
   });
 }

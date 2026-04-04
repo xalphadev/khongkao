@@ -13,6 +13,7 @@ interface StaffHomeProps { userName: string; }
 interface Transaction {
   id: string; totalAmount: number; createdAt: string;
   customerName?: string | null;
+  customer?: { id: string; name: string; priceGroup?: { id: string; name: string; color: string } | null } | null;
   items: { id: string; productName: string; quantity: number; unit: string; subtotal: number }[];
 }
 interface HeldBill {
@@ -30,6 +31,19 @@ function formatMoneyShort(n: number) {
 function localDate() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+
+// Derive customer group breakdown from transactions
+function getGroupBreakdown(txns: Transaction[]) {
+  const map: Record<string, { name: string; color: string | null; count: number; amount: number }> = {};
+  txns.forEach((t) => {
+    const pg = t.customer?.priceGroup;
+    const key = pg?.id ?? "__none__";
+    if (!map[key]) map[key] = { name: pg ? `กลุ่ม ${pg.name}` : "ราคาปกติ", color: pg?.color ?? null, count: 0, amount: 0 };
+    map[key].count += 1;
+    map[key].amount += t.totalAmount;
+  });
+  return Object.values(map).sort((a, b) => b.amount - a.amount);
 }
 
 // Derive top products from transactions
@@ -104,6 +118,7 @@ export default function StaffHome({ userName }: StaffHomeProps) {
   const initial = firstName.charAt(0).toUpperCase();
   const avgPerBill = todayTransactions.length > 0 ? todayTotal / todayTransactions.length : 0;
   const topProducts = getTopProducts(todayTransactions);
+  const groupBreakdown = getGroupBreakdown(todayTransactions);
 
   const thaiDate = new Date().toLocaleDateString("th-TH", {
     weekday: "short", day: "numeric", month: "short", year: "numeric",
@@ -326,6 +341,32 @@ export default function StaffHome({ userName }: StaffHomeProps) {
                     style={{ color: CHIP_COLORS[i % CHIP_COLORS.length].text }}>
                     ฿{formatMoneyShort(p.total)}
                   </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Customer group breakdown today ── */}
+        {!loading && groupBreakdown.length > 1 && (
+          <div className="bg-white rounded-2xl px-4 py-3.5 shadow-sm border border-gray-100">
+            <div className="flex items-center gap-2 mb-2.5">
+              <div className="w-1.5 h-4 rounded-full" style={{ background: "linear-gradient(180deg, #f59e0b, #f97316)" }} />
+              <p className="text-gray-600 text-xs font-bold uppercase tracking-wide">ลูกค้าวันนี้ตามกลุ่ม</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {groupBreakdown.map((g, i) => (
+                <div key={i}
+                  className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold"
+                  style={{
+                    background: g.color ?? "#6b7280",
+                    color: "#fff",
+                  }}>
+                  <span>{g.name}</span>
+                  <span className="opacity-80">·</span>
+                  <span>{g.count} บิล</span>
+                  <span className="opacity-60">·</span>
+                  <span>฿{formatMoneyShort(g.amount)}</span>
                 </div>
               ))}
             </div>

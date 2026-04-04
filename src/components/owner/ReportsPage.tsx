@@ -20,6 +20,11 @@ interface PriceGroupStat {
   id: string; name: string; color: string | null;
   amount: number; count: number; customerCount: number;
 }
+interface CustomerStat {
+  id: string; name: string; nickname: string | null;
+  priceGroupName: string | null; priceGroupColor: string | null;
+  amount: number; count: number;
+}
 interface PeriodReport {
   startDate: string; endDate: string;
   totalAmount: number; totalTransactions: number;
@@ -28,6 +33,7 @@ interface PeriodReport {
   productBreakdown: { name: string; unit: string; amount: number; quantity: number }[];
   staffBreakdown: { name: string; amount: number; count: number }[];
   priceGroupBreakdown: PriceGroupStat[];
+  customerBreakdown: CustomerStat[];
   transactions: Transaction[];
 }
 
@@ -99,6 +105,7 @@ export default function ReportsPage() {
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
   const [drillExpandedId, setDrillExpandedId] = useState<string | null>(null);
   const [showAllProducts, setShowAllProducts] = useState(false);
+  const [showAllCustomers, setShowAllCustomers] = useState(false);
   const [showAllTx, setShowAllTx] = useState(false);
   // Custom range
   const [customStart, setCustomStart] = useState(() => localDateString());
@@ -115,7 +122,7 @@ export default function ReportsPage() {
   }, []);
 
   useEffect(() => {
-    if (period !== "custom") { load(); setShowAllProducts(false); setShowAllTx(false); }
+    if (period !== "custom") { load(); setShowAllProducts(false); setShowAllCustomers(false); setShowAllTx(false); }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [period, anchor, filterGroupId]);
 
@@ -161,6 +168,7 @@ export default function ReportsPage() {
     if (customStart > customEnd) return;
     setCustomApplied(true);
     setShowAllProducts(false);
+    setShowAllCustomers(false);
     setShowAllTx(false);
     load();
   };
@@ -518,6 +526,68 @@ export default function ReportsPage() {
               <p className="text-[10px] text-gray-400 mt-3 text-center">กดที่ป้ายกลุ่มเพื่อกรองข้อมูล</p>
             </div>
           )}
+
+          {/* ── Top customers ── */}
+          {report.customerBreakdown && report.customerBreakdown.length > 0 && (() => {
+            const LIMIT = 5;
+            const all = report.customerBreakdown;
+            const shown = showAllCustomers ? all : all.slice(0, LIMIT);
+            const topAmt = all[0]?.amount ?? 1;
+            return (
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="px-4 py-3.5 border-b border-gray-50 flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-xl flex items-center justify-center shrink-0"
+                    style={{ background: "linear-gradient(135deg, #8b5cf6, #ec4899)" }}>
+                    <User className="w-4 h-4 text-white" />
+                  </div>
+                  <p className="text-sm font-semibold text-gray-700 flex-1">ลูกค้ายอดนิยม</p>
+                  <span className="text-xs font-bold text-violet-600 bg-violet-50 px-2 py-0.5 rounded-full border border-violet-100">{all.length} คน</span>
+                </div>
+                <div className="divide-y divide-gray-50">
+                  {shown.map((c, i) => {
+                    const barPct = topAmt > 0 ? (c.amount / topAmt) * 100 : 0;
+                    return (
+                      <div key={c.id} className="flex items-center gap-3 px-4 py-3">
+                        <span className="w-7 h-7 rounded-xl flex items-center justify-center text-xs font-bold shrink-0 text-white"
+                          style={{ background: i === 0 ? "linear-gradient(135deg, #8b5cf6, #ec4899)" : "#f3f4f6", color: i === 0 ? "#fff" : "#6b7280" }}>
+                          {i + 1}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-semibold text-gray-800 text-sm truncate">{c.name}</p>
+                            {c.nickname && <span className="text-xs text-gray-400 shrink-0">"{c.nickname}"</span>}
+                            {c.priceGroupName && (
+                              <span className="text-[10px] text-white font-semibold rounded px-1.5 py-0.5 shrink-0"
+                                style={{ background: c.priceGroupColor ?? "#6b7280" }}>
+                                {c.priceGroupName}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                              <div className="h-full rounded-full transition-all"
+                                style={{ width: `${barPct}%`, background: "linear-gradient(90deg, #8b5cf6, #ec4899)" }} />
+                            </div>
+                            <span className="text-gray-400 text-xs shrink-0">{c.count} บิล</span>
+                          </div>
+                        </div>
+                        <p className="font-bold text-sm tabular-nums shrink-0 text-violet-600">
+                          ฿{formatMoney(c.amount)}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+                {all.length > LIMIT && (
+                  <button onClick={() => setShowAllCustomers(v => !v)}
+                    className="w-full py-3 border-t border-dashed border-gray-200 text-sm font-medium text-gray-500 active:bg-gray-50 flex items-center justify-center gap-1.5">
+                    <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${showAllCustomers ? "rotate-180" : ""}`} />
+                    {showAllCustomers ? "แสดงน้อยลง" : `ดูเพิ่มเติม ${all.length - LIMIT} คน`}
+                  </button>
+                )}
+              </div>
+            );
+          })()}
 
           {/* ── Category breakdown ── */}
           {report.categoryBreakdown.length > 0 && (

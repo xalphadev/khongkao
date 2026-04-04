@@ -155,17 +155,24 @@ function PriceMatrixView({ groups, categories, matrix, onEditGroup }: {
                 <p className="font-black text-gray-800 text-base">กลุ่ม {g.name}</p>
                 {g.description && <p className="text-gray-400 text-[10px] leading-tight mt-0.5 line-clamp-2">{g.description}</p>}
               </div>
-              {/* Override stats */}
-              <div className="flex items-center gap-1.5 flex-wrap">
-                {overrides > 0
-                  ? <span className="text-[10px] font-bold text-white rounded-md px-1.5 py-0.5" style={{ background: g.color ?? "#16a34a" }}>
-                      {overrides} กำหนดเอง
-                    </span>
-                  : <span className="text-[10px] font-semibold text-gray-400 bg-gray-100 rounded-md px-1.5 py-0.5">
-                      ราคาปกติทั้งหมด
-                    </span>
-                }
-                <span className="text-[10px] text-gray-300">/{allCount}</span>
+              {/* Override stats + progress */}
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {overrides > 0
+                    ? <span className="text-[10px] font-bold text-white rounded-md px-1.5 py-0.5" style={{ background: g.color ?? "#16a34a" }}>
+                        {overrides}/{allCount} สินค้า
+                      </span>
+                    : <span className="text-[10px] font-semibold text-amber-600 bg-amber-50 border border-amber-200 rounded-md px-1.5 py-0.5 flex items-center gap-0.5">
+                        <AlertCircle className="w-2.5 h-2.5" /> ยังไม่ตั้งราคา
+                      </span>
+                  }
+                </div>
+                {allCount > 0 && (
+                  <div className="h-1 bg-white/30 rounded-full overflow-hidden">
+                    <div className="h-full rounded-full transition-all"
+                      style={{ width: `${Math.round((overrides / allCount) * 100)}%`, background: "rgba(255,255,255,0.8)" }} />
+                  </div>
+                )}
               </div>
               <div className="flex items-center gap-1 text-[11px] font-bold text-white rounded-lg px-2.5 py-1.5 w-fit"
                 style={{ background: g.color ?? "#16a34a" }}>
@@ -556,6 +563,8 @@ export default function PriceGroupsPage() {
     </div>
   );
 
+  const totalProducts = categories.flatMap((c) => c.products.filter((p) => !p.customPrice)).length;
+
   return (
     <div className="space-y-5">
       {/* Page Header */}
@@ -622,14 +631,39 @@ export default function PriceGroupsPage() {
                   </span>
                 </div>
                 {g.description && <p className="text-gray-400 text-xs mt-0.5 truncate">{g.description}</p>}
-                <div className="flex items-center gap-3 mt-1">
+                <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                   <span className="text-xs text-gray-400 flex items-center gap-1">
                     <Users className="w-3 h-3" /> {g.customerCount} ลูกค้า
                   </span>
-                  <span className="text-xs text-gray-400">
-                    {g.itemCount} สินค้ามีราคา
-                  </span>
+                  {totalProducts > 0 && (() => {
+                    const pct = Math.round((g.itemCount / totalProducts) * 100);
+                    if (g.itemCount === 0) {
+                      return (
+                        <span className="text-[10px] font-semibold bg-amber-50 text-amber-600 border border-amber-200 rounded-md px-1.5 py-0.5 flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3" /> ยังไม่ได้ตั้งราคา
+                        </span>
+                      );
+                    }
+                    if (g.itemCount < totalProducts) {
+                      return (
+                        <span className="text-[10px] font-semibold bg-blue-50 text-blue-600 border border-blue-100 rounded-md px-1.5 py-0.5">
+                          {g.itemCount}/{totalProducts} สินค้า ({pct}%)
+                        </span>
+                      );
+                    }
+                    return (
+                      <span className="text-[10px] font-semibold bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-md px-1.5 py-0.5">
+                        ✓ ครบ {totalProducts} สินค้า
+                      </span>
+                    );
+                  })()}
                 </div>
+                {totalProducts > 0 && g.itemCount > 0 && (
+                  <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden mt-2">
+                    <div className="h-full rounded-full transition-all"
+                      style={{ width: `${Math.round((g.itemCount / totalProducts) * 100)}%`, background: g.color ?? "#16a34a" }} />
+                  </div>
+                )}
               </div>
               <div className="flex items-center gap-1 shrink-0">
                 <button onClick={() => { setEditingGroup(g); setShowForm(true); }}
@@ -667,7 +701,22 @@ export default function PriceGroupsPage() {
             <p className="text-gray-400 text-sm mt-1">สร้างกลุ่มราคาก่อนใน tab "กลุ่มราคา"</p>
           </div>
         ) : (
-          <PriceMatrix groups={groups} categories={categories} />
+          <>
+            {/* Alert: groups with no prices configured */}
+            {groups.some((g) => g.itemCount === 0) && (
+              <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3">
+                <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-amber-700 text-sm font-semibold">มีกลุ่มที่ยังไม่ได้ตั้งราคา</p>
+                  <p className="text-amber-600 text-xs mt-0.5">
+                    {groups.filter((g) => g.itemCount === 0).map((g) => `กลุ่ม ${g.name}`).join(", ")}
+                    {" "}— ลูกค้าในกลุ่มนี้จะได้รับราคาปกติจนกว่าจะตั้งราคา
+                  </p>
+                </div>
+              </div>
+            )}
+            <PriceMatrix groups={groups} categories={categories} />
+          </>
         )
       )}
 
